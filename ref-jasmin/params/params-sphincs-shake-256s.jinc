@@ -30,3 +30,7 @@ param int SPX_OFFSET_TREE_INDEX = 28;
 param int SPX_HARAKA = 0;
 param int SPX_SHA2 = 0;
 param int SPX_SHAKE = 1;
+param int CRYPTO_SECRETKEYBYTES = 128;
+param int CRYPTO_PUBLICKEYBYTES = 64;
+param int CRYPTO_BYTES = 29792;
+param int CRYPTO_SEEDBYTES = 96;

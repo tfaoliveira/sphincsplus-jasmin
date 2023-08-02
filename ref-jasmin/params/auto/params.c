@@ -77,5 +77,15 @@ int main(void)
   print("SPX_SHA2", sha2);
   print("SPX_SHAKE", shake);
 
+  #if defined(SPX_SHA512)
+  print("SPX_SHA512", SPX_SHA512);
+  #endif
+
+  // parameters from api.h
+  print("CRYPTO_SECRETKEYBYTES", SPX_SK_BYTES);
+  print("CRYPTO_PUBLICKEYBYTES", SPX_PK_BYTES);
+  print("CRYPTO_BYTES", SPX_BYTES);
+  print("CRYPTO_SEEDBYTES", 3*SPX_N);
+
   return 0;
 }
