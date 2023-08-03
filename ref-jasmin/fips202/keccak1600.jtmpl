@@ -1,0 +1,302 @@
+require "keccakf1600.jinc"
+
+inline fn __keccak_init(reg ptr u64[25] state) -> reg ptr u64[25]
+{
+  inline int i;
+  reg u64 t;
+
+  ?{}, t = #set0();
+  for i=0 to 25
+  { state[i] = t; }
+
+  return state;
+}
+
+inline fn __add_full_block<INLEN>(
+  reg ptr u64[25] state,
+  reg ptr u8[INLEN] in,
+  reg u64 offset,
+  reg u64 rate
+) -> reg ptr u64[25], reg u64
+{
+  reg u64 i t rate64;
+
+  rate64 = rate;
+  rate64 >>= 3;
+  i = 0;
+  while ( i < rate64 )
+  {
+    t = in[u64 (int)offset]; //
+    state[(int)i] ^= t;
+    i += 1;
+    offset += 1;
+  }
+
+  return state, offset;
+}//<>
+
+inline fn __add_final_block<INLEN>(
+  reg ptr u64[25] state,
+  reg ptr u8[INLEN] in,
+  reg u64 offset,
+  reg u8 trail_byte,
+  reg u64 rate
+) -> reg ptr u64[25]
+{
+  reg u64 i t inlen64 inlen8;
+  reg u8 c;
+
+  t = offset;
+  t <<= 3;
+  inlen64 = INLEN;
+  inlen64 -= t;
+  inlen64 >>= 3;
+  i = 0;
+  while ( i < inlen64 )
+  {
+    t = in[u64 (int)offset]; //
+    state[(int)i] ^= t;
+    i += 1;
+    offset += 1;
+  }
+
+  offset <<= 3;
+  i <<= 3;
+  inlen8 = INLEN;
+  inlen8 -= offset;
+  while ( i < inlen8 )
+  {
+    c = in[(int) offset];
+    state[u8 (int)i] ^= c;
+    i += 1;
+    offset += 1;
+  }
+
+  state[u8 (int)i] ^= trail_byte;
+
+  i = rate;
+  i -= 1;
+  state[u8 (int)i] ^= 0x80;
+
+  return state;
+}//<>
+
+inline fn __absorb<INLEN>(
+  reg ptr u64[25] state,
+  reg ptr u8[INLEN] in,
+  reg u64 offset,
+  stack u8 s_trail_byte,
+  reg u64 rate // rate already in bytes -- it is returned bc of spills
+) -> reg ptr u64[25], reg u64
+{
+  reg u64 inlen;
+  stack u64 s_inlen s_offset s_rate;
+  stack ptr u8[INLEN] s_in;
+  reg u8 trail_byte;
+  reg u64 t;
+
+  // intermediate blocks
+  inlen = INLEN;
+  while ( inlen >= rate )
+  {
+    inlen -= rate;
+
+    state, offset = __add_full_block<INLEN>(state, in, offset, rate);
+
+    s_in = in;
+    s_inlen = inlen; 
+    s_offset = offset;
+    s_rate = rate;
+
+    state = _keccakf1600(state);
+
+    in = s_in;
+    inlen = s_inlen;
+    offset = s_offset;
+    rate = s_rate;
+  }
+
+  // final block
+  trail_byte = s_trail_byte;
+
+  state = __add_final_block<INLEN>(state, in, offset, trail_byte, rate);
+
+  return state, rate;
+}//<>
+
+
+inline fn __xtr_full_block<OUTLEN>(
+  reg ptr u64[25] state,
+  reg ptr u8[OUTLEN] out,
+  reg u64 offset,
+  reg u64 rate
+) -> reg ptr u8[OUTLEN], reg u64
+{
+  reg u64 i t rate64;
+
+  rate64 = rate;
+  rate64 >>= 3;
+  i = 0;
+  while ( i < rate64 )
+  {
+    t = state[(int)i];
+    out[u64 (int) offset] = t;
+    i += 1;
+    offset += 1;
+  }
+
+  return out, offset;
+}//<>
+
+
+inline fn __xtr_bytes<OUTLEN>(
+  reg ptr u64[25] state,
+  reg ptr u8[OUTLEN] out,
+  reg u64 offset
+) -> reg ptr u8[OUTLEN], reg u64
+{
+  reg u64 i t outlen64 outlen8;
+  reg u8 c;
+
+  t = offset;
+  t <<= 3;
+  outlen64 = OUTLEN;
+  outlen64 -= t;
+  outlen64 >>= 3;
+  i = 0;
+  while ( i < outlen64 )
+  {
+    t = state[(int)i];
+    out[u64 (int) offset] = t;
+    i += 1;
+    offset += 1;
+  }
+
+  offset <<= 3;
+  i <<= 3;
+  outlen8 = OUTLEN;
+  outlen8 -= offset;
+  while ( i < outlen8 )
+  {
+    c = state[u8 (int)i];
+    out[(int)offset] = c;
+    i += 1;
+    offset += 1;
+  }
+
+  return out, offset;
+}//<>
+
+
+inline fn __squeeze<OUTLEN>(
+  reg mut ptr u64[25] state,
+  reg ptr u8[OUTLEN] out,
+  reg u64 offset,
+  reg u64 rate
+) -> reg ptr u8[OUTLEN], reg u64
+{
+  reg u64 outlen;
+  stack ptr u8[OUTLEN] s_out;
+  stack u64 s_outlen s_offset s_rate;
+
+  // intermediate blocks
+  outlen = OUTLEN;
+  while ( outlen > rate )
+  {
+    outlen -= rate;
+
+    s_out = out;
+    s_offset = offset;
+    s_outlen = outlen;
+    s_rate = rate;
+
+    state = _keccakf1600(state);
+
+    out = s_out;
+    offset = s_offset;
+    outlen = s_outlen;
+    rate = s_rate;
+
+    out, offset = __xtr_full_block<OUTLEN>(state, out, offset, rate);
+  }
+
+  s_out = out;
+  s_offset = offset;
+
+  state = _keccakf1600(state);
+
+  out = s_out;
+  offset = s_offset;
+
+  out, offset = __xtr_bytes<OUTLEN>(state, out, offset);
+
+  return out, offset;
+}//<>
+
+
+inline fn __keccak1600<OUTLEN,INLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg ptr u8[INLEN] in,
+  reg u8 trail_byte,
+  reg u64 rate)
+  ->
+  reg ptr u8[OUTLEN]
+{
+  stack u64[25] _state;
+  reg ptr u64[25] state;
+
+  stack ptr u8[OUTLEN] s_out;
+  stack u8 s_trail_byte;
+  reg u64 offset;
+
+  s_out = out;
+  s_trail_byte = trail_byte;
+
+  state = _state;
+  state = __keccak_init(state);
+
+  // absorb
+  offset = 0;
+  state, rate = __absorb<INLEN>(state, in, offset, s_trail_byte, rate);
+
+  // squeeze
+  out = s_out;
+  offset = 0;
+  out, _ = __squeeze<OUTLEN>(state, out, offset, rate);
+  return out;
+}//<>
+
+
+#[returnaddress="stack"]
+fn _keccak1600<OUTLEN,INLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg ptr u8[INLEN] in,
+  reg u8 trail_byte,
+  reg u64 rate)
+  ->
+  reg ptr u8[OUTLEN]
+{
+  out = __keccak1600<OUTLEN,INLEN>(out, in, trail_byte, rate);
+  return out;
+}//<>
+
+
+inline fn _keccak1600_<OUTLEN,INLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg ptr u8[INLEN] in,
+  reg u8 trail_byte,
+  reg u64 rate)
+  ->
+  reg ptr u8[OUTLEN]
+{
+  out = out;
+  in = in;
+  trail_byte = trail_byte;
+  rate = rate;
+
+  out = _keccak1600<OUTLEN,INLEN>(out, in, trail_byte, rate);
+
+  out = out;
+  return out;
+}//<>
+

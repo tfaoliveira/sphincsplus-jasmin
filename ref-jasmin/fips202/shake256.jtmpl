@@ -1,0 +1,19 @@
+require "keccak1600.jtmpl"
+
+inline fn __shake256<OUTLEN,INLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg ptr u8[INLEN] in)
+  -> 
+  reg ptr u8[OUTLEN]
+{
+  reg u64 rate;
+  reg u8 trail_byte;
+
+  trail_byte = 0x1F;
+  rate = (1088/8);
+
+  out = _keccak1600_<OUTLEN,INLEN>(out, in, trail_byte, rate);
+
+  return out;
+}//<>
+
