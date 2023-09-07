@@ -5,6 +5,7 @@ CFLAGS ?= -O3 -Wall -Wextra -Wpedantic -Wvla -Werror -std=c99 \
 	        -Wundef -Wshadow -Wcast-align -Wpointer-arith -Wmissing-prototypes \
 	        -fstrict-aliasing -fno-common -pipe -g
 JASMIN ?= jasminc
+JPP    ?= ../scripts/jpp
 
 # ------------------------------------------------------------------------------
 # -- note: to add more tests, update the following list. as an example, to test
@@ -23,7 +24,7 @@ run: $(OUT)
 
 .PRECIOUS: bin/test_shake256_%.jpp
 bin/test_shake256_%.jpp:
-	jpp -I Sphincs:../../ -in test_shake256.jazz -out $@
+	$(JPP) -I Sphincs:../../ -in test_shake256.jazz -out $@
 	sed -i -e "s/<OUTLEN,INLEN>/_$(GET_OUTLEN)_$(GET_INLEN)/" $@
 	sed -i -e "s/<OUTLEN>/_$(GET_OUTLEN)/" $@
 	sed -i -e "s/OUTLEN/$(GET_OUTLEN)/" $@
