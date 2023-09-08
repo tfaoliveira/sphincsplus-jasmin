@@ -1,6 +1,3 @@
-//param int TEST_SHAKE256_OUT = 32;
-//param int TEST_SHAKE256_IN = 64;
-
 from Sphincs require "fips202/shake256.jtmpl"
 
 export fn test_shake256(reg u64 _out _in)

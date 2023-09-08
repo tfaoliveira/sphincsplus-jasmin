@@ -6,6 +6,7 @@ CFLAGS ?= -O3 -Wall -Wextra -Wpedantic -Wvla -Werror -std=c99 \
 	        -fstrict-aliasing -fno-common -pipe -g
 JASMIN ?= jasminc
 JPP    ?= ../scripts/jpp
+JASMINPP  ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 # -- note: to add more tests, update the following list. as an example, to test
@@ -25,14 +26,9 @@ run: $(OUT)
 .PRECIOUS: bin/test_shake256_%.jpp
 bin/test_shake256_%.jpp:
 	$(JPP) -I Sphincs:../../ -in test_shake256.jazz -out $@
-	sed -i -e "s/<OUTLEN,INLEN>/_$(GET_OUTLEN)_$(GET_INLEN)/" $@
-	sed -i -e "s/<OUTLEN>/_$(GET_OUTLEN)/" $@
-	sed -i -e "s/OUTLEN/$(GET_OUTLEN)/" $@
-	sed -i -e "s/<INLEN>/_$(GET_INLEN)/" $@
-	sed -i -e "s/INLEN/$(GET_INLEN)/" $@
-	sed -i -e "s/<TEST_SHAKE256_OUT,TEST_SHAKE256_IN>/_$(GET_OUTLEN)_$(GET_INLEN)/" $@
 	sed -i -e "s/TEST_SHAKE256_OUT/$(GET_OUTLEN)/" $@
 	sed -i -e "s/TEST_SHAKE256_IN/$(GET_INLEN)/" $@
+	$(JASMINPP) --input_file $@ --output_file $@
 
 .PRECIOUS: bin/test_shake256_%.s
 bin/test_shake256_%.s: bin/test_shake256_%.jpp
@@ -47,7 +43,6 @@ bin/test_shake256_%.out: bin/test_shake256_%
 
 bin/:
 	mkdir -p bin/
-
 
 # ------------------------------------------------------------------------------
 .PHONY: clean
