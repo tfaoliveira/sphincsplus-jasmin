@@ -26,9 +26,7 @@ run: $(OUT)
 .PRECIOUS: bin/test_shake256_%.jpp
 bin/test_shake256_%.jpp:
 	$(JPP) -I Sphincs:../../ -in test_shake256.jazz -out $@
-	sed -i -e "s/TEST_SHAKE256_OUT/$(GET_OUTLEN)/" $@
-	sed -i -e "s/TEST_SHAKE256_IN/$(GET_INLEN)/" $@
-	$(JASMINPP) --input_file $@ --output_file $@
+	$(JASMINPP) --input_file $@ --output_file $@ --param "OUTLEN:$(GET_OUTLEN)" --param "INLEN:$(GET_INLEN)"
 
 .PRECIOUS: bin/test_shake256_%.s
 bin/test_shake256_%.s: bin/test_shake256_%.jpp
