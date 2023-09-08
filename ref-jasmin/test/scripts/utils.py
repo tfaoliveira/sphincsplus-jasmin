@@ -4,6 +4,26 @@ from generic_fn import GenericFn
 from task import Task
 
 
+def parse_tasks(text: [str], global_params: dict[str, int]) -> [Task]:
+    res: [Task] = []
+
+    for s in text:
+        fields: [str] = s.split()
+        params: dict[str, int] = {}
+        fn_name: str = fields[0].split(":")[-1]
+        for field in fields:
+            print(field)
+            if field.startswith("p:"):
+                # Split the field by ':'
+                _, key, value = field.split(":")
+                params[key] = int(value)
+
+        task = Task(fn_name, params.values(), global_params)
+        res.append(task)
+
+    return res
+
+
 def get_params(code: str) -> dict[str, int]:
     """
     Extracts and evaluates parameter declarations from Jasmin source code.

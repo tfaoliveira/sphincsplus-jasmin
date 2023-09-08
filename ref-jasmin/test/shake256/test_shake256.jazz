@@ -1,17 +1,17 @@
 from Sphincs require "fips202/shake256.jtmpl"
 
-export fn test_shake256(reg u64 _out _in)
+export fn shake256<OUTLEN,INLEN>(reg u64 _out _in)
 {
-  stack u8[TEST_SHAKE256_OUT] out;
-  stack u8[TEST_SHAKE256_IN] in;
-  reg ptr u8[TEST_SHAKE256_OUT] out_p;
-  reg ptr u8[TEST_SHAKE256_IN] in_p;
+  stack u8[OUTLEN] out;
+  stack u8[INLEN] in;
+  reg ptr u8[OUTLEN] out_p;
+  reg ptr u8[INLEN] in_p;
 
   reg u8 t;
   reg u64 i;
 
   i = 0;
-  while(i < TEST_SHAKE256_IN)
+  while(i < INLEN)
   { t = (u8)[_in + i];
     in[(int)i] = t;
     i += 1;
@@ -20,15 +20,14 @@ export fn test_shake256(reg u64 _out _in)
   out_p = out;
   in_p = in;
 
-  out_p = __shake256<TEST_SHAKE256_OUT,TEST_SHAKE256_IN>(out_p, in_p);
+  out_p = __shake256<OUTLEN,INLEN>(out_p, in_p);
 
   out = out_p;
 
   i = 0;
-  while(i < TEST_SHAKE256_OUT)
+  while(i < OUTLEN)
   { t = out[(int)i];
     (u8)[_out + i] = t;
     i += 1;
   }
-}
-
+}//<>

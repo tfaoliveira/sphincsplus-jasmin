@@ -41,6 +41,8 @@ def parse_args():
         action="store_true",  # Makes -d a flag without an argument
     )
 
+    parser.add_argument("--task", required=False, nargs="+")
+
     return parser.parse_args()
 
 
@@ -74,7 +76,7 @@ def resolve_templates(
     # First, we gather the tasks without handling nested calls, and then, after all
     # the tasks are collected, resolve the nested calls in the Task class.
     # This needs to be done on the input_text instead of the already processed text
-    tasks: list[Task] = utils.get_tasks(input_text, global_params)
+    tasks: list[Task] = export_tasks + utils.get_tasks(input_text, global_params)
 
     if debug:
         print("Tasks [1st pass]:")
@@ -125,6 +127,8 @@ def resolve_templates(
 if __name__ == "__main__":
     args = parse_args()
 
+    print(args)
+
     # Check if the input files exists
     if not os.path.exists(args.input_file):
         sys.stderr.write(f"Error: The file '{args.input_file}' does not exist.\n")
@@ -138,6 +142,9 @@ if __name__ == "__main__":
 
     # 2nd step: Get generic functions dict from Jasmin source code
     generic_fn_dict: dict[str, GenericFn] = utils.get_generic_fn_dict(text)
+
+    export_tasks: [Task] = utils.parse_tasks(args.task, global_params)
+    print(export_tasks)
 
     if args.debug:
         print("DEBUG: Global Param Dictionary")
