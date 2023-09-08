@@ -26,7 +26,7 @@ run: $(OUT)
 .PRECIOUS: bin/test_shake256_%.jpp
 bin/test_shake256_%.jpp:
 	$(JPP) -I Sphincs:../../ -in test_shake256.jazz -out $@
-	$(JASMINPP) --input_file $@ --output_file $@ --param "OUTLEN:$(GET_OUTLEN)" --param "INLEN:$(GET_INLEN)"
+	$(JASMINPP) --input_file $@ --output_file $@ --task "fn:shake256 p:OUTLEN:$(GET_OUTLEN) p:INLEN:$(GET_INLEN)"
 
 .PRECIOUS: bin/test_shake256_%.s
 bin/test_shake256_%.s: bin/test_shake256_%.jpp
