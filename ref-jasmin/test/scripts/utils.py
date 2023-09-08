@@ -12,7 +12,6 @@ def parse_tasks(text: [str], global_params: dict[str, int]) -> [Task]:
         params: dict[str, int] = {}
         fn_name: str = fields[0].split(":")[-1]
         for field in fields:
-            print(field)
             if field.startswith("p:"):
                 # Split the field by ':'
                 _, key, value = field.split(":")

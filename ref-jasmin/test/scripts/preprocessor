@@ -144,7 +144,6 @@ if __name__ == "__main__":
     generic_fn_dict: dict[str, GenericFn] = utils.get_generic_fn_dict(text)
 
     export_tasks: [Task] = utils.parse_tasks(args.task, global_params)
-    print(export_tasks)
 
     if args.debug:
         print("DEBUG: Global Param Dictionary")
