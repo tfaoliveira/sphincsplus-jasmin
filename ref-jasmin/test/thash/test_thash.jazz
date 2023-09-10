@@ -1,0 +1,9 @@
+
+// NOTE: requires are 'managed' by the Makefile; check rule for 'bin/test_thash_%.jpp'
+
+export fn thash<INBLOCKS,>() // TODO: check ,
+{
+  // TODO_ implement exported function
+  __thash<INBLOCKS>(out, in, pub_seed, addr);
+
+}//<>

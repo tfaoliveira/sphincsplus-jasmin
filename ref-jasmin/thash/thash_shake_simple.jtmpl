@@ -1,0 +1,32 @@
+
+from Sphincs require "fips202/shake256.jtmpl"
+from Sphincs require "memcpy/memcpy.jtmpl"
+
+inline fn __thash<INBLOCKS>(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[INBLOCKS*SPX_N] in,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr)
+  ->
+  reg ptr u8[SPX_N]
+{
+  // TODO : study how to improve usage: avoid having to use 'SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N' repeatedly
+  // - check local parameters // - local defines working as alias
+
+  stack u8[SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N] buf;
+  reg ptr u8[SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N] buf_p;
+  reg u64 offset;
+
+  buf_p = buf;
+  offset = 0;
+
+  buf_p, offset = _x_memcpy_u8u8<SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N, SPX_N>(buf_p, offset, pub_seed);
+  buf_p, offset = _x_memcpy_u8u32<SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N, 8>(buf_p, offset, addr);
+  buf_p, _      = _x_memcpy_u8u8<SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N, INBLOCKS*SPX_N>(buf_p, offset, in);
+
+  out = __shake256<SPX_N,SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N>(out, buf_p);
+
+  return out;
+}//<>
+
+
