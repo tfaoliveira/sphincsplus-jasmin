@@ -13,9 +13,12 @@ from generic_fn import GenericFn
 from task import Task
 
 """
-$ python3 preprocessor.py [-d] --input_file <input_file> --output_file <output_file>
-"""
+$ python3 preprocessor [-d] --input_file <input_file> --output_file <output_file> --task <task to generate the export function>
 
+E.g.
+
+python3 preprocessor --input_file test_shake256_32_64.jpp --output_file test_shake256_32_64.jpp --task "fn:shake256 p:OUTLEN:32 p:INLEN:64"
+"""
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Jasmin source code preprocessor")
@@ -126,8 +129,6 @@ def resolve_templates(
 
 if __name__ == "__main__":
     args = parse_args()
-
-    print(args)
 
     # Check if the input files exists
     if not os.path.exists(args.input_file):

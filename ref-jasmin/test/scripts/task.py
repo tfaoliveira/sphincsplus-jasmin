@@ -106,6 +106,11 @@ class Task:
         generic_fn_call_pattern = r"(\w+)<([^>]+)>\(([^)]+)\);"
         for match in re.finditer(generic_fn_call_pattern, resolved_fn_body):
             fn_name, generic_params, _ = match.groups()
+            
+            if fn_name == self.fn_name:
+                sys.stderr.write(f'Recursive functions not supported: {self.fn_name}\n')
+                sys.exit(-1)
+            
             generic_params: list[str] = [p.strip() for p in generic_params.split(",")]
 
             for param in generic_params:
@@ -119,7 +124,7 @@ class Task:
 
             concrete_args = [int(context_params.get(p, p)) for p in generic_params]
 
-            subtask = Task(fn_name, concrete_args, self.global_params)
+            subtask = Task(fn_name, concrete_args, self.global_params)           
             subtasks.append(subtask)
 
         # Recursive step: Find and collect sub-tasks from the resolved function body

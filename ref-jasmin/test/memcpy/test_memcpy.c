@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "macros.h"
 
@@ -30,18 +31,23 @@ extern void memcpy_u8u8p_jazz(uint8_t *out, uint64_t offset, const uint8_t *in);
 
 int main()
 {
-  uint8_t out0[OUTLEN], out1[OUTLEN];
+  // uint8_t out0[OUTLEN], out1[OUTLEN];
   uint8_t in0[INLEN], in1[INLEN];
   uint64_t offset;
 
   int t;
+
+  srand(42); // Seed
 
   for(t=0; t<TESTS; t++)
   {
     randombytes(in0, INLEN);
     memcpy(in1, in0, INLEN);
 
-    // TODO: generate random offset where offset + INLEN <= OUTLEN 
+    // Generate random offset where offset + INLEN <= OUTLEN 
+    uint64_t maxOffset = abs(OUTLEN - INLEN);
+    offset = (uint64_t)rand() % (maxOffset + 1); 
+    assert (offset + INLEN <= OUTLEN);
 
     //memcpy_jazz(out0, offset, in0); // TODO gen offset
     //memcpy(out1+offset, in1, INLEN);
@@ -53,4 +59,3 @@ int main()
 
   return 0;
 }
-

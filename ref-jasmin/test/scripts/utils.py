@@ -57,11 +57,18 @@ def get_generic_fn_dict(input_text: str) -> dict[str, GenericFn]:
     """
     res: dict[str, GenericFn] = {}
 
-    pattern = r"([#\[\]\"=\w\s]*)\s+?fn\s+(\w+)<([^>]+)>\s*\(([^\)]+)\)([\s\S]*?)}//<>"
+    pattern = r"([#\[\]\"=\w]+)?\s+?fn\s+(\w+)<([^>]+)>\s*\(([^\)]+)\)([\s\S]*?)}//<>"
 
     if matches := re.finditer(pattern, input_text, flags=re.MULTILINE):
         for match in matches:
             annotation, fn_name, params, args, fn_body = match.groups()
+
+            # print(f"Annotation: {annotation}")
+            # print(f"Fn name: {fn_name}")
+            # print(f"Params: {params}")
+            # print(f"Args: {args}")
+            # print(f"Fn Body: {fn_body}")
+            # print("---------------", end="\n\n")
 
             annotation = annotation.strip()
             if "#" in annotation:

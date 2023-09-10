@@ -1,13 +1,39 @@
 from Sphincs require "memcpy/memcpy.jtmpl"
 
 ////////////////////////////////////////////////////////////////////////////////
-// TODO: x_memcpy_u8u32
+// x_memcpy_u8u32
+export fn x_memcpy_u8u32<OUTLEN,INLEN>(reg u64 _out offset _in)
+{
+  stack u8[OUTLEN] out;
+  stack u8[INLEN] in;
+  reg ptr u8[OUTLEN] out_p;
+  reg ptr u8[INLEN] in_p;
+
+  reg u8 t;
+  reg u64 i;
+
+  i = 0;
+  while(i < INLEN)
+  { t = (u8)[_in + i];
+    in[(int)i] = t;
+    i += 1;
+  }
+
+  out_p = out;
+  in_p = in;
+  out_p, offset = _memcpy_u8u32<OUTLEN,INLEN>(out_p, offset, in_p);
+  out = out_p;
+
+  i = 0;
+  while(i < OUTLEN)
+  { t = out[(int)i];
+    (u8)[_out + i] = t;
+    i += 1;
+  }
+}//<>
 
 ////////////////////////////////////////////////////////////////////////////////
-//  inline fn _x_memcpy_u8u8<OUTLEN,INLEN>(
-//    reg ptr u8[OUTLEN] out,
-//    reg u64 offset,
-//    reg ptr u8[INLEN] in);
+// x_memcpy_u8u8
 export fn x_memcpy_u8u8<OUTLEN,INLEN>(reg u64 _out offset _in)
 {
   stack u8[OUTLEN] out;
@@ -27,7 +53,7 @@ export fn x_memcpy_u8u8<OUTLEN,INLEN>(reg u64 _out offset _in)
 
   out_p = out;
   in_p = in;
-  out_p, offset = x_memcpy_u8u8<OUTLEN,INLEN>(out_p, offset, in_p);
+  out_p, offset = _memcpy_u8u8<OUTLEN,INLEN>(out_p, offset, in_p);
   out = out_p;
 
   i = 0;
@@ -39,6 +65,33 @@ export fn x_memcpy_u8u8<OUTLEN,INLEN>(reg u64 _out offset _in)
 }//<>
 
 ////////////////////////////////////////////////////////////////////////////////
-// TODO: x_memcpy_u8u8p
+// x_memcpy_u8u8p
+export fn x_memcpy_u8u8p<OUTLEN,INLEN>(reg u64 _out offset _in)
+{
+  stack u8[OUTLEN] out;
+  stack u8[INLEN] in;
+  reg ptr u8[OUTLEN] out_p;
+  reg ptr u8[INLEN] in_p;
 
+  reg u8 t;
+  reg u64 i;
 
+  i = 0;
+  while(i < INLEN)
+  { t = (u8)[_in + i];
+    in[(int)i] = t;
+    i += 1;
+  }
+
+  out_p = out;
+  in_p = in;
+  out_p, offset = _memcpy_u8u8p<OUTLEN,INLEN>(out_p, offset, in_p);
+  out = out_p;
+
+  i = 0;
+  while(i < OUTLEN)
+  { t = out[(int)i];
+    (u8)[_out + i] = t;
+    i += 1;
+  }
+}//<>
