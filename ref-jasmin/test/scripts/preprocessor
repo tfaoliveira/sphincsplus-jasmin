@@ -82,25 +82,26 @@ def resolve_templates(
     tasks: list[Task] = export_tasks + utils.get_tasks(input_text, global_params)
 
     if debug:
-        print("Tasks [1st pass]:")
+        print("\n\nTasks [1st pass]:")
         pprint.pprint(tasks)
 
     if debug:
-        print("Searching for subtasks")
+        print("\n\nSearching for subtasks")
 
     for task in tasks:
         subtasks = task.get_sub_tasks(generic_fn_dict)
         tasks.extend(subtasks)
 
     if debug:
-        print("Tasks [2nd pass (includes subtasks)]:")
+        print("\n\nTasks [2nd pass (includes subtasks)]:")
         pprint.pprint(tasks)
 
     # Remove duplicate tasks
-    tasks = list(set(tasks))
+    # tasks = list(set(tasks))
+    tasks = utils.remove_duplicates(tasks)
 
     if debug:
-        print("Tasks [3rd pass (removes duplicate tasks)]:")
+        print("\n\nTasks [3rd pass (removes duplicate tasks)]:")
         pprint.pprint(tasks)
 
     # 6th step: Resolve each task
@@ -108,6 +109,7 @@ def resolve_templates(
         text = task.resolve(text, generic_fn_dict)
 
     # 7th step: Resolve generic function calls that were not resolved before
+    text = utils.replace_expression_in_call(text)  # Evaluates expressions inside <>
     text = re.sub(
         r"(\w+)<([^>]+)>",
         lambda match: f"{match.group(1)}_{'_'.join(str(global_params.get(p.strip(), p.strip())) for p in match.group(2).split(','))}",
@@ -144,12 +146,12 @@ if __name__ == "__main__":
     # 2nd step: Get generic functions dict from Jasmin source code
     generic_fn_dict: dict[str, GenericFn] = utils.get_generic_fn_dict(text)
 
-    export_tasks: [Task] = utils.parse_tasks(args.task, global_params)
+    export_tasks: [Task] = utils.parse_tasks(args.task, global_params, generic_fn_dict)
 
     if args.debug:
         print("DEBUG: Global Param Dictionary")
         pprint.pprint(global_params)
-        print("DEBUG: Generic Fn Dictionary:")
+        print("\n\nDEBUG: Generic Fn Dictionary:")
         pprint.pprint(generic_fn_dict.keys())
 
     with open(args.input_file, "r") as f:

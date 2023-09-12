@@ -3,8 +3,22 @@ import re
 from generic_fn import GenericFn
 from task import Task
 
+from typing import TypeVar
 
-def parse_tasks(text: [str], global_params: dict[str, int]) -> [Task]:
+T = TypeVar("T")
+
+
+def remove_duplicates(_list: list[T]) -> list[T]:
+    result = []
+    for item in _list:
+        if item not in result:
+            result.append(item)
+    return result
+
+
+def parse_tasks(
+    text: [str], global_params: dict[str, int], generic_fn_dict: dict[str, GenericFn]
+) -> [Task]:
     res: [Task] = []
 
     for s in text:
@@ -17,7 +31,7 @@ def parse_tasks(text: [str], global_params: dict[str, int]) -> [Task]:
                 _, key, value = field.split(":")
                 params[key] = int(value)
 
-        task = Task(fn_name, params.values(), global_params)
+        task = Task(fn_name, params, global_params, generic_fn_dict)
         res.append(task)
 
     return res
@@ -57,7 +71,7 @@ def get_generic_fn_dict(input_text: str) -> dict[str, GenericFn]:
     """
     res: dict[str, GenericFn] = {}
 
-    pattern = r"([#\[\]\"=\w]+)?\s+?fn\s+(\w+)<([^>]+)>\s*\(([^\)]+)\)([\s\S]*?)}//<>"
+    pattern = r"([#\[\]\"=\w]+)?\s+?fn\s+(\w+)<([^>]+)>\s*\(([^\)]*)\)([\s\S]*?)}//<>"
 
     if matches := re.finditer(pattern, input_text, flags=re.MULTILINE):
         for match in matches:
@@ -86,7 +100,7 @@ def remove_generic_fn_text(input_text: str) -> str:
     """
     res: dict[str, GenericFn] = {}
 
-    pattern = r"([#\[\]\"=\w\s]*)\s+?fn\s+(\w+)<([^>]+)>\s*\(([^\)]+)\)([\s\S]*?)}//<>"
+    pattern = r"([#\[\]\"=\w]+)?\s+?fn\s+(\w+)<([^>]+)>\s*\(([^\)]*)\)([\s\S]*?)}//<>"
 
     matches = re.finditer(pattern, input_text, flags=re.MULTILINE)
 
@@ -135,6 +149,7 @@ def replace_generic_calls_with_concrete(
 
         concrete_args = [str(concrete_params.get(p, p)) for p in generic_params]
         concrete_call = f"{fn_name}_" + "_".join(concrete_args)
+        print(f"Concrete call: {concrete_call}")
 
         return concrete_call
 
@@ -204,3 +219,16 @@ def build_concrete_fn(generic_fn: GenericFn, replacement_dict: dict[str, int]) -
     res += "}"
 
     return res
+
+
+def replace_expression_in_call(text: str) -> str:
+    def replace_expression(match) -> list[str]:
+        fields: list[str] = match.group(1).split(",")
+        evaluated_fields = list(map(eval, fields))
+        return f"<{', '.join(map(str, evaluated_fields))}>"
+
+    return re.sub(
+        r"<([^>\n]+)>",
+        lambda match: replace_expression(match),
+        text,
+    )
