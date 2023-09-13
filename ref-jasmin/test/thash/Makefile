@@ -44,16 +44,15 @@ bin/test_thash_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	#$(JASMINPP) --input_file $@ --output_file $@ --task "fn:thash p:INBLOCKS:$(GET_INBLOCKS)" #TODO uncomment
+	$(JASMINPP) --input_file $@ --output_file $@ --task "fn:thash p:INBLOCKS:$(GET_INBLOCKS)"
 
 .PRECIOUS: bin/test_thash_%.s
 bin/test_thash_%.s: bin/test_thash_%.jpp
-	touch $@
-	#jasminc $< -o $@ # TODO uncomment and remove previous touch 
+	jasminc $< -o $@
 
 $(TESTS):
 bin/test_thash_%: bin/test_thash_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DTYPE=$(GET_TYPE) -DINBLOCKS=$(GET_NBLOCKS) -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	$(CC) $(CFLAGS) -o $@ -DINBLOCKS=$(GET_INBLOCKS) -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
 -I../common -I../../ -I../../params \
 test_thash.c $< ../../thash_$(GET_HASH)_$(GET_THASH).c ../../fips202.c
 
