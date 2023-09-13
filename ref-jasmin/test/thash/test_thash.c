@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "macros.h"
 
@@ -52,44 +53,54 @@ extern void thash_jazz(
 
 // implementation from, for instance, ../../thash_shake_robust.c / ../../thash_shake_simple.c
 extern void thash(
-    unsigned char *out, 
-    const unsigned char *in, 
+    unsigned char *out,
+    const unsigned char *in,
     unsigned int inblocks,
-    const spx_ctx *ctx, 
-    uint32_t addr[8]
-);
+    const spx_ctx *ctx,
+    uint32_t addr[8]);
 
 static spx_ctx init_ctx(void)
 {
-  spx_ctx ctx;
-  randombytes(ctx.pub_seed, SPX_N); // TODO: FIXME: This is probably wrong (?)
-  randombytes(ctx.sk_seed, SPX_N);  // TODO: FIXME: This is probably wrong (?)
-  return ctx;
+    spx_ctx ctx;
+    randombytes(ctx.pub_seed, SPX_N);
+    randombytes(ctx.sk_seed, SPX_N);
+    return ctx;
 }
 
-int main(void)
+static void random_addr(uint32_t addr[8])
 {
-  uint8_t out0[SPX_N], out1[SPX_N];
-  uint8_t in0[SPX_N * INBLOCKS], in1[SPX_N * INBLOCKS];
-  uint32_t addr[8];
-  spx_ctx ctx; // pub_seed is here
+    for (size_t i = 0; i < 8; i++)
+    {
+        addr[i] = (uint32_t)rand();
+    }
+}
 
-  int t;
-  for (t = 0; t < TESTS; t++)
-  {
-    ctx = init_ctx();
+int main()
+{
+    uint8_t out0[SPX_N], out1[SPX_N];
+    uint8_t in0[SPX_N * INBLOCKS], in1[SPX_N * INBLOCKS];
+    uint32_t addr[8];
+    spx_ctx ctx; // pub_seed is here
 
-    randombytes(in0, SPX_N * INBLOCKS);
-    memcpy(in1, in0, SPX_N * INBLOCKS);
+    int t;
 
-    thash_jazz(out0, in0, ctx.pub_seed, addr);
-    memcpy(out1, out0, SPX_N); // TODO: Remove this. This is only here to prevent error from 
-    // thash(out1, in1, INBLOCKS, &ctx, addr); // undefined reference
+    srand(42);
 
-    assert(memcmp(out0, out1, SPX_N) == 0);
-  }
+    for (t = 0; t < TESTS; t++)
+    {
+        ctx = init_ctx();
+        random_addr(addr);
 
-  printf("PASS: thash = { inblocks : %d }\n", INBLOCKS);
+        randombytes(in0, SPX_N * INBLOCKS);
+        memcpy(in1, in0, SPX_N * INBLOCKS);
 
-  return 0;
+        thash_jazz(out0, in0, ctx.pub_seed, addr);
+        thash(out1, in1, INBLOCKS, &ctx, addr);
+
+        assert(memcmp(out0, out1, SPX_N) == 0);
+    }
+
+    printf("PASS: thash = { inblocks : %d }\n", INBLOCKS);
+
+    return 0;
 }

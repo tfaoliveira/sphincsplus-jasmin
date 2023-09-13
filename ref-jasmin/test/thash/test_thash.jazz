@@ -1,7 +1,6 @@
 // NOTE: requires are 'managed' by the Makefile; check rule for 'bin/test_thash_%.jpp'
-from Sphincs require "thash/thash_shake_simple.jtmpl"
 
-export fn thash<INBLOCKS>(reg u64 _in _out _pub_seed _addr)
+export fn thash<INBLOCKS>(reg u64 _out _in _pub_seed _addr)
 {
   stack u8[SPX_N] out;
   stack u8[INBLOCKS*SPX_N] in;
@@ -14,7 +13,7 @@ export fn thash<INBLOCKS>(reg u64 _in _out _pub_seed _addr)
   reg ptr u32[8] addr_p;
 
   reg u64 i;
-  reg u8 t;
+  reg u8 t; 
   reg u32 u;
   
   // Load in
@@ -39,7 +38,7 @@ export fn thash<INBLOCKS>(reg u64 _in _out _pub_seed _addr)
     u = (u32)[_addr + 4 * i]; // 8 * 4 = 32
     addr[(int) i] = u;
     i += 1;
-  }
+ }
 
   out_p = out;
   in_p = in;
@@ -47,7 +46,6 @@ export fn thash<INBLOCKS>(reg u64 _in _out _pub_seed _addr)
   addr_p = addr;
 
   out_p = __thash<INBLOCKS>(out_p, in_p, pub_seed_p, addr_p);
-
   out = out_p;
 
   // write result
@@ -57,5 +55,4 @@ export fn thash<INBLOCKS>(reg u64 _in _out _pub_seed _addr)
     (u8)[_out + i] = t;
     i += 1;
   }
-
 }//<>
