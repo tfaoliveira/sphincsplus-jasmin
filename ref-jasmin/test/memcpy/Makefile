@@ -60,7 +60,7 @@ bin/test_memcpy_u8u32_%: bin/test_memcpy_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DOUTLEN=$(GET_OUTLEN) -DINLEN=$(GET_INLEN) -I../common test_memcpy_u8u32.c $<
 
 bin/test_memcpy_%.out: bin/test_memcpy_%
-	./$<
+	@./$<
 
 bin/:
 	mkdir -p bin/

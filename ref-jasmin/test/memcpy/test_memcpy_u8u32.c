@@ -9,7 +9,7 @@
 #include "print.c"
 #include "notrandombytes.c"
 
-#ifndef OUTLEN 
+#ifndef OUTLEN
 #define OUTLEN 128
 #endif
 
@@ -32,20 +32,23 @@ int main()
 
   int t;
 
-  for(t=0; t<TESTS; t++)
+  srand(42); // Seed
+
+  for (t = 0; t < TESTS; t++)
   {
-    randombytes((uint8_t*)in0, INLEN*4);
-    memcpy(in1, in0, INLEN*4);
+    randombytes((uint8_t *)in0, INLEN * 4);
+    memcpy(in1, in0, INLEN * 4);
 
     memset(out0, 0, OUTLEN);
     memset(out1, 0, OUTLEN);
 
-    offset = 0; // TODO
+    // Generate random offset
+    uint64_t maxOffset = abs(INLEN * 4 - OUTLEN);
+    offset = (uint64_t)rand() % (maxOffset + 1);
 
     memcpy_u8u32_jazz(out0, offset, in0);
-    memcpy(out1+offset, in1, INLEN*4);
-
-    assert(memcmp(out0+offset,out1+offset,INLEN*4) == 0);
+    memcpy(out1 + offset, in1, INLEN * 4);
+    assert(memcmp(out0 + offset, out1 + offset, INLEN * 4) == 0);
   }
 
   printf("PASS: memcpy_u8u32 = { outlen : %d ; inlen : %d; }\n", OUTLEN, INLEN);
