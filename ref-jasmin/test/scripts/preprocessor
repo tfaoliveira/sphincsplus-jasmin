@@ -20,6 +20,7 @@ E.g.
 python3 preprocessor --input_file test_shake256_32_64.jpp --output_file test_shake256_32_64.jpp --task "fn:shake256 p:OUTLEN:32 p:INLEN:64"
 """
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Jasmin source code preprocessor")
 
@@ -82,26 +83,25 @@ def resolve_templates(
     tasks: list[Task] = export_tasks + utils.get_tasks(input_text, global_params)
 
     if debug:
-        print("\n\nTasks [1st pass]:")
+        print("Tasks [1st pass]:")
         pprint.pprint(tasks)
 
     if debug:
-        print("\n\nSearching for subtasks")
+        print("Searching for subtasks")
 
     for task in tasks:
         subtasks = task.get_sub_tasks(generic_fn_dict)
         tasks.extend(subtasks)
 
     if debug:
-        print("\n\nTasks [2nd pass (includes subtasks)]:")
+        print("Tasks [2nd pass (includes subtasks)]:")
         pprint.pprint(tasks)
 
     # Remove duplicate tasks
-    # tasks = list(set(tasks))
     tasks = utils.remove_duplicates(tasks)
 
     if debug:
-        print("\n\nTasks [3rd pass (removes duplicate tasks)]:")
+        print("Tasks [3rd pass (removes duplicate tasks)]:")
         pprint.pprint(tasks)
 
     # 6th step: Resolve each task
@@ -109,10 +109,10 @@ def resolve_templates(
         text = task.resolve(text, generic_fn_dict)
 
     # 7th step: Resolve generic function calls that were not resolved before
-    text = utils.replace_expression_in_call(text)  # Evaluates expressions inside <>
+    # FIXME: TODO: This may have to be done in Task so it has access to the context params
     text = re.sub(
         r"(\w+)<([^>]+)>",
-        lambda match: f"{match.group(1)}_{'_'.join(str(global_params.get(p.strip(), p.strip())) for p in match.group(2).split(','))}",
+        lambda match: f"{match.group(1)}_{'_'.join(str(global_params.get(p.strip(), eval(p.strip(), {}, global_params))) for p in match.group(2).split(','))}",
         text,
     )
 
@@ -146,12 +146,12 @@ if __name__ == "__main__":
     # 2nd step: Get generic functions dict from Jasmin source code
     generic_fn_dict: dict[str, GenericFn] = utils.get_generic_fn_dict(text)
 
-    export_tasks: [Task] = utils.parse_tasks(args.task, global_params, generic_fn_dict)
+    export_tasks: [Task] = utils.parse_tasks(args.task, global_params)
 
     if args.debug:
         print("DEBUG: Global Param Dictionary")
         pprint.pprint(global_params)
-        print("\n\nDEBUG: Generic Fn Dictionary:")
+        print("DEBUG: Generic Fn Dictionary:")
         pprint.pprint(generic_fn_dict.keys())
 
     with open(args.input_file, "r") as f:
