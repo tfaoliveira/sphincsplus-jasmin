@@ -1,0 +1,122 @@
+
+from Sphincs require "memcpy/memcpy.jtmpl"
+
+// TODO : fix spills and check remaining to dos
+
+//
+// Computes a root node given a leaf and an auth path.
+// Expects address to be complete other than the tree_height and tree_index.
+// 
+inline fn __compute_root(
+  reg ptr u8[SPX_N] root,
+  reg ptr u8[SPX_N] leaf,
+  reg u32 leaf_idx,
+  reg u32 idx_offset,
+  reg u64 auth_path, // memory pointer (sig)
+  reg u32 tree_height,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr)
+  ->
+  reg ptr u8[SPX_N], // root
+  reg ptr u32[8]     // addr
+)
+{
+  stack u8 buffer[2*SPX_N];
+  reg ptr u8 buffer_p[2*SPX_N];
+  reg u64 offset inlen;
+
+  reg u32 i leaf_idx_bit t;
+
+  // If leaf_idx is odd (last bit = 1), current path element is a right child
+  // and auth_path has to go left. Otherwise it is the other way around.
+
+  buffer_p = buffer;
+
+  leaf_idx_bit = leaf_idx;
+  leaf_idx_bit &= 1;
+
+  if(leaf_idx_bit == 1)
+  {
+    offset = SPX_N;
+    buffer_p, _ = _x_memcpy_u8u8<2*SPX_N, SPX_N>(buffer_p, offset, leaf);
+
+    offset = 0;
+    inlen = SPX_N;
+    buffer_p, _ = _x_memcpy_u8u8p<2*SPX_N>(buffer_p, offset, auth_path, inlen); // TODO: memcpy
+
+  } else
+  {
+    offset = SPX_N;
+    buffer_p, offset = _x_memcpy_u8u8<2*SPX_N, SPX_N>(buffer_p, offset, leaf);
+
+    inlen = SPX_N;
+    buffer_p, _ = _x_memcpy_u8u8p<2*SPX_N>(buffer, offset, auth_path, inlen);
+  }
+
+  // increment pointer (sig)
+  auth_path += SPX_N;
+
+  //for (i = 0; i < tree_height - 1; i++) {
+  i = 0;
+  tree_height -= 1;
+  while(i < tree_height)
+  {
+    leaf_idx >>= 1;
+    idx_offset >>= 1;
+
+    // Set the address of the node we're creating.
+    t = #LEA_32(i + 1);
+    addr = __set_tree_height(addr, t);
+
+    t = #LEA_32(leaf_idx + idx_offset);
+    addr = __set_tree_index(addr, t);
+
+    // Pick the right or left neighbor, depending on parity of the node.
+    leaf_idx_bit = leaf_idx;
+    leaf_idx_bit &= 1;
+
+    // notes: at this point there are two possible calls for thash:
+    // - thash(buffer + SPX_N, buffer, 2, pub_seed, addr)
+    // - thash(buffer, buffer, 2, pub_seed, addr)
+    //
+    // it seems to be the case that the first call could be nicely handled with sub arrays
+    // but the second call requires a 'inplace' implementation of thash
+    //
+    // alternatively, it is possible to use an intermediate buffer, but such solution 
+    // decreases efficiency
+
+    // TODO: the current implementation might not work; focusing on pre-processing first
+    if (leaf_idx_bit == 1)
+    {
+      buffer[SPX_N:SPX_N] = __thash<2>(buffer[SPX_N:SPX_N], buffer, pub_seed, addr);
+
+      offset = 0;
+      inlen = SPX_N;
+      buffer[0:SPX_N] = _x_memcpy_u8u8p<SPX_N>(buffer[0:SPX_N], offset, auth_path, inlen);
+    }
+    else
+    {
+      buffer[0:SPX_N] = __thash<2>(buffer[0:SPX_N], buffer, pub_seed, addr);
+
+      offset = 0;
+      inlen = SPX_N;
+      buffer[SPX_N:SPX_N] = _x_memcpy_u8u8p<SPX_N>(buffer[SPX_N:SPX_N], offset, auth_path, inlen);
+    }
+
+    auth_path += SPX_N;
+    i += 1;
+  }
+
+  // The last iteration is exceptional; we do not copy an auth_path node.
+
+  // TODO: implement the following code
+  // leaf_idx >>= 1;
+  // idx_offset >>= 1;
+  // set_tree_height(addr, tree_height);
+  // set_tree_index(addr, leaf_idx + idx_offset);
+
+  root = __thash<2>(root, buffer, pub_seed, addr);
+
+  return root, addr;
+}
+
