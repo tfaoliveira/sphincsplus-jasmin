@@ -28,6 +28,9 @@ def remove_duplicates(input_list: list[T]) -> list[T]:
 
 
 def parse_tasks(text: [str], global_params: dict[str, int]) -> [Task]:
+    if text is None:
+        return []
+    
     res: [Task] = []
 
     for s in text:
