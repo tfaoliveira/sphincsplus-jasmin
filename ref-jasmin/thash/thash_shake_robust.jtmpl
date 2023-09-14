@@ -17,17 +17,17 @@ inline fn __thash<INBLOCKS>(
   reg ptr u8[SPX_N + SPX_ADDR_BYTES] buff_p; // just the first SPX_N + SPX_ADDR_BYTES elements of buf
   reg ptr u8[INBLOCKS * SPX_N] bitmask_p; 
   
-  /* stack ptr u8[INBLOCKS * SPX_N] bitmask_sp; */
-  /* stack ptr u8[SPX_N + SPX_ADDR_BYTES] buff_sp; */
-  /* stack ptr u8[INBLOCKS * SPX_N] bitmask_sp; */
+  stack ptr u8[INBLOCKS * SPX_N] bitmask_sp; 
+  stack ptr u8[SPX_N + SPX_ADDR_BYTES] buff_sp; 
+  stack ptr u8[INBLOCKS * SPX_N] bitmask_sp; 
 
-  /* stack ptr u8[INBLOCKS*SPX_N] in_s; */ 
-  /* stack ptr u8[SPX_N] pub_seed_s; */ 
-  /* stack ptr u32[8] addr_s; */ 
+  stack ptr u8[INBLOCKS*SPX_N] in_s; 
+  stack ptr u8[SPX_N] pub_seed_s; 
+  stack ptr u32[8] addr_s; 
 
-  reg u8 t;       /* stack u8 s_t; */
-  reg u64 offset; /* stack u64 s_offset;  */
-  reg u64 i;      /* stack u64 s_i; */
+  reg u8 t;       stack u8 s_t; 
+  reg u64 offset; stack u64 s_offset;  
+  reg u64 i;      stack u64 s_i; 
   inline int j;
 
   offset = 0;
@@ -41,7 +41,7 @@ inline fn __thash<INBLOCKS>(
   offset = 0; buff_p = buff; 
   buff_p, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES, SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N>(buff_p, offset, buf_p);
   
-  // s_offset = offset; pub_seed_s = pub_seed; addr_s = addr; // spills
+  s_offset = offset; pub_seed_s = pub_seed; addr_s = addr; // spills
 
   bitmask_p = bitmask;
   bitmask_p = __shake256<INBLOCKS * SPX_N, SPX_N + SPX_ADDR_BYTES>(bitmask_p, buff_p); 
@@ -54,15 +54,15 @@ inline fn __thash<INBLOCKS>(
     i += 1;
   }
 
-  /* s_i = i; s_t = t; in_s = in; */
+  s_i = i; s_t = t; in_s = in; 
 
-  /* bitmask_sp = bitmask_p; */
-  /* out = out; */
+  bitmask_sp = bitmask_p; 
+  out = out; 
 
-  /* buff_sp = buff_p; */
-  /* buf_p = buf_p; */
+  buff_sp = buff_p; 
+  buf_p = buf_p; 
 
-  // out = __shake256<SPX_N, SPX_N + SPX_ADDR_BYTES + INBLOCKS * SPX_N>(out, buf_p);
+  out = __shake256<SPX_N, SPX_N + SPX_ADDR_BYTES + INBLOCKS * SPX_N>(out, buf_p);
   
   return out;
 }//<>
