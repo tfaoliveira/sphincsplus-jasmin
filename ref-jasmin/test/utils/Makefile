@@ -39,7 +39,7 @@ entry: bin/test_utils.jpp
 bin/test_utils.jpp: | bin/
 	cp test_utils.jazz $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(JASMINPP) --input_file $@ --output_file $@ --task "fn:dummy p:DDD:1"
+	$(JASMINPP) --input_file $@ --output_file $@
 
 # ------------------------------------------------------------------------------
 

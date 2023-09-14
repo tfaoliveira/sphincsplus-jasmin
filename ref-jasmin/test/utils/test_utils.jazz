@@ -116,10 +116,4 @@ export fn compute_root_jazz(reg u64 arguments)
   __store_addr(addr_p, addr_ptr);
 }
 
-export fn dummy<DDD>(reg u64 a) -> reg u64
-{
-  reg u64 a;
-  a = DDD;
-  return a;
-}//<>
 
