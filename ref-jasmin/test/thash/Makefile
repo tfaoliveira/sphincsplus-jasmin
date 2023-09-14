@@ -15,7 +15,7 @@ JASMINPP ?= ../scripts/preprocessor
 
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple # robust
+THASH_LIST    := robust # simple robust
 INBLOCKS_LIST := $(shell seq 1 4) 64 100
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach N,$(INBLOCKS_LIST),$(H)_$(P)_$(T)_$(N)))))
@@ -48,7 +48,7 @@ bin/test_thash_%.jpp: | bin/
 
 .PRECIOUS: bin/test_thash_%.s
 bin/test_thash_%.s: bin/test_thash_%.jpp
-	jasminc  $< -o $@
+	jasminc -nowarning $< -o $@
 
 $(TESTS):
 bin/test_thash_%: bin/test_thash_%.s | bin/

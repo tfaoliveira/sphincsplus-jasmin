@@ -1,1 +1,69 @@
-// TODO
+from Sphincs require "fips202/shake256.jtmpl"
+from Sphincs require "memcpy/memcpy.jtmpl"
+
+inline fn __thash<INBLOCKS>(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[INBLOCKS*SPX_N] in,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr)
+  ->
+  reg ptr u8[SPX_N]
+{
+  stack u8[SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N] buf;
+  stack u8[SPX_N + SPX_ADDR_BYTES] buff; // just the first SPX_N + SPX_ADDR_BYTES elements of buf
+  stack u8[INBLOCKS * SPX_N] bitmask;
+
+  reg ptr u8[SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N] buf_p;
+  reg ptr u8[SPX_N + SPX_ADDR_BYTES] buff_p; // just the first SPX_N + SPX_ADDR_BYTES elements of buf
+  reg ptr u8[INBLOCKS * SPX_N] bitmask_p; 
+  
+  /* stack ptr u8[INBLOCKS * SPX_N] bitmask_sp; */
+  /* stack ptr u8[SPX_N + SPX_ADDR_BYTES] buff_sp; */
+  /* stack ptr u8[INBLOCKS * SPX_N] bitmask_sp; */
+
+  /* stack ptr u8[INBLOCKS*SPX_N] in_s; */ 
+  /* stack ptr u8[SPX_N] pub_seed_s; */ 
+  /* stack ptr u32[8] addr_s; */ 
+
+  reg u8 t;       /* stack u8 s_t; */
+  reg u64 offset; /* stack u64 s_offset;  */
+  reg u64 i;      /* stack u64 s_i; */
+  inline int j;
+
+  offset = 0;
+
+  buf_p = buf;
+
+  buf_p, offset = _x_memcpy_u8u8<SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N, SPX_N>(buf_p, offset, pub_seed); // Copy the pub_seed into buf
+  buf_p, _      = _x_memcpy_u8u32<SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N, 8>(buf_p, offset, addr);        // Copy addr into buf + SPX_N
+
+  // Copy the first SPX_N + SPX_ADDR_BYTES elements of buf into buff
+  offset = 0; buff_p = buff; 
+  buff_p, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES, SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N>(buff_p, offset, buf_p);
+  
+  // s_offset = offset; pub_seed_s = pub_seed; addr_s = addr; // spills
+
+  bitmask_p = bitmask;
+  bitmask_p = __shake256<INBLOCKS * SPX_N, SPX_N + SPX_ADDR_BYTES>(bitmask_p, buff_p); 
+
+  i = 0;
+  while (i < INBLOCKS * SPX_N) {
+    t = in[(int) i];
+    t ^= bitmask_p[(int) i];
+    buf_p[SPX_N + SPX_ADDR_BYTES + (int) i] = t;
+    i += 1;
+  }
+
+  /* s_i = i; s_t = t; in_s = in; */
+
+  /* bitmask_sp = bitmask_p; */
+  /* out = out; */
+
+  /* buff_sp = buff_p; */
+  /* buf_p = buf_p; */
+
+  // out = __shake256<SPX_N, SPX_N + SPX_ADDR_BYTES + INBLOCKS * SPX_N>(out, buf_p);
+  
+  return out;
+}//<>
+
