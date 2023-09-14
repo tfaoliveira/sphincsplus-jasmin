@@ -22,10 +22,10 @@
 #endif
 
 #define memcpy_u8u8_jazz NAMESPACE2(x_memcpy_u8u8, OUTLEN, INLEN)
-#define memcpy_u8u8p_jazz NAMESPACE2(x_memcpy_u8u8p, OUTLEN, INLEN)
+#define memcpy_u8u8p_jazz NAMESPACE1(x_memcpy_u8u8p, OUTLEN)
 
 extern void memcpy_u8u8_jazz(uint8_t *out, uint64_t offset, const uint8_t *in);
-extern void memcpy_u8u8p_jazz(uint8_t *out, uint64_t offset, const uint8_t *in);
+extern void memcpy_u8u8p_jazz(uint8_t *out, uint64_t offset, const uint8_t *in, uint64_t inlen);
 
 int main()
 {
@@ -52,7 +52,7 @@ int main()
     assert (offset + INLEN <= OUTLEN);
 
     memcpy_u8u8_jazz(out0, offset, in0);
-    memcpy_u8u8p_jazz(out1, offset, in1);
+    memcpy_u8u8p_jazz(out1, offset, in1, INLEN);
     memcpy(out2+offset, in2, INLEN);
 
     assert(memcmp(out0+offset,out1+offset,INLEN) == 0);

@@ -67,7 +67,7 @@ export fn x_memcpy_u8u8<OUTLEN,INLEN>(reg u64 _out offset _in)
 
 ////////////////////////////////////////////////////////////////////////////////
 // x_memcpy_u8u8p
-export fn x_memcpy_u8u8p<OUTLEN,INLEN>(reg u64 _out offset _in)
+export fn x_memcpy_u8u8p<OUTLEN>(reg u64 _out offset _in inlen)
 {
   stack u8[OUTLEN] out;
   reg ptr u8[OUTLEN] out_p;
@@ -76,7 +76,7 @@ export fn x_memcpy_u8u8p<OUTLEN,INLEN>(reg u64 _out offset _in)
   reg u64 i;
 
   out_p = out;
-  out_p, offset = _x_memcpy_u8u8p<OUTLEN,INLEN>(out_p, offset, _in);
+  out_p, offset = _x_memcpy_u8u8p<OUTLEN>(out_p, offset, _in, inlen);
   out = out_p;
 
   i = 0;
@@ -86,3 +86,4 @@ export fn x_memcpy_u8u8p<OUTLEN,INLEN>(reg u64 _out offset _in)
     i += 1;
   }
 }//<>
+
