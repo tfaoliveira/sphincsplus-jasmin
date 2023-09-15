@@ -14,14 +14,14 @@ class Task:
 
     Attributes:
         fn_name (str): The name of the function to be resolved in the Jasmin code.
-        template_params (list[int]): A list of the value of the parameters to be used in the function.
+        template_params (list[str]): A list of the value of the parameters to be used in the function.
         global_params (dict[str, int]): The dictionary of the global parameters
     """
 
     def __init__(
         self,
         fn_name: str,
-        template_params: list[int],
+        template_params: list[str],
         global_params: dict[str, int],
     ):
         self.fn_name = fn_name
@@ -126,9 +126,13 @@ class Task:
                             param, self.global_params[param]
                         )
                     except KeyError:
+                        template_params_int: [int] = [int(val) for val in self.template_params]
+                        template_dict : dict[str, int] = dict(zip(generic_fn_dict[self.fn_name].params, template_params_int)) # TODO: handle key error 
                         context_params[param] = eval(
-                            param, {}, {**self.global_params, **context_params}
+                            param, {}, {**self.global_params, **context_params, **template_dict}
                         )
+                    except Exception:
+                        sys.stderr.write('Could not evaluate parameter: {param}')
 
             concrete_args = [int(context_params.get(p, p)) for p in generic_params]
 
