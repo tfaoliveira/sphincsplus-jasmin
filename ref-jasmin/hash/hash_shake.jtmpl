@@ -1,0 +1,64 @@
+from Sphincs require "fips202/shake256.jtmpl"
+from Sphincs require "memcpy/memcpy.jtmpl"
+
+param int SPX_TREE_BITS = SPX_TREE_HEIGHT * (SPX_D - 1);
+param int SPX_TREE_BYTES = (SPX_TREE_BITS + 7) / 8;
+param int SPX_LEAF_BYTES = (SPX_LEAF_BITS + 7) / 8;
+param int SPX_DGST_BYTES = SPX_FORS_MSG_BYTES + SPX_TREE_BYTES + SPX_LEAF_BYTES;
+
+/*
+ * Computes PRF(pk_seed, sk_seed, addr)
+ */
+inline fn __prf_addr(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[SPX_N]
+{
+  stack u8[2*SPX_N + SPX_ADDR_BYTES] buf;
+  reg ptr u8[2*SPX_N + SPX_ADDR_BYTES] buf_p;
+
+  reg u64 offset;
+  stack u64 s_offset;
+
+  buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, pub_seed);
+  buf_p, offset = _x_memcpy_u8u32<2*SPX_N + SPX_ADDR_BYTES, 8>(buf_p, offset, addr);
+  buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, pub_seed);
+
+  s_offset = offset;
+
+  out = __shake256<SPX_N, 2*SPX_N + SPX_ADDR_BYTES>(out, buf_p);
+  return out;
+}
+
+/*
+ * MLEN is the message length
+ */
+inline fn __gen_message_random<MLEN>(
+  reg ptr u8[SPX_N] R,
+  reg ptr u8[SPX_N] sk_prf,
+  reg ptr u8[SPX_N] optrand,
+  reg ptr u8[MLEN] m,
+) -> reg ptr u8[SPX_N]
+{
+  stack u64[25] s_inc;
+  reg ptr u64[25] s_inc_p; // State in the keccack function
+    
+  reg u64 rate offset;
+  reg u8 trail_byte;
+
+  trail_byte = 0x1F;
+  rate = (1088/8);
+
+  s_inc_p = s_inc;
+  s_inc_p = __keccak_init(s_inc_p);
+
+  s_inc_p, rate = __absorb<SPX_N>(s_inc, sk_prf, trail_byte, rate);
+  s_inc_p, rate = __absorb<SPX_N>(s_inc, optrand, trail_byte, rate);
+  s_inc_p, rate = __absorb<MLEN>(s_inc, m, trail_byte, rate);
+
+  offset = 0;
+  R, _ = __squeeze<SPX_N>(s_inc, R, offset, rate);
+
+  return R;
+}//<>
