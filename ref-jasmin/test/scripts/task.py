@@ -31,9 +31,13 @@ class Task:
     def __eq__(self, other):
         if not isinstance(other, Task):
             return False
+
+        template_params_int_self: [int] = [int(val) for val in self.template_params]
+        template_params_int_other: [int] = [int(val) for val in other.template_params]
+
         return (
             self.fn_name == other.fn_name
-            and self.template_params == other.template_params
+            and template_params_int_self == template_params_int_other
         )
 
     def __hash__(self):
@@ -126,13 +130,22 @@ class Task:
                             param, self.global_params[param]
                         )
                     except KeyError:
-                        template_params_int: [int] = [int(val) for val in self.template_params]
-                        template_dict : dict[str, int] = dict(zip(generic_fn_dict[self.fn_name].params, template_params_int)) # TODO: handle key error 
+                        template_params_int: [int] = [
+                            int(val) for val in self.template_params
+                        ]
+                        template_dict: dict[str, int] = dict(
+                            zip(
+                                generic_fn_dict[self.fn_name].params,
+                                template_params_int,
+                            )
+                        )  # TODO: handle key error
                         context_params[param] = eval(
-                            param, {}, {**self.global_params, **context_params, **template_dict}
+                            param,
+                            {},
+                            {**self.global_params, **context_params, **template_dict},
                         )
                     except Exception:
-                        sys.stderr.write('Could not evaluate parameter: {param}')
+                        sys.stderr.write("Could not evaluate parameter: {param}")
 
             concrete_args = [int(context_params.get(p, p)) for p in generic_params]
 
