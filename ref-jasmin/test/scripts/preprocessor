@@ -133,7 +133,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     if args.debug:
-        print(f'Args.task: {args.task}')
+        print(f"Args.task: {args.task}")
 
     # Check if the input files exists
     if not os.path.exists(args.input_file):
@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
     export_tasks: [Task] = utils.parse_tasks(args.task, global_params)
     if args.debug:
-        print('DEBUG: Export tasks: ')
+        print("DEBUG: Export tasks: ")
         pprint.pprint(export_tasks)
 
     if args.debug:
@@ -167,6 +167,8 @@ if __name__ == "__main__":
         input_text, global_params, generic_fn_dict, args.debug
     )
     output_text += "\n"
+
+    output_text = utils.replace_eval_global_params(output_text, global_params)
 
     if args.debug:
         print("\n--------------------------------------------------------------\n")
