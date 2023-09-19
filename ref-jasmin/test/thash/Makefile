@@ -26,6 +26,8 @@ OUT        := $(addsuffix .out, $(TESTS))
 
 GET_HASH     = $(word 1, $(subst _, ,$*))
 GET_PARAM    = $(word 2, $(subst _, ,$*))
+
+GET_PARAMS   = sphincs-$(GET_HASH)-$(GET_PARAM)
 GET_THASH    = $(word 3, $(subst _, ,$*))
 GET_INBLOCKS = $(word 4, $(subst _, ,$*))
 
@@ -48,11 +50,11 @@ bin/test_thash_%.jpp: | bin/
 
 .PRECIOUS: bin/test_thash_%.s
 bin/test_thash_%.s: bin/test_thash_%.jpp
-	jasminc -lazy-regalloc -nowarning $< -o $@
+	jasminc -nowarning $< -o $@
 
 $(TESTS):
 bin/test_thash_%: bin/test_thash_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DINBLOCKS=$(GET_INBLOCKS) -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) -DINBLOCKS=$(GET_INBLOCKS) \
 -I../common -I../../ -I../../params \
 test_thash.c $< ../../thash_$(GET_HASH)_$(GET_THASH).c ../../fips202.c
 
