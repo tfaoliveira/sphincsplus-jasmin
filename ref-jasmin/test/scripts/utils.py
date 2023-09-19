@@ -27,10 +27,25 @@ def remove_duplicates(input_list: list[T]) -> list[T]:
     return res
 
 
+def replace_eval_global_params(text: str, params: dict[str, int]) -> str:
+    def eval_expression(match):
+        name, expression = match.groups()
+        try:
+            value = eval(expression, params)
+            return f'param int {name} = {value};'
+        except Exception as e:
+            print(f"Error evaluating expression for {name}: {e}")
+            return match.group(0)
+
+    pattern = r"param\s+int\s+(\w+)\s*=\s*(.+);"
+    updated_text = re.sub(pattern, eval_expression, text)
+    return updated_text
+
+
 def parse_tasks(text: [str], global_params: dict[str, int]) -> [Task]:
     if text is None:
         return []
-    
+
     res: [Task] = []
 
     for s in text:
