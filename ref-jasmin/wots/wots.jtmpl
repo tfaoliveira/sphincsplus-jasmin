@@ -1,0 +1,142 @@
+from Sphincs require "address/address.jinc"
+from Sphincs require "memcpy/memcpy.jtmpl"
+from Sphincs require "thash/thash_shake_simple.jtmpl" // TODO: Manage this in the makefile
+
+
+param int SPX_WOTS_BYTES  = SPX_WOTS_LEN * SPX_N;
+
+/**
+ * Computes the chaining function.
+ * out and in have to be n-byte arrays.
+ *
+ * Interprets in as start-th value of the chain.
+ * addr has to contain the address of the chain.
+ */
+inline fn __gen_chain<OUTLEN, INLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg ptr u8[INLEN] in,
+  reg u32 start,
+  reg u32 steps,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[OUTLEN]
+{
+  reg u32 i;
+  reg u64 offset;
+  
+  reg ptr u8[SPX_N] buf_p; 
+  buf_p = in[0:SPX_N];
+  stack ptr u8[SPX_N] buf_ps;
+
+  /* Initialize out with the value at position 'start'. */
+  offset = 0;
+  out, offset = _x_memcpy_u8u8<OUTLEN,SPX_N>(out, offset, buf_p);
+  buf_ps = buf_p; // spill 
+
+  /* Iterate 'steps' calls to the hash function. */
+  i = start;
+  while (i < (start+steps) && i < SPX_WOTS_W) {
+    addr = __set_hash_addr(addr, i);
+    out = __thash<1>(out, out, pub_seed, addr); // INBLOCKS = 1;
+    i += 1;
+  }
+
+  return out;
+}//<>
+
+/*
+ * Interprets an array of bytes as integers in base w.
+ * This only works when log_w is a divisor of 8.
+*/
+inline fn __base_w<OUTLEN,INLEN>(
+  reg ptr u32[OUTLEN] output,
+  reg ptr u8[INLEN] input
+) -> reg ptr u32[OUTLEN]
+{
+  reg u64 in out;
+  reg u8  total t;
+  reg u64 bits consumed;
+
+  reg bool cond;
+
+  in   = 0;
+  out  = 0;
+  bits = 0;
+
+  consumed = 0;
+  while { cond = (consumed < OUTLEN); } (cond) {
+    if (bits == 0) {
+      t = input[(int) in];
+      total = t;
+
+      in += 1;
+      bits += 8;
+    }
+
+    bits -= SPX_WOTS_LOGW;
+    output[(int) out] = (32u) (total >> bits) & (SPX_WOTS_W - 1);
+
+    out += 1;
+    consumed += 1;
+  }
+
+  return output;
+}//<> 
+
+/*
+inline fn __wots_checksum(
+  reg ptr u32[??] csum_base_w,
+  reg ptr u32[??] msg_base_w
+) -> 
+{
+  stack u32[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) // 8] csum_bytes;
+
+  reg u32 csum;
+  csum = 0;
+
+  return csum_base_w;
+}
+*/
+
+/* Takes a message and derives the matching chain lengths. */
+inline fn __chain_lengths<MSG_LEN>(
+  reg ptr u32[SPX_WOTS_LEN] lengths,
+  reg ptr u8[MSG_LEN] msg
+) -> reg ptr u32[SPX_WOTS_LEN]
+{
+  lengths = __base_w<SPX_WOTS_LEN,MSG_LEN>(lengths, msg);
+  // TODO: WOTS CHECKSUM
+  return lengths;
+}//<>
+
+/**
+ * Takes a WOTS signature and an n-byte message, computes a WOTS public key.
+ *
+ * Writes the computed public key to 'pk'.
+ */
+inline fn __wots_pk_from_sig<MSG_LEN>(
+    reg ptr u8[SPX_WOTS_BYTES] pk,
+    reg const ptr u8[SPX_BYTES] sig,
+    reg const ptr u8[MSG_LEN] msg,
+    reg const ptr u8[SPX_N] pub_seed,
+    reg const ptr u8[SPX_N] sk_seed,
+    reg ptr u32[8] addr
+) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
+{
+  stack u32[SPX_WOTS_LEN] lengths;
+  reg ptr u32[SPX_WOTS_LEN] lengths_p;
+
+  lengths_p = lengths;
+  lengths_p = __chain_lengths<MSG_LEN>(lengths_p, msg);
+
+  reg u32 i;
+  i = 0;
+  while (i < SPX_WOTS_LEN)
+  {
+    addr = __set_chain_addr(addr, i);
+    // __gen_chain(addr) TODO:
+    i += 1;
+  }
+
+  return pk, addr;
+}//<>

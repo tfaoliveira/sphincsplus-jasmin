@@ -1,0 +1,113 @@
+from Sphincs require "wots/wots.jtmpl"
+
+inline fn __load_addr(reg ptr u32[8] addr, reg u64 p) -> reg ptr u32[8]
+{
+  inline int i;
+  reg u32 t;
+
+  for i=0 to 8
+  { t = (u32)[p + 4*i];
+    addr[i] = t;
+  }
+
+  return addr;
+}
+
+inline fn __load_ctx(
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u64 addr
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+  inline int i;
+  reg u8 t;
+
+  for i = 0 to SPX_N {
+    t = (u8)[addr + i];
+    pub_seed[i] = t;
+
+    t = (u8)[addr + SPX_N + i];
+    sk_seed[i] = t;
+  }
+
+  return pub_seed, sk_seed;
+}
+
+export fn wots_pk_from_sig_jazz<MSG_LEN>(
+    reg u64 _pk _sig _msg _ctx _addr
+)
+{
+    stack u8[SPX_WOTS_BYTES] pk;
+    stack u8[SPX_BYTES] sig;
+    stack u8[SPX_N] pub_seed;
+    stack u8[SPX_N] sk_seed;
+    stack u8[MSG_LEN] msg;
+    stack u32[8] addr;
+
+    reg ptr u8[SPX_WOTS_BYTES] pk_p;
+    reg ptr u8[SPX_BYTES] sig_p;
+    reg ptr u8[SPX_N] pub_seed_p;
+    reg ptr u8[SPX_N] sk_seed_p;
+    reg ptr u8[MSG_LEN] msg_p;
+    reg ptr u32[8] addr_p;
+    
+    reg u8 t;
+    inline int i;
+
+    for i = 0 to SPX_BYTES {
+      t = (u8)[_sig + i];
+      sig[i] = t;
+    }
+
+    for i = 0 to MSG_LEN {
+        t = (u8)[_msg + i];
+        msg[i] = t; 
+    }
+
+    pub_seed_p = pub_seed; sk_seed_p = sk_seed;
+
+    pub_seed_p, sk_seed_p = __load_ctx(pub_seed_p, sk_seed_p, _ctx);
+
+    addr_p = addr;
+    addr_p = __load_addr(addr_p, _addr);
+
+    pk_p = pk; sig_p = sig; msg_p = msg;
+    pk_p, addr_p = __wots_pk_from_sig<MSG_LEN>(pk_p, sig_p, msg_p, pub_seed, sk_seed_p, addr_p);
+    pk = pk_p;
+
+    // Write result
+    for i = 0 to SPX_WOTS_BYTES {
+      t = pk[i];
+      (u8)[_pk + i] = t;
+    }
+
+    // TODO: Write address
+}//<>
+
+export fn chain_lengths_jazz<MSG_LEN>(reg u64 _lengths _msg)
+{
+  stack u32[SPX_WOTS_LEN] lengths;
+  stack u8[MSG_LEN] msg;
+
+  reg ptr u32[SPX_WOTS_LEN] lengths_p;
+  reg ptr u8[MSG_LEN] msg_p;
+
+  inline int i;
+  reg u32 u; reg u8 t;
+
+  for i = 0 to SPX_WOTS_LEN {
+    u = (u32)[_lengths + i];
+    lengths[i] = u;
+  }
+    
+  for i = 0 to MSG_LEN {
+    t = (u8)[_msg + i];
+    msg[i] = t; 
+  }
+
+  // Write result
+  for i = 0 to SPX_WOTS_LEN {
+    u = lengths[i];
+    (u32)[_lengths + i] = u;
+  }
+}//<>
