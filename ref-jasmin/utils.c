@@ -65,16 +65,17 @@ void compute_root(unsigned char *root, const unsigned char *leaf,
         memcpy(buffer, leaf, SPX_N);
         memcpy(buffer + SPX_N, auth_path, SPX_N);
     }
+
     auth_path += SPX_N;
 
     for (i = 0; i < tree_height - 1; i++) {
         leaf_idx >>= 1;
         idx_offset >>= 1;
-        /* Set the address of the node we're creating. */
+        // Set the address of the node we're creating.
         set_tree_height(addr, i + 1);
         set_tree_index(addr, leaf_idx + idx_offset);
 
-        /* Pick the right or left neighbor, depending on parity of the node. */
+        // Pick the right or left neighbor, depending on parity of the node.
         if (leaf_idx & 1) {
             thash(buffer + SPX_N, buffer, 2, ctx, addr);
             memcpy(buffer, auth_path, SPX_N);
@@ -86,7 +87,7 @@ void compute_root(unsigned char *root, const unsigned char *leaf,
         auth_path += SPX_N;
     }
 
-    /* The last iteration is exceptional; we do not copy an auth_path node. */
+    // The last iteration is exceptional; we do not copy an auth_path node.
     leaf_idx >>= 1;
     idx_offset >>= 1;
     set_tree_height(addr, tree_height);

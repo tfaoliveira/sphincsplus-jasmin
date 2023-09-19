@@ -17,12 +17,14 @@ inline fn __thash<INBLOCKS>(
   reg ptr u8[INBLOCKS*SPX_N] bitmask_p;
 
   stack ptr u8[SPX_N] out_s;
+  stack ptr u8[INBLOCKS*SPX_N] in_s;
 
   reg u64 i offset;
   stack u64 offset_s;
   reg u8 b;
 
   out_s = out;
+  in_s = in;
   buf_p = buf;
   offset = 0;
 
@@ -37,6 +39,7 @@ inline fn __thash<INBLOCKS>(
   bitmask_p = __shake256<INBLOCKS*SPX_N,SPX_N + SPX_ADDR_BYTES>(bitmask_p, buf_ps);
 
   // TODO: optimize
+  in = in_s;
   i = 0;
   offset = offset_s;
   while(i < INBLOCKS*SPX_N)

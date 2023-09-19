@@ -1,0 +1,124 @@
+
+from Sphincs require "utils/utils.jinc"
+
+// auxiliary functions /////////////////////////////////////////////////////////
+
+inline fn __load_addr(reg ptr u32[8] addr, reg u64 p) -> reg ptr u32[8]
+{
+  inline int i;
+  reg u32 t;
+
+  for i=0 to 8
+  { t = (u32)[p + 4*i];
+    addr[i] = t;
+  }
+
+  return addr;
+}
+
+inline fn __store_addr(reg ptr u32[8] addr, reg u64 p)
+{
+  inline int i;
+  reg u32 t;
+
+  for i=0 to 8
+  { t = addr[i];
+    (u32)[p + 4*i] = t;
+  }
+}
+
+//
+
+inline fn __load_spx_n(reg ptr u8[SPX_N] out, reg u64 p) -> reg ptr u8[SPX_N]
+{
+  inline int i;
+  reg u8 t;
+
+  for i=0 to SPX_N
+  { t = (u8)[p + i];
+    out[i] = t;
+  }
+
+  return out;
+}
+
+inline fn __store_spx_n(reg ptr u8[SPX_N] spx, reg u64 p)
+{
+  inline int i;
+  reg u8 t;
+
+  for i=0 to SPX_N
+  { t = spx[i];
+    (u8)[p + i] = t;
+  }
+}
+
+// exported functions //////////////////////////////////////////////////////////
+
+export fn compute_root_jazz(reg u64 arguments)
+{
+  // { root,
+  //   leaf,
+  //   leaf_idx :: u32,
+  //   idx_offset :: u32,
+  //   auth_path
+  //   tree_height :: u32,
+  //   pub_seed
+  //   addr }
+
+  reg u64 root_ptr leaf_ptr auth_path pub_seed_ptr addr_ptr p;
+  reg u32 leaf_idx idx_offset tree_height;
+
+  stack u64 root_ptr_s addr_ptr_s;
+
+  //
+
+  stack   u8[SPX_N] root   leaf   pub_seed;
+  reg ptr u8[SPX_N] root_p leaf_p pub_seed_p;
+
+  stack   u32[8] addr;
+  reg ptr u32[8] addr_p;
+
+  // load arguments from array
+  root_ptr     = (u64)[arguments + 8*0]; root_ptr_s = root_ptr;
+  leaf_ptr     = (u64)[arguments + 8*1];
+
+  p            = (u64)[arguments + 8*2];
+  leaf_idx     = (u32)[p];
+
+  p            = (u64)[arguments + 8*3];
+  idx_offset   = (u32)[p];
+
+  auth_path    = (u64)[arguments + 8*4];
+
+  p            = (u64)[arguments + 8*5];
+  tree_height  = (u32)[p];
+
+  pub_seed_ptr = (u64)[arguments + 8*6];
+  addr_ptr     = (u64)[arguments + 8*7]; addr_ptr_s = addr_ptr;
+
+  // load contents from pointers
+  root_p = root;
+  root_p = __load_spx_n(root_p, root_ptr);
+
+  leaf_p = leaf;
+  leaf_p = __load_spx_n(leaf_p, leaf_ptr);
+
+  pub_seed_p = pub_seed;
+  pub_seed_p = __load_spx_n(pub_seed_p, pub_seed_ptr);
+
+  addr_p = addr;
+  addr_p = __load_addr(addr_p, addr_ptr);
+
+  // call 
+  root_p, addr_p = __compute_root(root_p, leaf_p, leaf_idx, idx_offset,
+                                  auth_path, tree_height, pub_seed_p, addr_p);
+
+  // store
+  root_ptr = root_ptr_s;
+  __store_spx_n(root_p, root_ptr);
+
+  addr_ptr = addr_ptr_s;
+  __store_addr(addr_p, addr_ptr);
+}
+

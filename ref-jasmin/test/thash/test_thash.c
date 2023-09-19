@@ -11,12 +11,8 @@
 
 #include "context.h"
 
-#ifndef HASH
-#define HASH shake
-#endif
-
-#ifndef PARAM
-#define PARAM 128f
+#ifndef PARAMS
+#define PARAMS sphincs-shake-128f
 #endif
 
 #ifndef THASH
@@ -100,7 +96,7 @@ int main()
         assert(memcmp(out0, out1, SPX_N) == 0);
     }
 
-    printf("PASS: thash = { inblocks : %d }\n", INBLOCKS);
+    printf("PASS: thash = { params: %s, thash: %s, inblocks : %d }\n", xstr(PARAMS), xstr(THASH), INBLOCKS);
 
     return 0;
 }
