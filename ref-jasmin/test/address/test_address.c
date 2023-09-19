@@ -57,7 +57,7 @@ void test_set_layer_addr(void)
     assert(memcmp(addr0, addr1, sizeof(uint32_t)*8) == 0);
   }
 
-  printf("PASS: set_layer_addr = { SPX_OFFSET_LAYER : %d}\n", SPX_OFFSET_LAYER);
+  printf(" PASS: set_layer_addr = { SPX_OFFSET_LAYER : %d}\n", SPX_OFFSET_LAYER);
 }
 
 
@@ -79,7 +79,7 @@ void test_set_tree_addr(void)
     assert(memcmp(addr0, addr1, sizeof(uint32_t)*8) == 0);
   }
 
-  printf("PASS: set_tree_addr = { SPX_OFFSET_TREE : %d}\n", SPX_OFFSET_TREE);
+  printf(" PASS: set_tree_addr = { SPX_OFFSET_TREE : %d}\n", SPX_OFFSET_TREE);
 }
 
 // testing: void set_type(uint32_t addr[8], uint32_t type)
@@ -100,7 +100,7 @@ void test_set_type(void)
     assert(memcmp(addr0, addr1, sizeof(uint32_t)*8) == 0);
   }
 
-  printf("PASS: set_type = { SPX_OFFSET_TYPE : %d}\n", SPX_OFFSET_TYPE);
+  printf(" PASS: set_type = { SPX_OFFSET_TYPE : %d}\n", SPX_OFFSET_TYPE);
 }
 
 // testing: void copy_subtree_addr(uint32_t out[8], const uint32_t in[8])
@@ -124,7 +124,7 @@ void test_copy_subtree_addr(void)
     assert(memcmp(out_addr0, out_addr1, sizeof(uint32_t)*8) == 0);
   }
 
-  printf("PASS: copy_subtree_addr = { SPX_OFFSET_TREE : %d}\n", SPX_OFFSET_TREE);
+  printf(" PASS: copy_subtree_addr = { SPX_OFFSET_TREE : %d}\n", SPX_OFFSET_TREE);
 }
 
 // testing: void set_keypair_addr(uint32_t addr[8], uint32_t keypair)
@@ -145,7 +145,7 @@ void test_set_keypair_addr(void)
     assert(memcmp(addr0, addr1, sizeof(uint32_t)*8) == 0);
   }
 
-  printf("PASS: set_keypair_addr = { SPX_OFFSET_KP_ADDR1 : %d, SPX_OFFSET_KP_ADDR2 : %d, SPX_FULL_HEIGHT/SPX_D > 8 : %d}\n", SPX_OFFSET_KP_ADDR1, SPX_OFFSET_KP_ADDR2, SPX_FULL_HEIGHT/SPX_D > 8);
+  printf(" PASS: set_keypair_addr = { SPX_OFFSET_KP_ADDR1 : %d, SPX_OFFSET_KP_ADDR2 : %d, SPX_FULL_HEIGHT/SPX_D > 8 : %d}\n", SPX_OFFSET_KP_ADDR1, SPX_OFFSET_KP_ADDR2, SPX_FULL_HEIGHT/SPX_D > 8);
 }
 
 // testing: void copy_keypair_addr(uint32_t out[8], const uint32_t in[8])
@@ -169,7 +169,7 @@ void test_copy_keypair_addr(void)
     assert(memcmp(out_addr0, out_addr1, sizeof(uint32_t)*8) == 0);
   }
 
-  printf("PASS: set_keypair_addr = { SPX_OFFSET_KP_ADDR1 : %d, SPX_OFFSET_KP_ADDR2 : %d, SPX_FULL_HEIGHT/SPX_D > 8 : %d}\n", SPX_OFFSET_KP_ADDR1, SPX_OFFSET_KP_ADDR2, SPX_FULL_HEIGHT/SPX_D > 8);
+  printf(" PASS: set_keypair_addr = { SPX_OFFSET_KP_ADDR1 : %d, SPX_OFFSET_KP_ADDR2 : %d, SPX_FULL_HEIGHT/SPX_D > 8 : %d}\n", SPX_OFFSET_KP_ADDR1, SPX_OFFSET_KP_ADDR2, SPX_FULL_HEIGHT/SPX_D > 8);
 }
 
 // testing: void set_chain_addr(uint32_t addr[8], uint32_t chain)
@@ -190,7 +190,7 @@ void test_set_chain_addr(void)
     assert(memcmp(addr0, addr1, sizeof(uint32_t)*8) == 0);
   }
 
-  printf("PASS: set_chain_addr = { SPX_OFFSET_CHAIN_ADDR : %d}\n", SPX_OFFSET_CHAIN_ADDR);
+  printf(" PASS: set_chain_addr = { SPX_OFFSET_CHAIN_ADDR : %d}\n", SPX_OFFSET_CHAIN_ADDR);
 }
 
 // testing: void set_hash_addr(uint32_t addr[8], uint32_t hash)
@@ -211,7 +211,7 @@ void test_set_hash_addr(void)
     assert(memcmp(addr0, addr1, sizeof(uint32_t)*8) == 0);
   }
 
-  printf("PASS: set_hash_addr = { SPX_OFFSET_HASH_ADDR : %d}\n", SPX_OFFSET_HASH_ADDR);
+  printf(" PASS: set_hash_addr = { SPX_OFFSET_HASH_ADDR : %d}\n", SPX_OFFSET_HASH_ADDR);
 }
 
 // testing: void set_tree_height(uint32_t addr[8], uint32_t tree_height)
@@ -232,7 +232,7 @@ void test_set_tree_height(void)
     assert(memcmp(addr0, addr1, sizeof(uint32_t)*8) == 0);
   }
 
-  printf("PASS: set_tree_height = { SPX_OFFSET_TREE_HGT : %d}\n", SPX_OFFSET_TREE_HGT);
+  printf(" PASS: set_tree_height = { SPX_OFFSET_TREE_HGT : %d}\n", SPX_OFFSET_TREE_HGT);
 }
 
 // testing: void set_tree_index(uint32_t addr[8], uint32_t tree_index)
@@ -253,13 +253,15 @@ void test_set_tree_index(void)
     assert(memcmp(addr0, addr1, sizeof(uint32_t)*8) == 0);
   }
 
-  printf("PASS: set_tree_index = { SPX_OFFSET_TREE_INDEX : %d}\n", SPX_OFFSET_TREE_INDEX);
+  printf(" PASS: set_tree_index = { SPX_OFFSET_TREE_INDEX : %d}\n", SPX_OFFSET_TREE_INDEX);
 }
 
 //
 
 int main()
 {
+  printf("\nPARAMS: %s\n", xstr(PARAMS));
+
   test_set_layer_addr();
   test_set_tree_addr();
   test_set_type();
