@@ -15,7 +15,7 @@ JASMINPP ?= ../scripts/preprocessor
 
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple #robust # TODO uncomment
+THASH_LIST    := simple robust
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST),$(H)_$(P)_$(T))))
 
@@ -25,6 +25,8 @@ OUT        := $(addsuffix .out, $(TESTS))
 
 GET_HASH     = $(word 1, $(subst _, ,$*))
 GET_PARAM    = $(word 2, $(subst _, ,$*))
+
+GET_PARAMS   = sphincs-$(GET_HASH)-$(GET_PARAM)
 GET_THASH    = $(word 3, $(subst _, ,$*))
 GET_INBLOCKS = $(word 4, $(subst _, ,$*))
 
@@ -47,11 +49,11 @@ bin/test_utils_%.jpp: | bin/
 
 .PRECIOUS: bin/test_utils_%.s
 bin/test_utils_%.s: bin/test_utils_%.jpp
-	jasminc -nowarning $< -o $@
+	$(JASMIN) $< -o $@
 
 $(TESTS):
 bin/test_utils_%: bin/test_utils_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) \
 -I../common -I../../ -I../../params \
 test_utils.c $< ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../fips202.c
 

@@ -11,6 +11,14 @@
 
 #include "context.h"
 
+#ifndef PARAMS
+#define PARAMS sphincs-shake-128f
+#endif
+
+#ifndef THASH
+#define THASH simple
+#endif
+
 #ifndef TESTS
 #define TESTS 1000
 #endif
@@ -168,19 +176,7 @@ void test_compute_root()
       assert(tree_height0 == tree_height1);
       assert(*(uint32_t*)(arguments0[5]) == tree_height1);
 
-      // TODO: complete compute_root_jazz function and remove first call to compute_root
-      // compute_root_jazz(arguments0);
-
-      compute_root((uint8_t*)arguments0[0],
-                   (uint8_t*)arguments0[1],
-                   *((uint32_t*)arguments0[2]),
-                   *((uint32_t*)arguments0[3]),
-                   (uint8_t*)arguments0[4],
-                   *((uint32_t*)arguments0[5]),
-                   &ctx,
-                   (uint32_t*)arguments0[7]);
-
-
+      compute_root_jazz(arguments0);
       compute_root(root1, leaf1, leaf_idx1, idx_offset1, auth_path1, tree_height1, &ctx, addr1);
 
       assert(memcmp(root0,root1,SPX_N*sizeof(uint8_t)) == 0);

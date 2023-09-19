@@ -122,4 +122,3 @@ export fn compute_root_jazz(reg u64 arguments)
   __store_addr(addr_p, addr_ptr);
 }
 
-

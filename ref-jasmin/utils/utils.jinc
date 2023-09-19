@@ -58,7 +58,7 @@ inline fn __compute_root(
 
   } else
   {
-      offset = SPX_N;
+      offset = 0;
     buffer_p, offset = __memcpy_u8u8<2*SPX_N, SPX_N>(buffer_p, offset, leaf);
 
       inlen = SPX_N;
