@@ -1,6 +1,4 @@
 
-from Sphincs require "params/params-sphincs-shake-128s.jinc" // to be removed
-from Sphincs require "thash/thash_shake_simple.jtmpl" // to be removed
 from Sphincs require "utils/utils.jinc"
 
 // auxiliary functions /////////////////////////////////////////////////////////
@@ -68,7 +66,7 @@ export fn compute_root_jazz(reg u64 arguments)
   //   pub_seed
   //   addr }
 
-  reg u64 root_ptr leaf_ptr auth_path pub_seed_ptr addr_ptr;
+  reg u64 root_ptr leaf_ptr auth_path pub_seed_ptr addr_ptr p;
   reg u32 leaf_idx idx_offset tree_height;
 
   stack u64 root_ptr_s addr_ptr_s;
@@ -84,10 +82,18 @@ export fn compute_root_jazz(reg u64 arguments)
   // load arguments from array
   root_ptr     = (u64)[arguments + 8*0]; root_ptr_s = root_ptr;
   leaf_ptr     = (u64)[arguments + 8*1];
-  leaf_idx     = (u32)[arguments + 8*2];
-  idx_offset   = (u32)[arguments + 8*3];
+
+  p            = (u64)[arguments + 8*2];
+  leaf_idx     = (u32)[p];
+
+  p            = (u64)[arguments + 8*3];
+  idx_offset   = (u32)[p];
+
   auth_path    = (u64)[arguments + 8*4];
-  tree_height  = (u32)[arguments + 8*5];
+
+  p            = (u64)[arguments + 8*5];
+  tree_height  = (u32)[p];
+
   pub_seed_ptr = (u64)[arguments + 8*6];
   addr_ptr     = (u64)[arguments + 8*7]; addr_ptr_s = addr_ptr;
 

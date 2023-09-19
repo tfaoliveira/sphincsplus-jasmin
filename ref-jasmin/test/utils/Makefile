@@ -15,13 +15,12 @@ JASMINPP ?= ../scripts/preprocessor
 
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple # robust
-INBLOCKS_LIST := $(shell seq 1 4) 64 100
+THASH_LIST    := simple #robust # TODO uncomment
 
-TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach N,$(INBLOCKS_LIST),$(H)_$(P)_$(T)_$(N)))))
+TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST),$(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
-TESTS      := $(addprefix bin/test_thash_, $(TLIST))
+TESTS      := $(addprefix bin/test_utils_, $(TLIST))
 OUT        := $(addsuffix .out, $(TESTS))
 
 GET_HASH     = $(word 1, $(subst _, ,$*))
@@ -33,15 +32,31 @@ GET_INBLOCKS = $(word 4, $(subst _, ,$*))
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
 
 # ------------------------------------------------------------------------------
-# -- testing stuff
-entry: bin/test_utils.jpp
+default: $(TESTS)
+run: $(OUT)
+jpp_files: $(JPP_FILES)
 
-bin/test_utils.jpp: | bin/
+$(JPP_FILES):
+.PRECIOUS: bin/test_utils_%.jpp
+bin/test_utils_%.jpp: | bin/
 	cp test_utils.jazz $@
+	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
+	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
 	$(JASMINPP) --input_file $@ --output_file $@
 
-# ------------------------------------------------------------------------------
+.PRECIOUS: bin/test_utils_%.s
+bin/test_utils_%.s: bin/test_utils_%.jpp
+	jasminc -nowarning $< -o $@
+
+$(TESTS):
+bin/test_utils_%: bin/test_utils_%.s | bin/
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+-I../common -I../../ -I../../params \
+test_utils.c $< ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../fips202.c
+
+bin/test_utils_%.out: bin/test_utils_%
+	@./$<
 
 bin/:
 	mkdir -p bin/
@@ -50,3 +65,4 @@ bin/:
 .PHONY: clean
 clean:
 	rm -fr bin/
+

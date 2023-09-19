@@ -1,7 +1,9 @@
+// for the final instantiation of this file, the user need to 'require':
+// - params/params-sphincs-*
+// - thash/thash-*-*
 
 from Sphincs require "memcpy/memcpy.jtmpl"
-
-// TODO : fix spills and check remaining to dos
+from Sphincs require "address/address.jinc"
 
 //
 // Computes a root node given a leaf and an auth path.
@@ -12,20 +14,30 @@ inline fn __compute_root(
   reg ptr u8[SPX_N] leaf,
   reg u32 leaf_idx,
   reg u32 idx_offset,
-  reg u64 auth_path, // memory pointer (sig)
-  reg u32 tree_height,
+  reg u64 auth_path,   // memory pointer (sig)
+  reg u32 tree_height, // assume > 0 ; check comment next to while loop
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u32[8] addr)
   ->
   reg ptr u8[SPX_N], // root
   reg ptr u32[8]     // addr
-)
 {
-  stack u8 buffer[2*SPX_N];
-  reg ptr u8 buffer_p[2*SPX_N];
+  stack ptr u8[SPX_N] root_s pub_seed_s;
+  stack u64 auth_path_s;
+  stack u32 leaf_idx_s idx_offset_s tree_height_s;
+  stack ptr u32[8] addr_s;
+
+  root_s = root;
+  pub_seed_s = pub_seed;
+  //
+
+  stack u8[2*SPX_N] buffer;
+  reg ptr u8[2*SPX_N] buffer_p;
+  reg ptr u8[SPX_N] buffer_p_0 buffer_p_1; // first half and second half
   reg u64 offset inlen;
 
   reg u32 i leaf_idx_bit t;
+  stack u32 i_s;
 
   // If leaf_idx is odd (last bit = 1), current path element is a right child
   // and auth_path has to go left. Otherwise it is the other way around.
@@ -37,30 +49,36 @@ inline fn __compute_root(
 
   if(leaf_idx_bit == 1)
   {
-    offset = SPX_N;
-    buffer_p, _ = _x_memcpy_u8u8<2*SPX_N, SPX_N>(buffer_p, offset, leaf);
+      offset = SPX_N;
+    buffer_p, _ = __memcpy_u8u8<2*SPX_N, SPX_N>(buffer_p, offset, leaf);
 
-    offset = 0;
-    inlen = SPX_N;
-    buffer_p, _ = _x_memcpy_u8u8p<2*SPX_N>(buffer_p, offset, auth_path, inlen); // TODO: memcpy
+      offset = 0;
+      inlen = SPX_N;
+    buffer_p, _ = __memcpy_u8u8p<2*SPX_N>(buffer_p, offset, auth_path, inlen);
 
   } else
   {
-    offset = SPX_N;
-    buffer_p, offset = _x_memcpy_u8u8<2*SPX_N, SPX_N>(buffer_p, offset, leaf);
+      offset = SPX_N;
+    buffer_p, offset = __memcpy_u8u8<2*SPX_N, SPX_N>(buffer_p, offset, leaf);
 
-    inlen = SPX_N;
-    buffer_p, _ = _x_memcpy_u8u8p<2*SPX_N>(buffer, offset, auth_path, inlen);
+      inlen = SPX_N;
+    buffer_p, _ = __memcpy_u8u8p<2*SPX_N>(buffer_p, offset, auth_path, inlen);
   }
+
+  buffer = buffer_p;
 
   // increment pointer (sig)
   auth_path += SPX_N;
+  auth_path_s = auth_path;
 
   //for (i = 0; i < tree_height - 1; i++) {
   i = 0;
-  tree_height -= 1;
+  tree_height -= 1; // given this, it seems to be the case that tree_height > 0 is a precondition.
   while(i < tree_height)
   {
+    tree_height_s = tree_height;
+    i_s = i;
+
     leaf_idx >>= 1;
     idx_offset >>= 1;
 
@@ -71,9 +89,14 @@ inline fn __compute_root(
     t = #LEA_32(leaf_idx + idx_offset);
     addr = __set_tree_index(addr, t);
 
+    addr_s = addr;
+
     // Pick the right or left neighbor, depending on parity of the node.
     leaf_idx_bit = leaf_idx;
     leaf_idx_bit &= 1;
+
+    leaf_idx_s = leaf_idx;
+    idx_offset_s = idx_offset;
 
     // notes: at this point there are two possible calls for thash:
     // - thash(buffer + SPX_N, buffer, 2, pub_seed, addr)
@@ -82,40 +105,66 @@ inline fn __compute_root(
     // it seems to be the case that the first call could be nicely handled with sub arrays
     // but the second call requires a 'inplace' implementation of thash
     //
-    // alternatively, it is possible to use an intermediate buffer, but such solution 
-    // decreases efficiency
 
-    // TODO: the current implementation might not work; focusing on pre-processing first
+    pub_seed = pub_seed_s;
+
     if (leaf_idx_bit == 1)
     {
-      buffer[SPX_N:SPX_N] = __thash<2>(buffer[SPX_N:SPX_N], buffer, pub_seed, addr);
-
-      offset = 0;
-      inlen = SPX_N;
-      buffer[0:SPX_N] = _x_memcpy_u8u8p<SPX_N>(buffer[0:SPX_N], offset, auth_path, inlen);
+        buffer_p = buffer;
+        buffer_p_1 = buffer[SPX_N:SPX_N];
+      buffer_p_1 = __thash<2>(buffer_p_1, buffer_p, pub_seed, addr);
+        buffer_p[SPX_N:SPX_N] = buffer_p_1;
+        buffer = buffer_p;
+      //
+        buffer_p_0 = buffer[0:SPX_N];
+        offset = 0;
+        auth_path = auth_path_s;
+        inlen = SPX_N;
+      buffer_p_0, _ = _x_memcpy_u8u8p<SPX_N>(buffer_p_0, offset, auth_path, inlen);
+        buffer[0:SPX_N] = buffer_p_0;
     }
     else
     {
-      buffer[0:SPX_N] = __thash<2>(buffer[0:SPX_N], buffer, pub_seed, addr);
+        buffer_p = buffer;
+        buffer_p_0 = buffer[0:SPX_N]; 
+      buffer_p_0 = __thash<2>(buffer_p_0, buffer_p, pub_seed, addr);
+        buffer_p[0:SPX_N] = buffer_p_0;
+        buffer = buffer_p;
 
-      offset = 0;
-      inlen = SPX_N;
-      buffer[SPX_N:SPX_N] = _x_memcpy_u8u8p<SPX_N>(buffer[SPX_N:SPX_N], offset, auth_path, inlen);
+        buffer_p_1 = buffer[SPX_N:SPX_N];
+        offset = 0;
+        auth_path = auth_path_s;
+        inlen = SPX_N;
+      buffer_p_1, _ = _x_memcpy_u8u8p<SPX_N>(buffer_p_1, offset, auth_path, inlen);
+        buffer[SPX_N:SPX_N] = buffer_p_1; // no asm instructions
     }
 
     auth_path += SPX_N;
+
+    addr = addr_s;
+    auth_path_s = auth_path;
+    leaf_idx = leaf_idx_s;
+    idx_offset = idx_offset_s;
+    tree_height = tree_height_s;
+    i = i_s;
+
     i += 1;
   }
 
+  tree_height += 1; // restore tree_height to its previous value
+
   // The last iteration is exceptional; we do not copy an auth_path node.
+  leaf_idx >>= 1;
+  idx_offset >>= 1;
+  addr = __set_tree_height(addr, tree_height);
+  t = #LEA_32(leaf_idx + idx_offset);
+  addr = __set_tree_index(addr, t);
 
-  // TODO: implement the following code
-  // leaf_idx >>= 1;
-  // idx_offset >>= 1;
-  // set_tree_height(addr, tree_height);
-  // set_tree_index(addr, leaf_idx + idx_offset);
+    root = root_s;
+    buffer_p = buffer;
+    pub_seed = pub_seed_s;
 
-  root = __thash<2>(root, buffer, pub_seed, addr);
+  root = __thash<2>(root, buffer_p, pub_seed, addr);
 
   return root, addr;
 }
