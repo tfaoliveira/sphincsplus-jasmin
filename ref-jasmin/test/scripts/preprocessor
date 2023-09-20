@@ -112,7 +112,7 @@ def resolve_templates(
     # FIXME: TODO: This may have to be done in Task so it has access to the context params
     text = re.sub(
         r"(\w+)<([^>]+)>",
-        lambda match: f"{match.group(1)}_{'_'.join(str(global_params.get(p.strip(), eval(p.strip(), {}, global_params))) for p in match.group(2).split(','))}",
+        lambda match: f"{match.group(1)}_{'_'.join(str(global_params.get(p.strip(), eval(p.strip().replace('/', '//'), {}, global_params))) for p in match.group(2).split(','))}",
         text,
     )
 

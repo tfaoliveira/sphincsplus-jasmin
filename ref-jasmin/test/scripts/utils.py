@@ -31,7 +31,7 @@ def replace_eval_global_params(text: str, params: dict[str, int]) -> str:
     def eval_expression(match):
         name, expression = match.groups()
         try:
-            value = eval(expression, params)
+            value = eval(expression.replace('/', '//'), params)
             return f'param int {name} = {value};'
         except Exception as e:
             print(f"Error evaluating expression for {name}: {e}")
@@ -169,7 +169,7 @@ def replace_generic_calls_with_concrete(
         for param in generic_params:
             try:
                 # Evaluate the expression using the global_params dict to get the concrete value
-                concrete_params[param] = eval(param, None, global_params)
+                concrete_params[param] = eval(param.replace('/', '//'), None, global_params)
             except (NameError, TypeError, ValueError, SyntaxError):
                 # If evaluation fails, use the original param as a string
                 concrete_params[param] = param
@@ -198,7 +198,7 @@ def get_tasks(text: str, global_params: dict[str, int]) -> list[Task]:
         for param in generic_params:
             try:
                 # Evaluate the expression using the param_dict to get the concrete value
-                concrete_params[param] = eval(param, None, global_params)
+                concrete_params[param] = eval(param.replace('/', '//'), None, global_params)
             except (NameError, TypeError, ValueError, SyntaxError):
                 # If evaluation fails, use the original param as a string
                 concrete_params[param] = param

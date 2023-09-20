@@ -140,7 +140,7 @@ class Task:
                             )
                         )  # TODO: handle key error
                         context_params[param] = eval(
-                            param,
+                            param.replace('/', '//'),
                             {},
                             {**self.global_params, **context_params, **template_dict},
                         )
