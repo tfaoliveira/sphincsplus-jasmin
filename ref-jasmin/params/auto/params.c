@@ -87,5 +87,19 @@ int main(void)
   print("CRYPTO_BYTES", SPX_BYTES);
   print("CRYPTO_SEEDBYTES", 3*SPX_N);
 
+  #if defined(SPX_SHAKE)
+  #define SPX_TREE_BITS (SPX_TREE_HEIGHT * (SPX_D - 1))
+  #define SPX_TREE_BYTES ((SPX_TREE_BITS + 7) / 8)
+  #define SPX_LEAF_BITS SPX_TREE_HEIGHT
+  #define SPX_LEAF_BYTES ((SPX_LEAF_BITS + 7) / 8)
+  #define SPX_DGST_BYTES (SPX_FORS_MSG_BYTES + SPX_TREE_BYTES + SPX_LEAF_BYTES)
+
+  print("SPX_TREE_BITS", SPX_TREE_BITS);
+  print("SPX_TREE_BYTES", SPX_TREE_BYTES);
+  print("SPX_LEAF_BITS", SPX_LEAF_BITS);
+  print("SPX_LEAF_BYTES", SPX_LEAF_BYTES);
+  print("SPX_DGST_BYTES", SPX_DGST_BYTES);
+  #endif
+
   return 0;
 }
