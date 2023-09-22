@@ -134,9 +134,11 @@ export fn gen_msg_random<MLEN>(
 }//<>
 
 
-export fn hash_message_jazz<MSG_LEN>(reg u64 _digest _tree _leaf_idx _R_pk _msg  _ctx) -> reg u32
+export fn hash_message_jazz<MSG_LEN>(
+  reg u64 _digest _tree _leaf_idx _R_pk _msg  _ctx
+) -> reg u32
 {
-  stack u8[SPX_DGST_BYTES] digest;
+  stack u8[SPX_FORS_MSG_BYTES] digest;
 
   stack u8[SPX_N] R;
   reg ptr u8[SPX_N] R_p;
@@ -179,7 +181,7 @@ export fn hash_message_jazz<MSG_LEN>(reg u64 _digest _tree _leaf_idx _R_pk _msg 
   digest, tree, leaf_idx = __hash_message<MSG_LEN>(digest, tree, leaf_idx, R_p, pk_p, msg_p);
 
   // Write results
-  for i = 0 to SPX_DGST_BYTES {
+  for i = 0 to SPX_FORS_MSG_BYTES {
     t = digest[i];
     (u8)[_digest + i] = t;
   }
