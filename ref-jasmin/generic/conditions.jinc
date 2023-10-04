@@ -1,0 +1,60 @@
+
+// conditions.jinc
+
+// cond = a < b && a < c
+inline fn __cond_u64_not_a_below_b_and_a_below_c(reg u64 a b c) -> reg bool
+{
+  reg bool c1 c2 c3;
+  reg u8 bc1 bc2;
+
+  ?{ "<u" = c1 } = #CMP_64(a, b);
+  // if(c1) <=> if(a <u b)
+  bc1 = #SETcc(c1); // bc1 = 1 if a a<u b
+
+  ?{ "<u" = c2 } = #CMP_64(a, c);
+  // if(c2) <=> if(a <u c)
+  bc2 = #SETcc(c2); // bc2 = 1 if a a<u c
+
+  // zf == 1 => bc1 & bc2 == 0 => cond = false
+  // zf == 0 => bc1 & bc2 == 1 => cond = true
+  _, _, _, _, c3 = #TEST_8(bc1, bc2); // TODO return not (and remove not from the name)
+
+  return c3;
+}
+
+/*
+export fn cond_u64_a_below_b_and_a_below_c(reg u64 a b c) -> reg u64
+{
+  reg bool cond;
+  reg u64 res one;
+
+  cond = __cond_u64_not_a_below_b_and_a_below_c(a, b, c);
+
+  res = 0; one = 1;
+  res = one if(!cond);
+
+  return res;
+}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
