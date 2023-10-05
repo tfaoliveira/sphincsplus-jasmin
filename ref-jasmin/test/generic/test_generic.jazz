@@ -1,0 +1,37 @@
+from Sphincs require "generic/conditions.jinc"
+from Sphincs require "generic/utils.jtmpl"
+from Sphincs require "generic/sign_utils.jinc"
+
+export fn cond_u64_a_below_b_and_a_below_c_jazz(reg u64 a b c) -> reg u64 {
+    reg u64 r;
+    c = __cond_u64_a_below_b_and_a_below_c(a, b, c);
+    r = c;
+    return r;
+}
+
+export fn zero_array_u32_jazz<INLEN>(reg u64 addr) {
+    stack u32[INLEN] a;
+    reg ptr u32[INLEN] ap;
+
+    ap = a;
+    ap = __load_u32_array<INLEN>(ap, addr);
+    ap = __zero_array_u32<INLEN>(ap);
+    __store_u32_array<INLEN>(ap, addr);
+}//<>
+
+export fn get_sk_prf_from_sk_jazz(reg u64 _sk _prf) {
+    stack u8[SPX_SK_BYTES] sk;
+    reg ptr u8[SPX_SK_BYTES] sk_p;
+
+    stack u8[SPX_N] prf;
+    reg ptr u8[SPX_N] prf_p;
+
+    sk_p = sk; prf_p = prf;
+
+    sk_p = __load_u8_array<SPX_SK_BYTES>(sk_p, _sk);
+    prf_p = __load_u8_array<SPX_N>(prf_p, _prf);
+
+    prf_p = __get_sk_prf_from_sk(sk_p, prf_p);
+
+    __store_u8_array<SPX_N>(prf_p, _prf);
+}

@@ -2,22 +2,18 @@
 // conditions.jinc
 
 // cond = a < b && a < c
-inline fn __cond_u64_not_a_below_b_and_a_below_c(reg u64 a b c) -> reg bool
+// FIXME: Removed comments because the otherwise the preprocessor doesnt work
+// TODO: Add comments from commit 98d3631593695e9f69cf545bc42073a18237dfcd [ref-jasmin branch]
+inline fn __cond_u64_a_below_b_and_a_below_c(reg u64 a b c) -> reg bool
 {
   reg bool c1 c2 c3;
   reg u8 bc1 bc2;
 
   ?{ "<u" = c1 } = #CMP_64(a, b);
-  // if(c1) <=> if(a <u b)
-  bc1 = #SETcc(c1); // bc1 = 1 if a a<u b
-
+  bc1 = #SETcc(c1);
   ?{ "<u" = c2 } = #CMP_64(a, c);
-  // if(c2) <=> if(a <u c)
-  bc2 = #SETcc(c2); // bc2 = 1 if a a<u c
-
-  // zf == 1 => bc1 & bc2 == 0 => cond = false
-  // zf == 0 => bc1 & bc2 == 1 => cond = true
-  _, _, _, _, c3 = #TEST_8(bc1, bc2); // TODO return not (and remove not from the name)
+  bc2 = #SETcc(c2);
+  ?{ "!=" = c3 } = #TEST_8(bc1, bc2); 
 
   return c3;
 }

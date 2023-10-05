@@ -1,0 +1,122 @@
+// used to initialize addresses
+inline fn __zero_array_u32<INLEN>(
+  reg ptr u32[INLEN] a
+) -> reg ptr u32[INLEN]
+{
+  reg u32 t;
+  reg u64 i;
+
+  t = 0;
+  i = 0;
+  while (i < INLEN) {
+    a[(int )i] = t;
+  }
+
+  return a;
+}//<>
+
+
+//// TODO: The following functions are only used in tests (maybe they shouldnt be in this file)
+
+inline fn __load_u8_array<INLEN>(
+  reg ptr u8[INLEN] in,
+  reg u64 addr
+) -> reg ptr u8[INLEN] 
+{
+  reg u8 t;
+  reg u64 i;
+
+  i = 0;
+  while(i < INLEN) { 
+    t = (u8)[addr + i];
+    in[(int) i] = t;
+    i += 1;
+  }
+
+  return in;
+}//<>
+
+inline fn __load_u32_array<INLEN>(
+  reg ptr u32[INLEN] in,
+  reg u64 addr
+) -> reg ptr u32[INLEN] 
+{
+  reg u32 t;
+  reg u64 i;
+
+  i = 0;
+  while(i < INLEN) { 
+    t = (u32)[addr + 4*i];
+    in[(int) i] = t;
+    i += 1;
+  }
+
+  return in;
+}//<>
+
+inline fn __load_u64_array<INLEN>(
+  reg ptr u64[INLEN] in,
+  reg u64 addr
+) -> reg ptr u64[INLEN] 
+{
+  reg u64 t;
+  reg u64 i;
+
+  i = 0;
+  while(i < INLEN) { 
+    t = (u64)[addr + 8*i];
+    in[(int) i] = t;
+    i += 1;
+  }
+
+  return in;
+}//<>
+
+
+inline fn __store_u8_array<INLEN>(
+  reg ptr u8[INLEN] in,
+  reg u64 addr
+)
+{
+  reg u8 t;
+  reg u64 i;
+
+  i = 0;
+  while (i < INLEN) { 
+    t = in[(int) i];
+    (u8)[addr + i] = t;
+    i += 1;
+  }
+}//<>
+
+inline fn __store_u32_array<INLEN>(
+  reg ptr u32[INLEN] in,
+  reg u64 addr
+)
+{
+  reg u32 t;
+  reg u64 i;
+
+  i = 0;
+  while (i < INLEN) { 
+    t = in[(int) i];
+    (u32)[addr + 4*i] = t;
+    i += 1;
+  }
+}//<>
+
+inline fn __store_u64_array<INLEN>(
+  reg ptr u64[INLEN] in,
+  reg u64 addr
+)
+{
+  reg u64 t;
+  reg u64 i;
+
+  i = 0;
+  while (i < INLEN) {
+    t = in[(int) i];
+    [addr + 8 * i] = t;
+    i += 1;
+  }
+}//<>

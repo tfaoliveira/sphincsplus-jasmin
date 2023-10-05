@@ -64,25 +64,18 @@ inline fn __gen_message_random<MSG_LEN>(
   reg ptr u8[MSG_LEN] m
 ) -> reg ptr u8[SPX_N]
 {
-  stack u8[2 * SPX_N + MSG_LEN] buf;
-  reg ptr u8 [2 * SPX_N + MSG_LEN] buf_p;
-
   stack u64[26] shake256_state;
   reg ptr u64[26] shake256_state_p;
 
   shake256_state_p = shake256_state;
 
-  reg u64 offset;
 
-  buf_p  = buf;
-  offset = 0;  
-  
   shake256_state_p = __shake256_inc_init(shake256_state_p);
   shake256_state_p = __shake256_inc_absorb<SPX_N>(shake256_state_p, sk_prf);
   shake256_state_p = __shake256_inc_absorb<SPX_N>(shake256_state_p, optrand);
   shake256_state_p = __shake256_inc_absorb<MSG_LEN>(shake256_state_p, m);
   shake256_state_p = __shake256_inc_finalize(shake256_state_p);
-  R = __shake256_inc_squeeze<SPX_N>(shake256_state_p, R);
+  R, _ = __shake256_inc_squeeze<SPX_N>(R, shake256_state_p);
 
   return R;
 }//<>
@@ -102,12 +95,10 @@ inline fn __hash_message<MSG_LEN>(
   reg ptr u8[MSG_LEN] m
 ) -> reg ptr u8[SPX_FORS_MSG_BYTES], reg u64, reg u32
 {
-
   /*
    * buf_p = [ FORS MSG BYTES | TREE BYTES  | LEAF BYTES]
    * 
    */
-
   stack u8[SPX_DGST_BYTES] buf;
   reg ptr u8[SPX_DGST_BYTES] buf_p;
   reg ptr u8[SPX_TREE_BYTES] buf_tree_p;
@@ -127,7 +118,7 @@ inline fn __hash_message<MSG_LEN>(
   shake256_state_p = __shake256_inc_absorb<SPX_PK_BYTES>(shake256_state_p, pk);
   shake256_state_p = __shake256_inc_absorb<MSG_LEN>(shake256_state_p, m);
   shake256_state_p = __shake256_inc_finalize(shake256_state_p);
-  buf_p = __shake256_inc_squeeze<SPX_DGST_BYTES>(shake256_state_p, buf_p);
+  buf_p, _ = __shake256_inc_squeeze<SPX_DGST_BYTES>(buf_p, shake256_state_p);
 
   t = 0; // offset
   digest, _ = __memcpy_u8u8<SPX_FORS_MSG_BYTES,SPX_DGST_BYTES>(digest, t, buf_p);

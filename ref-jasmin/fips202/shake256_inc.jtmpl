@@ -1,0 +1,241 @@
+require "keccakf1600.jinc"
+
+from Sphincs require "generic/conditions.jinc"
+
+////// keccak
+inline fn __keccak_inc_init(reg ptr u64[26] state) -> reg ptr u64[26] {
+  inline int i;
+  reg u64 t;
+
+  ?{}, t = #set0();
+
+  for i = 0 to 26 { state[i] = t; }
+
+  return state;
+}
+
+inline fn __keccak_inc_absorb<INLEN>(
+  reg ptr u64[26] state,
+  reg ptr u8[INLEN] in,
+  reg u64 rate
+) -> reg ptr u64[26]
+{
+  reg u64 i inlen t u v; // t u and v are used for intermediate computations
+  reg u64 offset_in;
+  reg bool cond1 cond2;
+
+  stack u64 s_i s_inlen s_t s_u s_v s_offset_in s_rate;
+  stack ptr u8[INLEN] s_in;
+
+  inlen = INLEN;
+  offset_in = 0;
+
+  t = state[25]; t += inlen;
+  while {  cond1 = (t >= rate); } (cond1)
+  {
+    i = 0;
+    t = (64u) rate;
+    t -= state[25];
+    while { cond2 = (i < t); } (cond2)
+    {
+      t = state[25];
+      t += 1;
+
+      u = t;
+      u &= 0x07;
+      u <<= 3; // Same as u *= 8
+      // v = (64u) in[(int) offset_in + (int) i]; // FIXME: not able to assemble address
+      v <<= (u & 63);
+
+      t >>= 3;
+      state[(int) t] ^= v;
+
+      // Spills
+      s_i = i; s_inlen = inlen; s_t = t; s_u = u; s_v = v; s_offset_in = offset_in; s_in = in; s_rate = rate;
+
+      // state[0:25] = _keccakf1600(state[0:25]); // FIXME: register allocation: no more free register to allocate variable:
+
+      // Unspills
+      i = s_i; inlen = s_inlen; t = s_t; u = s_u; v = s_v; offset_in = s_offset_in; in = s_in; rate = s_rate; 
+
+      i += 1;
+
+    }
+    t = (64u) rate;
+    t -= state[25];
+    inlen -= t;
+    offset_in += t;
+    state[25] = 0;
+
+    // compute the loop condition
+    t = state[25]; t += inlen;
+  }
+  
+  i = 0;
+  while (i < inlen)
+  {
+    t = state[25];
+    t += 1;
+
+    u = t;
+    u &= 0x07;
+    u <<= 3; // Same as u *= 8
+    // v = (64u) in[(int) offset_in + (int) i]; // FIXME: not able to assemble address
+    v <<= (u & 63);
+
+    t >>= 3;
+    state[(int) t] ^= v;
+    i += 1;
+  }
+
+
+  state[25] += inlen;
+
+  return state;
+}//<>
+
+inline fn __keccak_inc_squeeze<OUTLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg ptr u64[26] state,
+  reg u64 rate
+) -> reg ptr u8[OUTLEN], reg ptr u64[26]  
+{
+  // Values to spill: out i outlen offset_out t rate
+  stack ptr u8[OUTLEN] s_out;
+  reg u64 i outlen offset_out t;
+  stack u64 s_i s_outlen s_offset_out s_t s_rate;
+  reg bool cond;
+  
+  offset_out = 0;
+  outlen = OUTLEN;
+
+  i = 0;
+  
+  t = state[25];
+
+  while {
+    cond = __cond_u64_a_below_b_and_a_below_c(i, outlen, t);
+  } (cond) {
+    i += 1;
+  }
+
+  offset_out += i;
+  outlen -= i;
+  state[25] -= 1;
+
+  while(outlen > 0)
+  {
+    s_out = out; s_i = i; s_outlen = outlen; s_offset_out = offset_out; s_t = t; // spill
+    // state[0:25] = _keccakf1600(state[0:25]); // FIXME: Register allocation
+    out = s_out; i = s_i; outlen = s_outlen; offset_out = s_offset_out; t = s_t; // unspill
+
+
+    while {
+      cond = __cond_u64_a_below_b_and_a_below_c(i, outlen, rate);
+    } (cond) {
+
+      i += 1;
+    }
+
+    offset_out += i;
+    outlen -= i;
+    t = rate; t -= i; state[25] = t; // Same as state[25] = rate - i;
+  }
+
+  out = out;
+  state = state;
+
+  return out, state;
+}//<>
+
+inline fn __keccak_inc_finalize(
+  reg ptr u64[26] state,
+  reg u64 rate,
+  reg u8 p
+) -> reg ptr u64[26]
+{
+  reg u64 index_word t u p64;
+  p64 = (64u) p;
+
+  // state[(int)state[25] >> 3] ^= (64u)p << (8 * (state[25] & 0x07));
+  // FIXME: Segfault here
+  index_word = state[25];
+  t = index_word;
+  index_word >>= (3 & 63);
+  
+  t &= 0x07;
+  t <<= (3 & 63);
+  p64 <<= (t & 63);
+  state[(int) index_word] ^= p64;
+
+  //state[(int)(rate - 1) >> 3] ^= (64u)128 << (8 * ((rate - 1) & 0x07));
+  index_word = (64u) rate;
+  index_word -= 1;
+  index_word >>= (3 & 63);
+
+  t = (64u) rate;
+  t -= 1;
+  t &= 0x07;
+  t <<= (3 & 63); // Same as t *= 8;
+  u = 128;
+  u <<= (t & 63);
+  state[(int) index_word] ^= u;
+
+  state[25] = 0;
+
+  return state;
+}
+
+////// shake
+fn __shake256_inc_init(reg ptr u64[26] state) -> reg ptr u64[26] {
+  state = state;
+  state = __keccak_inc_init(state);
+  return state;
+}
+
+#[returnaddress="stack"]
+inline fn __shake256_inc_absorb<INLEN>(
+  reg ptr u64[26] state,
+  reg ptr u8[INLEN] in
+) -> reg ptr u64[26]
+{
+  reg u64 rate;
+
+  state = state;
+  in = in;
+  
+  rate = (1088/8); // = 136
+
+  state = __keccak_inc_absorb<INLEN>(state, in, rate);
+  return state;
+}//<>
+
+fn __shake256_inc_finalize(
+  reg ptr u64[26] state
+) -> reg ptr u64[26] 
+{
+  reg u64 rate;
+  reg u8 p;
+
+  rate = (1088/8); // = 136
+  p = 0x1F;
+
+  state = __keccak_inc_finalize(state, rate, p);
+  return state;
+}
+
+#[returnaddress="stack"]
+fn __shake256_inc_squeeze<OUTLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg ptr u64[26] state
+) -> reg ptr u8[OUTLEN], reg ptr u64[26]
+{
+  stack u64 rate;
+
+  out = out;
+  state = state;
+  rate = (1088/8); // = 136
+
+  out, state = __keccak_inc_squeeze<OUTLEN>(out, state, rate);
+  return out, state;
+}//<>
