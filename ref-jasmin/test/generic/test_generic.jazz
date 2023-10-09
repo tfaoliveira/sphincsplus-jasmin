@@ -2,11 +2,14 @@ from Sphincs require "generic/conditions.jinc"
 from Sphincs require "generic/utils.jtmpl"
 from Sphincs require "generic/sign_utils.jinc"
 
-export fn cond_u64_a_below_b_and_a_below_c_jazz(reg u64 a b c) -> reg u64 {
-    reg u64 r;
-    c = __cond_u64_a_below_b_and_a_below_c(a, b, c);
-    r = c;
-    return r;
+export fn cond_u64_a_below_b_and_a_below_c_jazz(reg u64 a b c _res) {
+    reg u8 r;
+    reg bool res;
+
+    res = __cond_u64_a_below_b_and_a_below_c(a, b, c);
+    r = #SETcc(res);
+
+    (u8)[_res] = r;
 }
 
 export fn zero_array_u32_jazz<INLEN>(reg u64 addr) {
@@ -18,6 +21,15 @@ export fn zero_array_u32_jazz<INLEN>(reg u64 addr) {
     ap = __zero_array_u32<INLEN>(ap);
     __store_u32_array<INLEN>(ap, addr);
 }//<>
+
+export fn ull_to_bytes_jazz(reg u64 _out in)
+{
+    stack u8[8] out;
+    reg ptr u8[8] out_p;
+    out_p = out;
+    out_p = __ull_to_bytes(out_p, in);
+    __store_u8_array<8>(out_p, _out);
+}
 
 export fn get_sk_prf_from_sk_jazz(reg u64 _sk _prf) {
     stack u8[SPX_SK_BYTES] sk;

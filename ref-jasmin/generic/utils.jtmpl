@@ -10,14 +10,34 @@ inline fn __zero_array_u32<INLEN>(
   i = 0;
   while (i < INLEN) {
     a[(int )i] = t;
+    i += 1;
   }
 
   return a;
 }//<>
 
+// Used in wots
+inline fn __ull_to_bytes(
+  reg ptr u8[8] out,
+  reg u64 in
+) -> reg ptr u8[8]
+{
+  inline int i;
+
+  in = #BSWAP_64(in); // little endian
+
+  for i = 0 to 8 {
+    out[i] = (8u) in;
+    if (i != 7) {
+      in >>= 8;
+    }
+  }
+
+  return out;
+}
+
 
 //// TODO: The following functions are only used in tests (maybe they shouldnt be in this file)
-
 inline fn __load_u8_array<INLEN>(
   reg ptr u8[INLEN] in,
   reg u64 addr
