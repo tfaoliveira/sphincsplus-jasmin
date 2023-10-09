@@ -17,77 +17,133 @@ inline fn __keccak_inc_init(reg ptr u64[26] state) -> reg ptr u64[26] {
 inline fn __keccak_inc_absorb<INLEN>(
   reg ptr u64[26] state,
   reg ptr u8[INLEN] in,
-  reg u64 rate
+  inline int rate
 ) -> reg ptr u64[26]
 {
-  reg u64 i inlen t u v; // t u and v are used for intermediate computations
-  reg u64 offset_in;
-  reg bool cond1 cond2;
+  reg u64 inlen offset_in;
+  stack u64 s_inlen s_offset_in;
 
-  stack u64 s_i s_inlen s_t s_u s_v s_offset_in s_rate;
   stack ptr u8[INLEN] s_in;
+
+  reg u8 rate_8;
+  stack u8 s_rate_8;
+
+  reg u64 t i u v z;
+  stack u64 s_t s_i s_u s_v s_z;
 
   inlen = INLEN;
   offset_in = 0;
 
-  t = state[25]; t += inlen;
-  while {  cond1 = (t >= rate); } (cond1)
+  t = inlen; t += state[25]; // t holds the value of inlen + state[25]
+  rate_8 = rate;
+  
+  while (t >=u rate_8) 
   {
     i = 0;
-    t = (64u) rate;
-    t -= state[25];
-    while { cond2 = (i < t); } (cond2)
+    t = (64u) rate_8; t -= state[25];
+
+    while (i < t) 
     {
-      t = state[25];
-      t += 1;
+      s_rate_8 = rate_8; // spill
+      s_in = in; // spill
+
+      t = state[25]; 
+      t += i;
 
       u = t;
       u &= 0x07;
-      u <<= 3; // Same as u *= 8
-      // v = (64u) in[(int) offset_in + (int) i]; // FIXME: not able to assemble address
+      u <<= (3 & 63);
+
+      v = (64u) in[(int) i];
       v <<= (u & 63);
 
-      t >>= 3;
+      t >>= (3 & 63);
       state[(int) t] ^= v;
 
-      // Spills
-      s_i = i; s_inlen = inlen; s_t = t; s_u = u; s_v = v; s_offset_in = offset_in; s_in = in; s_rate = rate;
+      /* Permute state */
+      // Spill
+      s_in = in;
+      s_inlen = inlen;
+      s_offset_in = offset_in;
+      s_rate_8 = rate_8;
+      s_t = t;
+      s_i = i;
+      s_u = u;
+      s_v = v;
+      s_z = z;
 
-      // state[0:25] = _keccakf1600(state[0:25]); // FIXME: register allocation: no more free register to allocate variable:
 
-      // Unspills
-      i = s_i; inlen = s_inlen; t = s_t; u = s_u; v = s_v; offset_in = s_offset_in; in = s_in; rate = s_rate; 
+      state[0:25] = __keccakf1600(state[0:25]);
 
+      // Unspill
+      in = s_in;
+      inlen = s_inlen;
+      offset_in = s_offset_in;
+      rate_8 = s_rate_8;
+      t = s_t;
+      i = s_i;
+      u = s_u;
+      v = s_v;
+      z = s_z;
+
+      t = (64u) rate_8; t -= state[25];
       i += 1;
-
     }
-    t = (64u) rate;
-    t -= state[25];
+
+    t = (64u) rate; t -= state[25];
     inlen -= t;
     offset_in += t;
     state[25] = 0;
 
-    // compute the loop condition
-    t = state[25]; t += inlen;
+    /* Permute state */
+      // Spill
+      s_in = in;
+      s_inlen = inlen;
+      s_offset_in = offset_in;
+      s_rate_8 = rate_8;
+      s_t = t;
+      s_i = i;
+      s_u = u;
+      s_v = v;
+      s_z = z;
+
+
+      state[0:25] = __keccakf1600(state[0:25]);
+
+      // Unspill
+      in = s_in;
+      inlen = s_inlen;
+      offset_in = s_offset_in;
+      rate_8 = s_rate_8;
+      t = s_t;
+      i = s_i;
+      u = s_u;
+      v = s_v;
+      z = s_z;
+
+    t = inlen; t += state[25]; // to compute the loop condition
   }
-  
-  i = 0;
+
   while (i < inlen)
   {
-    t = state[25];
-    t += 1;
+    t = state[25]; 
+    t += i;
 
     u = t;
-    u &= 0x07;
-    u <<= 3; // Same as u *= 8
-    // v = (64u) in[(int) offset_in + (int) i]; // FIXME: not able to assemble address
-    v <<= (u & 63);
+    t >>= (3 & 63);
 
-    t >>= 3;
+    u &= 0x07;
+    u <<= (3 & 63);
+
+    z = offset_in;
+    z += i;
+    v = (64u) in[(int) z];
+    
+    v <<= (u & 63);
     state[(int) t] ^= v;
+
     i += 1;
   }
-
 
   state[25] += inlen;
 
@@ -100,50 +156,83 @@ inline fn __keccak_inc_squeeze<OUTLEN>(
   reg u64 rate
 ) -> reg ptr u8[OUTLEN], reg ptr u64[26]  
 {
-  // Values to spill: out i outlen offset_out t rate
+  // Values to spill: out rate i outlen offset_out t u addr
   stack ptr u8[OUTLEN] s_out;
-  reg u64 i outlen offset_out t;
-  stack u64 s_i s_outlen s_offset_out s_t s_rate;
+  reg u64 i outlen offset_out;
+  reg u64 t u addr; 
+  
+  stack u64 s_i s_outlen s_offset_out s_rate;
+  stack u64 s_t s_u s_addr;
+
   reg bool cond;
   
   offset_out = 0;
   outlen = OUTLEN;
 
   i = 0;
-  
   t = state[25];
 
+  /* First consume any bytes we still have sitting around */
   while {
     cond = __cond_u64_a_below_b_and_a_below_c(i, outlen, t);
   } (cond) {
-    i += 1;
+    t = rate;
+    t -= state[25];
+    t += i; // t holds the value of rate - state[25] + i
+
+    addr = t;
+    addr >>= (3 & 63); // addr holds the value off (rate - state[25] + i) >> 3
+
+    t &= 0x07; // t holds the value (rate - state[25] + i) & 0x07
+    t <<= (3 & 63); // Same as t *= 8.  t holds the value 8 * [(rate - state[25] + i) & 0x07]
+
+    u = state[(int) addr];
+    u >>= (t & 63);
+    
+    out[(int) i] = (8u) u;
+
+    t = state[25]; // to compute the loop condition
+    i += 1;        // to compute the loop condition
   }
 
   offset_out += i;
   outlen -= i;
   state[25] -= 1;
 
+  /* Then squeeze the remaining necessary blocks */
   while(outlen > 0)
   {
-    s_out = out; s_i = i; s_outlen = outlen; s_offset_out = offset_out; s_t = t; // spill
-    // state[0:25] = _keccakf1600(state[0:25]); // FIXME: Register allocation
-    out = s_out; i = s_i; outlen = s_outlen; offset_out = s_offset_out; t = s_t; // unspill
+    // Permute state
+    s_out = out; s_rate = rate; s_i = i; s_outlen = outlen; s_offset_out = offset_out; s_t = t; s_u = u; s_addr = addr; // spill
+    state[0:25] = _keccakf1600(state[0:25]);
+    out = s_out; rate = s_rate; i = s_i; outlen = s_outlen; offset_out = s_offset_out; t = s_t; u = s_u; addr = s_addr; // unspill
 
-
+    /* Then squeeze the remaining necessary blocks */
     while {
       cond = __cond_u64_a_below_b_and_a_below_c(i, outlen, rate);
     } (cond) {
+      t = i;
+      t &= 0x07;
+      t <<= (3 & 63); // t holds the value of 8 * (i & 0x07)
+
+      addr = i;
+      addr >>= (3 & 63); // addr holds the value of i >> 3
+
+      u = state[(int) addr];
+      u >>= (t & 63); // u holds the value of state[i >> 3] >> [8 * (i & 0x07)]
+
+      addr = offset_out; 
+      addr += i;
+      out[(int) addr] = (8u) u;
 
       i += 1;
     }
 
     offset_out += i;
     outlen -= i;
-    t = rate; t -= i; state[25] = t; // Same as state[25] = rate - i;
+    t = rate; t -= i; 
+    state[25] = t; // Same as state[25] = rate - i;
   }
-
-  out = out;
-  state = state;
 
   return out, state;
 }//<>
@@ -154,32 +243,37 @@ inline fn __keccak_inc_finalize(
   reg u8 p
 ) -> reg ptr u64[26]
 {
-  reg u64 index_word t u p64;
-  p64 = (64u) p;
+  reg u64 addr t u;
 
-  // state[(int)state[25] >> 3] ^= (64u)p << (8 * (state[25] & 0x07));
-  // FIXME: Segfault here
-  index_word = state[25];
-  t = index_word;
-  index_word >>= (3 & 63);
-  
+  t = state[25];
+  addr = t;
+
   t &= 0x07;
   t <<= (3 & 63);
-  p64 <<= (t & 63);
-  state[(int) index_word] ^= p64;
+  
+  u = (64u) p;
+  u <<= (t & 63);
 
-  //state[(int)(rate - 1) >> 3] ^= (64u)128 << (8 * ((rate - 1) & 0x07));
-  index_word = (64u) rate;
-  index_word -= 1;
-  index_word >>= (3 & 63);
+  addr >>= (3 & 63);
+  state[(int) addr] ^= u;
 
-  t = (64u) rate;
+  /////
+
+  t = rate;
   t -= 1;
+
+  addr = t;
+
   t &= 0x07;
-  t <<= (3 & 63); // Same as t *= 8;
+  t <<= (3 & 63);
+
   u = 128;
   u <<= (t & 63);
-  state[(int) index_word] ^= u;
+  
+  addr >>= (3 & 63);
+  state[(int) addr] ^= u;
+
+  /////
 
   state[25] = 0;
 
@@ -193,17 +287,14 @@ fn __shake256_inc_init(reg ptr u64[26] state) -> reg ptr u64[26] {
   return state;
 }
 
-#[returnaddress="stack"]
+// #[returnaddress="stack"]
 inline fn __shake256_inc_absorb<INLEN>(
   reg ptr u64[26] state,
-  reg ptr u8[INLEN] in
+  reg const ptr u8[INLEN] in
 ) -> reg ptr u64[26]
 {
-  reg u64 rate;
+  inline int rate;
 
-  state = state;
-  in = in;
-  
   rate = (1088/8); // = 136
 
   state = __keccak_inc_absorb<INLEN>(state, in, rate);
@@ -215,12 +306,12 @@ fn __shake256_inc_finalize(
 ) -> reg ptr u64[26] 
 {
   reg u64 rate;
-  reg u8 p;
+  reg u8 trail_byte;
 
   rate = (1088/8); // = 136
-  p = 0x1F;
+  trail_byte = 0x1F;
 
-  state = __keccak_inc_finalize(state, rate, p);
+  state = __keccak_inc_finalize(state, rate, trail_byte);
   return state;
 }
 
