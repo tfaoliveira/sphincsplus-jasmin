@@ -40,7 +40,7 @@ typedef struct {
 extern void prf_addr_jazz(uint8_t *out, const unsigned char *pub_seed, const unsigned char *sk_seed,
                           const uint32_t add[8]);
 
-#define gen_message_random_jazz NAMESPACE1(gen_msg_random, MSG_LEN)
+#define gen_message_random_jazz NAMESPACE1(gen_msg_random_jazz, MSG_LEN)
 extern void gen_message_random_jazz(uint8_t *R, const uint8_t *sk_prf, const uint8_t *optrand,
                                     const uint8_t *m);
 
@@ -91,9 +91,7 @@ void test_gen_message_random() {
 
         gen_message_random_jazz(R0, sk_prf, optrand, message);
         gen_message_random(R1, sk_prf, optrand, message, MSG_LEN, &ctx);
-
-        // TODO: Fails
-        // assert(memcmp(R0, R1, SPX_N) == 0);
+        assert(memcmp(R0, R1, SPX_N) == 0);
     }
 }
 
@@ -136,9 +134,9 @@ void test_hash_message() {
 
         hash_message(digest1, &tree1, &leaf_idx1, R, pk, message, MSG_LEN, &ctx);
 
-        // assert(tree0 == tree1);
-        // assert(tree1 == tree1);
-        // assert(memcmp(digest0, digest1, SPX_DGST_BYTES) == 0);
+        assert(tree0 == tree1);
+        assert(tree1 == tree1);
+        assert(memcmp(digest0, digest1, SPX_DGST_BYTES) == 0);
     }
 
 #undef SPX_TREE_BITS

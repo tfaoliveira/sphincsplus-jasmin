@@ -1,5 +1,4 @@
-require "keccakf1600.jinc"
-
+from Sphincs require "fips202/keccak1600.jtmpl"
 from Sphincs require "generic/conditions.jinc"
 
 ////// keccak
@@ -73,7 +72,7 @@ inline fn __keccak_inc_absorb<INLEN>(
       s_z = z;
 
 
-      state[0:25] = __keccakf1600(state[0:25]);
+      state[0:25] = _keccakf1600_(state[0:25]);
 
       // Unspill
       in = s_in;
@@ -108,7 +107,7 @@ inline fn __keccak_inc_absorb<INLEN>(
       s_z = z;
 
 
-      state[0:25] = __keccakf1600(state[0:25]);
+      state[0:25] = _keccakf1600_(state[0:25]);
 
       // Unspill
       in = s_in;
@@ -204,7 +203,7 @@ inline fn __keccak_inc_squeeze<OUTLEN>(
   {
     // Permute state
     s_out = out; s_rate = rate; s_i = i; s_outlen = outlen; s_offset_out = offset_out; s_t = t; s_u = u; s_addr = addr; // spill
-    state[0:25] = _keccakf1600(state[0:25]);
+    state[0:25] = _keccakf1600_(state[0:25]);
     out = s_out; rate = s_rate; i = s_i; outlen = s_outlen; offset_out = s_offset_out; t = s_t; u = s_u; addr = s_addr; // unspill
 
     /* Then squeeze the remaining necessary blocks */
@@ -287,8 +286,18 @@ fn __shake256_inc_init(reg ptr u64[26] state) -> reg ptr u64[26] {
   return state;
 }
 
-// #[returnaddress="stack"]
-inline fn __shake256_inc_absorb<INLEN>(
+inline fn __shake256_inc_init_(
+  reg ptr u64[26] state
+) -> reg ptr u64[26]
+{
+  state = state;
+  state = __shake256_inc_init(state);
+  state = state;
+  return state;
+}
+
+#[returnaddress="stack"]
+fn __shake256_inc_absorb<INLEN>(
   reg ptr u64[26] state,
   reg const ptr u8[INLEN] in
 ) -> reg ptr u64[26]
@@ -301,7 +310,20 @@ inline fn __shake256_inc_absorb<INLEN>(
   return state;
 }//<>
 
-fn __shake256_inc_finalize(
+inline fn __shake256_inc_absorb_<INLEN>(
+  reg ptr u64[26] state,
+  reg const ptr u8[INLEN] in
+) -> reg ptr u64[26]
+{
+  state = state;
+  in = in;
+  state = __shake256_inc_absorb<INLEN>(state, in);
+  state = state;
+  in = in;
+  return state;
+}//<>
+
+inline fn __shake256_inc_finalize(
   reg ptr u64[26] state
 ) -> reg ptr u64[26] 
 {

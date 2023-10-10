@@ -1,14 +1,7 @@
-class GenericFn:
+class TypedGenericFn:
     """
-    Represents a generic function with its respective relevant attributes.
-
-    Attributes:
-        annotation (str): The inline annotation (optional; may be the empty string).
-        fn_name (str): The name of the function.
-        params (list[str]): A string representing the generic parameters enclosed in angle brackets.
-        args (str): A string representing the generic arguments provided when calling the function.
-        fn_body (str): The body of the generic function. May contain calls to other generic ~
-                       functions. Also contains the return type
+    Same as GenericFn but with extra information.
+    E.g.: inline fn __map_e<N>[F,TYPE](reg ptr TYPE[N] a) -> reg ptr TYPE[N]
     """
 
     def __init__(
@@ -18,18 +11,24 @@ class GenericFn:
         params: str,
         args: str,
         fn_body: str,
+        generic_fn_names: list[str],
+        generic_fn_types: list[str],
     ):
         self.annotation = annotation
         self.fn_name = fn_name
         self.params = [p.strip() for p in params.split(",")]
         self.args = args
         self.fn_body = fn_body
+        self.generic_fn_names = [name.strip() for name in generic_fn_names]
+        self.generic_fn_types = [type.strip() for type in generic_fn_types]
 
     def __repr__(self) -> str:
         return (
             f"Annotation: {self.annotation}\n"
             f"Function Name: {self.fn_name}\n"
             f"Parameters: {self.params}\n"
+            f"Generic Fn Names: {self.generic_fn_names}\n"
+            f"Generic Fn Types: {self.generic_fn_types}\n"
             f"Arguments: {self.args}\n"
             f"Function Body:\n{self.fn_body}\n\n"
         )

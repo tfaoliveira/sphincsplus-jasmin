@@ -12,6 +12,8 @@ export fn shake256<OUTLEN,INLEN>(reg u64 _out _in)
   reg u8 t;
   reg u64 i;
 
+  stack u64 s_out s_in;
+
   i = 0;
   while(i < INLEN)
   { t = (u8)[_in + i];
@@ -19,14 +21,15 @@ export fn shake256<OUTLEN,INLEN>(reg u64 _out _in)
     i += 1;
   }
 
+  s_out = _out; s_in = _in; // spill
+  
   out_p = out;
   in_p = in;
-
   out_p = __shake256<OUTLEN,INLEN>(out_p, in_p);
-
   out = out_p;
 
-  i = 0;
+  _out = s_out; // unspill
+  i = 0; 
   while(i < OUTLEN)
   { t = out[(int)i];
     (u8)[_out + i] = t;
@@ -66,6 +69,7 @@ export fn shake256_inc_absorb_jazz<INLEN>(reg u64 _state _in)
   s_in = _in;
 
   state_p = __shake256_inc_absorb<INLEN>(state_p, in_p);
+  in = in_p;
 
   _state = s_state; // unspill
   __store_u64_array<26>(state_p, _state);

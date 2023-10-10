@@ -43,11 +43,11 @@ bin/test_hash_%.jpp: | bin/
 	cp test_hash.jazz $@
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(JASMINPP) --input_file $@ --output_file $@ --task "fn:gen_msg_random p:MSG_LEN:$(GET_MSG_LEN)" "fn:hash_message_jazz p:MSG_LEN:$(GET_MSG_LEN)"
+	$(JASMINPP) --input_file $@ --output_file $@ --task "fn:gen_msg_random_jazz p:MSG_LEN:$(GET_MSG_LEN)" "fn:hash_message_jazz p:MSG_LEN:$(GET_MSG_LEN)"
 
 .PRECIOUS: bin/test_hash_%.s
 bin/test_hash_%.s: bin/test_hash_%.jpp
-	jasminc -lazy-regalloc -nowarning $< -o $@
+	jasminc -nowarning $< -o $@
 
 $(TESTS):
 bin/test_hash_%: bin/test_hash_%.s | bin/

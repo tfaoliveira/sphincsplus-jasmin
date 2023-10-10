@@ -26,12 +26,12 @@ run: $(OUT)
 .PRECIOUS: bin/test_shake256_%.jpp
 bin/test_shake256_%.jpp:
 	$(JPP) -I Sphincs:../../ -in test_shake256.jazz -out $@
-	$(JASMINPP) --input_file $@ --output_file $@ --task "fn:shake256 p:OUTLEN:$(GET_OUTLEN) p:INLEN:$(GET_INLEN)" "fn:shake256_inc_absorb_jazz p:INLEN:$(GET_INLEN)" "fn:shake256_inc_squeeze_jazz p:OUTLEN:$(GET_OUTLEN)"
+	$(JASMINPP) --input_file $@ --output_file $@ --task "fn:shake256_inc_absorb_jazz p:INLEN:$(GET_INLEN)" "fn:shake256_inc_squeeze_jazz p:OUTLEN:$(GET_OUTLEN)" "fn:shake256 p:OUTLEN:$(GET_OUTLEN) p:INLEN:$(GET_INLEN)" 
 
 .PRECIOUS: bin/test_shake256_%.s
 bin/test_shake256_%.s: bin/test_shake256_%.jpp
 	jasminc -nowarning $< -o $@
-
+	
 $(TESTS):
 bin/test_shake256_%: bin/test_shake256_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DOUTLEN=$(GET_OUTLEN) -DINLEN=$(GET_INLEN) -I../common test_shake256.c $< ../../fips202.c 
