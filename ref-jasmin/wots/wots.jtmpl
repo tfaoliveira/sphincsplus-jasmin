@@ -23,43 +23,44 @@ inline fn __gen_chain(
   reg ptr u32[8] addr
 ) -> reg ptr u8[SPX_N], reg ptr u32[8]
 {
+  stack ptr u8[SPX_N] s_pub_seed;
+  stack ptr u32[8] s_addr;
 
   reg bool cond;
   reg u32 i t;
-
-  stack u32 s_start s_steps;
   stack u32 s_i s_t;
-
-  stack ptr u8[SPX_N] s_in;
-
-  stack u8[SPX_N] tmp; // copy of out (can call thash with (out,out): stack allocation: some writable reg ptr are not disjoints)
 
   out, _ = _x_memcpy_u8u8<SPX_N, SPX_N>(out, 0, in);
 
-  s_in = in;
+  s_pub_seed = pub_seed;
+  s_addr = addr;
 
   i = start;
-  t = start; t += steps;
+  t = start;
+  t += steps;
 
-  s_start = start; s_steps = steps; // SPILL
 
   while {
     // i < (start+steps) && i < SPX_WOTS_W
     cond = __cond_u32_a_below_b_and_a_below_c(i, t, SPX_WOTS_W);
   } (cond)
   {
+    s_i = i;
+    s_t = t;
+
+    s_addr = addr;
     addr = __set_hash_addr(addr, i);
+    s_addr = addr;
 
-    s_i = i; s_t = t; // spill
-    
-    tmp, _ = _x_memcpy_u8u8<SPX_N,SPX_N>(tmp, 0, out);
-    
-    // FIXME: Regalloc
-    // out = __thash_<1>(out, tmp, pub_seed, addr); // INBLOCKS = 1;
+    pub_seed = s_pub_seed;
+    out = __thash_inplace_(out, pub_seed, addr);
 
-    i = s_i; t = s_t; // unspill
+    i = s_i;
+    t = s_t;
     i += 1;
   }
+
+  addr = s_addr;
 
   return out, addr;
 }//<>
@@ -205,10 +206,6 @@ inline fn __wots_pk_from_sig<MSG_LEN>(
 }//<>
 
 
-
-
-
-
 ///////////////////// LOCAL FUNCTIONS ////////////////////
 #[returnaddress="stack"]
 fn _gen_chain(
@@ -224,7 +221,7 @@ fn _gen_chain(
   return out, addr;
 }//<>
 
-inline fn __gen_chain__(
+inline fn __gen_chain_(
   reg ptr u8[SPX_N] out,
   reg ptr u8[SPX_N] in,
   reg u32 start,
@@ -240,28 +237,12 @@ inline fn __gen_chain__(
   stack ptr u8[SPX_N] s_pub_seed;
   stack ptr u32[8] s_addr;
 
-  // Spill
-  s_out = out;
-  s_in = in;
-  s_start = start;
-  s_steps = steps;
-  
-  pub_seed = pub_seed;
-  addr = addr;
+  // Allow for full register swap
+  s_out = out; s_in = in; s_start = start; s_steps = steps; s_pub_seed = pub_seed; s_addr = addr;
 
-  // Unspill
-  out = s_out;
-  in = s_in;
-  start = s_start;
-  steps = s_steps;
-  
-  out = out;
-  in = in;
-  start = start;
-  steps = steps;
-
+  out = s_out; in = s_in; start = s_start; steps = s_steps; pub_seed = s_pub_seed; addr = s_addr;
 
   out, addr = _gen_chain(out, in, start, steps, pub_seed, addr);
-  
+
   return out, addr;
 }//<>

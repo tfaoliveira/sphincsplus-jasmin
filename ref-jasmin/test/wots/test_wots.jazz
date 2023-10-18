@@ -34,18 +34,7 @@ export fn gen_chain_jazz(
 
   stack u64 s_out s_in s_start s_steps s_pub_seed s_addr;
 
-  out = __load_u8_array<SPX_N>(out, _out);
-
-  in = __load_u8_array<SPX_N>(in, _in);
-
-  start = (u32) [_start];
-  steps = (u32) [_steps];
-
-  pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
-
-  addr = __load_u32_array<8>(addr, _addr);
-
-  // Spill
+  // Spill everything (start from clean state)
   s_out = _out;
   s_in = _in;
   s_start = _start;
@@ -53,14 +42,23 @@ export fn gen_chain_jazz(
   s_pub_seed = _pub_seed;
   s_addr = _addr;
 
-  out = out;
-  in = in;
-  start = start;
-  steps = steps;
-  pub_seed = pub_seed;
-  addr = addr;
+  _out = s_out;
+  out = __load_u8_array<SPX_N>(out, _out);
 
-  out, addr = __gen_chain__(out, in, start, steps, pub_seed, addr);
+  _in = s_in;
+  in = __load_u8_array<SPX_N>(in, _in);
+
+  _start = s_start;
+  start = (u32) [_start];
+  steps = (u32) [_steps];
+
+  _pub_seed = s_pub_seed;
+  pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
+
+  _addr = s_addr;
+  addr = __load_u32_array<8>(addr, _addr);
+
+  out, addr = __gen_chain_(out, in, start, steps, pub_seed, addr);
 
   // Unspill
   _out = s_out;
@@ -69,6 +67,7 @@ export fn gen_chain_jazz(
   __store_u8_array<SPX_N>(out, _out);
   __store_u32_array<8>(addr, _addr);
 }//<>
+
 
 export fn base_w_jazz<MSG_LEN>(reg u64 _lengths _msg)
 {
@@ -181,3 +180,4 @@ export fn chain_lengths_jazz<MSG_LEN>(reg u64 _lengths _msg)
   s_lengths = _lengths; // spill
   __store_u32_array<SPX_WOTS_LEN>(lengths_p, _lengths);
 }//<>
+
