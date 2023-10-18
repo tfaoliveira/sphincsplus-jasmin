@@ -16,6 +16,24 @@ inline fn __zero_array_u32<INLEN>(
   return a;
 }//<>
 
+inline fn __zero_array_u8<INLEN>(
+  reg ptr u8[INLEN] a
+) -> reg ptr u8[INLEN]
+{
+  reg u8 t;
+  reg u64 i;
+
+  t = 0;
+  i = 0;
+  while (i < INLEN) {
+    a[(int )i] = t;
+    i += 1;
+  }
+
+  return a;
+}//<>
+
+
 // Used in wots
 inline fn __ull_to_bytes(
   reg ptr u8[8] out,
@@ -36,6 +54,26 @@ inline fn __ull_to_bytes(
   return out;
 }
 
+inline fn __bytes_to_ull<INLEN>(reg u64 out, reg ptr u8[INLEN] in) -> reg u64 {
+  inline int i;
+
+  reg u64 t u;
+
+  out = 0;
+  for i = 0 to INLEN {
+    u = INLEN;
+    u -= 1;
+    u -= i;
+    u <<= (3 & 63);
+
+    t = (64u) in[i];
+    t <<= (u & 63);
+
+    out |= t;
+  }
+
+  return out;
+}//<>
 
 //// TODO: The following functions are only used in tests (maybe they shouldnt be in this file)
 inline fn __load_u8_array<INLEN>(
@@ -139,4 +177,29 @@ inline fn __store_u64_array<INLEN>(
     [addr + 8 * i] = t;
     i += 1;
   }
+}//<>
+
+inline fn __mem_eq_u8<LEN>(
+  reg ptr u8[LEN] a b
+) -> reg u64
+{
+  reg u8 acc;
+  reg u64 res;
+  reg u8 ta tb;
+
+  inline int i;
+  for i=0 to LEN {
+    ta = a[i];
+    tb = b[i];
+
+    if (ta != tb) { acc +=1; }
+  }
+
+  if (acc == 0) {
+    res=0;
+  } else {
+    res=1;
+  }
+
+  return res;
 }//<>

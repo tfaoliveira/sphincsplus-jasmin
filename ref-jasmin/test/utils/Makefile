@@ -9,7 +9,7 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 
 JASMIN   ?= jasminc
 JPP      ?= ../scripts/jpp
-JASMINPP ?= ../scripts/preprocessor
+PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ bin/test_utils_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(JASMINPP) --input_file $@ --output_file $@
+	$(PREPROCESSOR) --input_file $@ --output_file $@
 
 .PRECIOUS: bin/test_utils_%.s
 bin/test_utils_%.s: bin/test_utils_%.jpp

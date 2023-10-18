@@ -1,9 +1,32 @@
 
 //// Getters
 
-inline fn __get_sk_prf_from_sk(
+//// Format sk: [SK_SEED || SK_PRF || PUB_SEED || root] 
+//// len(SK_SEED) = CRYPTO_SEEDBYTES = 2 * SPX_N
+////
+////
+inline fn __get_sk_seed_from_sk(
   reg ptr u8[SPX_SK_BYTES] sk,
   reg ptr u8[SPX_N] res
+) -> reg ptr u8[SPX_N]
+{
+  reg u64 i;
+  reg u8 t;
+
+  i = 0;
+  while (i < SPX_N)
+  {
+    t = sk[(int) i];
+    res[(int) i] = t;
+    i += 1;
+  }
+
+  return res;
+}
+
+inline fn __get_sk_prf_from_sk(
+  reg ptr u8[SPX_N] res,
+  reg ptr u8[SPX_SK_BYTES] sk
 ) -> reg ptr u8[SPX_N]
 {
   // Format sk: [SK_SEED || SK_PRF || PUB_SEED || root]
@@ -14,13 +37,52 @@ inline fn __get_sk_prf_from_sk(
   while (i < SPX_N) {
     t = sk[ SPX_N + (int) i];
     res[(int) i] = t;
+    i += 1;
   }
 
   return res;
 }
 
-//// Setters
+// PK
+inline fn __get_pub_seed_pk(
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_PK_BYTES] pk
+) -> reg ptr u8[SPX_N]
+{
+  // Format pk: [PUB_SEED || root]
+  reg u64 i;
+  reg u8 t;
 
+  i = 0;
+  while(i < SPX_N) {
+    t = pk[(int) i];
+    pub_seed[(int) i] = t;
+    i += 1;
+  }
+
+  return pub_seed;
+}
+
+inline fn __get_root_pk(
+  reg ptr u8[SPX_N] root,
+  reg ptr u8[SPX_PK_BYTES] pk
+) -> reg ptr u8[SPX_N]
+{
+// Format pk: [PUB_SEED || root]
+  reg u64 i;
+  reg u8 t;
+
+  i = 0;
+  while (i < SPX_N) {
+    t = pk[SPX_N + (int) i];
+    root[(int) i] = t;
+    i += 1;
+  }
+
+  return root;
+}
+
+//// Setters
 /*
  * Sets the field PUB_SEED in pk
  */

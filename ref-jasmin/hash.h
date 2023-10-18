@@ -5,6 +5,7 @@
 #include "context.h"
 #include "params.h"
 
+#define initialize_hash_function SPX_NAMESPACE(initialize_hash_function)
 void initialize_hash_function(spx_ctx *ctx);
 
 #define prf_addr SPX_NAMESPACE(prf_addr)

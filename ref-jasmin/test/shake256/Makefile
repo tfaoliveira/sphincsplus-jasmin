@@ -6,7 +6,7 @@ CFLAGS ?= -O3 -Wall -Wextra -Wpedantic -Wvla -Werror -std=c99 \
 	        -fstrict-aliasing -fno-common -pipe -g
 JASMIN ?= jasminc
 JPP    ?= ../scripts/jpp
-JASMINPP  ?= ../scripts/preprocessor
+PREPROCESSOR  ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 # -- note: to add more tests, update the following list. as an example, to test
@@ -26,7 +26,7 @@ run: $(OUT)
 .PRECIOUS: bin/test_shake256_%.jpp
 bin/test_shake256_%.jpp:
 	$(JPP) -I Sphincs:../../ -in test_shake256.jazz -out $@
-	$(JASMINPP) --input_file $@ --output_file $@ --task "fn:shake256_inc_absorb_jazz p:INLEN:$(GET_INLEN)" "fn:shake256_inc_squeeze_jazz p:OUTLEN:$(GET_OUTLEN)" "fn:shake256 p:OUTLEN:$(GET_OUTLEN) p:INLEN:$(GET_INLEN)" 
+	$(PREPROCESSOR) --input_file $@ --output_file $@ --task "fn:shake256_inc_absorb_jazz p:INLEN:$(GET_INLEN)" "fn:shake256_inc_squeeze_jazz p:OUTLEN:$(GET_OUTLEN)" "fn:shake256 p:OUTLEN:$(GET_OUTLEN) p:INLEN:$(GET_INLEN)" 
 
 .PRECIOUS: bin/test_shake256_%.s
 bin/test_shake256_%.s: bin/test_shake256_%.jpp

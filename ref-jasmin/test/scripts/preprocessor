@@ -21,9 +21,6 @@ import pprint
 import argparse
 from argparse import Namespace
 
-import multiprocessing
-import concurrent.futures
-
 import utils
 from generic_fn import GenericFn
 from task import Task
@@ -149,29 +146,13 @@ def resolve_templates(
         pprint.pprint(tasks)
         print("\n", end="")
 
-    max_workers: int = args.workers if args.workers is not None else multiprocessing.cpu_count()
-    if args.debug:
-        print(f"# Workers: {max_workers}")
+    if args.debug and args.workers:
+        print(f"# Workers: {args.workers}")
 
-        # Create a ThreadPoolExecutor
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Submit tasks to the executor concurrently
-        futures = [
-            executor.submit(utils.find_subtasks, task, generic_fn_dict, typed_generic_fn_dict)
-            for task in tasks
-        ]
-
-        # Wait for all tasks to complete
-        concurrent.futures.wait(futures)
-
-        # Get results from the completed tasks
-        subtasks = [future.result() for future in futures]
-
-    tasks.extend(subtask for sublist in subtasks for subtask in sublist)
-
-    # for task in tasks:
-    #    subtasks = task.get_sub_tasks(generic_fn_dict, typed_generic_fn_dict)
-    #    tasks.extend(subtasks)
+    if args.workers:
+        tasks = utils.find_sub_tasks_sequentially(tasks, generic_fn_dict, typed_generic_fn_dict)
+    else:
+        tasks = utils.find_sub_tasks_sequentially(tasks, generic_fn_dict, typed_generic_fn_dict)
 
     if args.debug:
         print("Tasks [2nd pass (includes subtasks)]:")
@@ -218,75 +199,75 @@ def resolve_templates(
 
 
 if __name__ == "__main__":
-    args: Namespace = parse_args()
+    try:
+        args: Namespace = parse_args()
 
-    if args.debug:
-        print(f"Args.task: {args.task}")
+        if args.debug:
+            print(f"Args.task: {args.task}")
 
-    # Check if the input files exists
-    if not os.path.exists(args.input_file):
-        sys.stderr.write(f"Error: The file '{args.input_file}' does not exist.\n")
-        sys.exit(-1)
+        # Check if the input files exists
+        if not os.path.exists(args.input_file):
+            sys.stderr.write(f"Error: The file '{args.input_file}' does not exist.\n")
+            sys.exit(-1)
 
-    with open(args.input_file, "r", encoding="utf-8") as f:
-        text: str = f.read()
+        with open(args.input_file, "r", encoding="utf-8") as f:
+            text: str = f.read()
 
-    # Replace macros
-    text = utils.replace_expand_macros(text)
+        # 1st step: Load global parameters from param files
+        global_params: dict[str, int] = utils.get_params(text)
 
-    # 1st step: Load global parameters from param files
-    global_params: dict[str, int] = utils.get_params(text)
+        if args.debug:
+            print("DEBUG: Global Param Dictionary")
+            pprint.pprint(global_params)
+            print("\n")
 
-    if args.debug:
-        print("DEBUG: Global Param Dictionary")
-        pprint.pprint(global_params)
-        print("\n")
+        if args.debug:
+            print("Text after macro replacement")
+            print(text, end="\n\n")
 
-    if args.debug:
-        print("Text after macro replacement")
-        print(text, end="\n\n")
+        # 2nd step: Get generic functions dict from Jasmin source code
+        generic_fn_dict: dict[str, GenericFn] = utils.get_generic_fn_dict(text)
 
-    # 2nd step: Get generic functions dict from Jasmin source code
-    generic_fn_dict: dict[str, GenericFn] = utils.get_generic_fn_dict(text)
+        # 2.5 step: Get typed generic functions dict from Jasmin source code
+        typed_generic_fn_dict: dict[str, TypedGenericFn] = utils.get_typed_generic_fn_dict(text)
 
-    # 2.5 step: Get typed generic functions dict from Jasmin source code
-    typed_generic_fn_dict: dict[str, TypedGenericFn] = utils.get_typed_generic_fn_dict(text)
+        export_tasks: list[Task] = utils.parse_tasks(args.task, global_params)
 
-    export_tasks: list[Task] = utils.parse_tasks(args.task, global_params)
-    if args.debug:
-        print("DEBUG: Export tasks: ")
-        pprint.pprint(export_tasks)
-        print("\n")
+        if args.debug:
+            print("DEBUG: Export tasks: ")
+            pprint.pprint(export_tasks)
+            print("\n")
 
-    if args.debug:
-        print("DEBUG: Generic Fn Dictionary:")
-        pprint.pprint(generic_fn_dict.keys())
-        print("\n")
-        print("DEBUG: Typed Generic Fn Dictionary:")
-        pprint.pprint(typed_generic_fn_dict.keys())
-        # pprint.pprint(typed_generic_fn_dict)
-        print("\n")
+        if args.debug:
+            print("DEBUG: Generic Fn Dictionary:")
+            pprint.pprint(sorted(generic_fn_dict.keys()))
+            print("\n")
+            print("DEBUG: Typed Generic Fn Dictionary:")
+            pprint.pprint(sorted(typed_generic_fn_dict.keys()))
+            print("\n")
 
-    with open(args.input_file, "r", encoding="utf-8") as f:
-        input_text: str = f.read()
+        with open(args.input_file, "r", encoding="utf-8") as f:
+            input_text: str = f.read()
 
-    input_text = utils.replace_expand_macros(input_text)
-    if args.after_macro:
-        print(text)
-        sys.exit(0)
+        input_text = utils.replace_expand_macros(input_text)
+        if args.after_macro:
+            print(input_text)
+            sys.exit(0)
 
-    output_text: str = resolve_templates(
-        input_text, global_params, generic_fn_dict, typed_generic_fn_dict, args
-    )
-    output_text += "\n"
+        output_text: str = resolve_templates(
+            input_text, global_params, generic_fn_dict, typed_generic_fn_dict, args
+        )
+        output_text += "\n"
 
-    output_text = utils.replace_eval_global_params(output_text, global_params)
+        output_text = utils.replace_eval_global_params(output_text, global_params)
 
-    if args.debug:
-        print("\n--------------------------------------------------------------\n")
+        if args.debug:
+            print("\n--------------------------------------------------------------\n")
 
-    if args.output_file:
-        with open(args.output_file, "w", encoding="utf-8") as f:
-            f.write(output_text)
-    else:
-        print(output_text)
+        if args.output_file:
+            with open(args.output_file, "w", encoding="utf-8") as f:
+                f.write(output_text)
+        else:
+            print(output_text)
+    except KeyboardInterrupt:
+        sys.stderr.write("Program interrupted (Ctrl+C)\n")

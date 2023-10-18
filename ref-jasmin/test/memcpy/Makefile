@@ -6,7 +6,7 @@ CFLAGS ?= -O3 -Wall -Wextra -Wpedantic -Wvla -Werror -std=c99 \
 	        -fstrict-aliasing -fno-common -pipe -g
 JASMIN ?= jasminc
 JPP    ?= ../scripts/jpp
-JASMINPP  ?= ../scripts/preprocessor
+PREPROCESSOR  ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 MIN_INOUT ?= 1
@@ -46,7 +46,7 @@ GET_INLEN   = $(word 2, $(subst _, ,$*))
 .PRECIOUS: bin/test_memcpy_%.jpp
 bin/test_memcpy_%.jpp:
 	$(JPP) -I Sphincs:../../ -in test_memcpy.jazz -out $@
-	$(JASMINPP) --input_file $@ --output_file $@ --task "fn:x_memcpy_u8u8 p:OUTLEN:$(GET_OUTLEN) p:INLEN:$(GET_INLEN)" "fn:x_memcpy_u8u8p p:OUTLEN:$(GET_OUTLEN)" "fn:x_memcpy_u8u32 p:OUTLEN:$(GET_OUTLEN) p:INLEN:$(GET_INLEN)"
+	$(PREPROCESSOR) --input_file $@ --output_file $@ --task "fn:x_memcpy_u8u8 p:OUTLEN:$(GET_OUTLEN) p:INLEN:$(GET_INLEN)" "fn:x_memcpy_u8u8p p:OUTLEN:$(GET_OUTLEN)" "fn:x_memcpy_u8u32 p:OUTLEN:$(GET_OUTLEN) p:INLEN:$(GET_INLEN)"
 	
 .PRECIOUS: bin/test_memcpy_%.s
 bin/test_memcpy_%.s: bin/test_memcpy_%.jpp

@@ -9,7 +9,7 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 
 JASMIN   ?= jasminc
 JPP      ?= ../scripts/jpp
-JASMINPP ?= ../scripts/preprocessor
+PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 

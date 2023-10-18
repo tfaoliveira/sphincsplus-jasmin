@@ -1,0 +1,269 @@
+from Sphincs require "address/address.jinc"
+from Sphincs require "memcpy/memcpy.jtmpl"
+from Sphincs require "merkle/merkle.jtmpl"
+from Sphincs require "generic/utils.jtmpl"
+from Sphincs require "hash/hash_shake.jtmpl"
+
+/*
+ * Generates an SPX key pair given a seed of length
+ * Format sk: [SK_SEED || SK_PRF || PUB_SEED || root]
+ * Format pk: [PUB_SEED || root]
+ */
+inline fn __crypto_sign_seed_keypair(
+  reg ptr u8[SPX_PK_BYTES] pk,
+  reg ptr u8[SPX_SK_BYTES] sk,
+  reg ptr u8[CRYPTO_SEEDBYTES] seed
+) -> reg ptr u8[SPX_PK_BYTES], reg ptr u8[SPX_SK_BYTES]
+{
+  stack u8[SPX_N] pub_seed sk_seed;
+  reg ptr u8[SPX_N] pub_seed_p sk_seed_p;
+
+  reg u64 offset;
+
+  inline int i; 
+  reg u8 t; 
+  stack u8 st;
+
+  reg ptr u8[SPX_N] root;
+
+  pub_seed_p = pub_seed;
+  sk_seed_p = sk_seed;
+
+  /* Initialize SK_SEED, SK_PRF and PUB_SEED from seed. */
+  offset = 0;
+  sk, offset = _x_memcpy_u8u8<SPX_SK_BYTES, CRYPTO_SEEDBYTES>(sk, offset, seed);
+
+  
+  for i=0 to SPX_N { t=sk[2*SPX_N+i]; pk[i]=t; }
+  st = t;
+
+  offset = 0;
+  pub_seed_p, offset = _x_memcpy_u8u8<SPX_N,SPX_PK_BYTES>(pub_seed_p, offset, pk);
+
+  offset = 0;
+  sk_seed_p, offset = _x_memcpy_u8u8<SPX_N, SPX_SK_BYTES>(sk_seed_p, offset, sk);
+
+  root = sk[3*SPX_N : SPX_N];
+  root = __merkle_gen_root(root, pub_seed_p, sk_seed_p);
+  sk[3*SPX_N : SPX_N] = root;
+
+  // Write root to pk
+  for i=0 to SPX_N { t=sk[3*SPX_N+i]; pk[SPX_N+i]=t; }
+
+  return pk, sk;
+}
+
+/*
+ * Generates an SPX key pair.
+ * Format sk: [SK_SEED || SK_PRF || PUB_SEED || root]
+ * Format pk: [PUB_SEED || root]
+ */
+inline fn __crypto_sign_keypair(
+  reg ptr u8[SPX_PK_BYTES] pk,
+  reg ptr u8[SPX_SK_BYTES] sk
+) -> reg ptr u8[SPX_PK_BYTES], reg ptr u8[SPX_SK_BYTES]
+{
+  stack u8[CRYPTO_SEEDBYTES] seed;
+  reg ptr u8[CRYPTO_SEEDBYTES] seed_p;
+
+  seed_p = seed;
+  seed_p = #randombytes(seed_p);
+  
+  pk, sk = __crypto_sign_seed_keypair(pk, sk, seed_p);
+  return pk, sk;
+}
+
+/**
+ * Returns an array containing a detached signature.
+ */
+inline fn __crypto_sign_signature<SIG_LEN,MSG_LEN>(
+  reg ptr u8[SIG_LEN] sig,
+  reg ptr u8[MSG_LEN] msg,
+) -> reg u64
+{
+  stack u8[SPX_N] pub_seed sk_seed;
+
+  stack u8[SPX_N] optrand;
+  reg ptr u8[SPX_N] optrand_p;
+
+  stack u8[SPX_FORS_MSG_BYTES] mhash;
+  stack u8[SPX_N] root;
+
+  stack u32[8] wots_addr tree_addr;
+  reg ptr u32[8] wots_addr_p tree_addr_p;
+
+  reg u64 tree;
+  reg u32 idx_leaf;
+
+  inline int i;
+
+  reg u64 siglen sig_offset;
+
+  reg u32 t u;
+
+  siglen = SIG_LEN;
+  sig_offset = 0;
+
+  wots_addr_p = wots_addr;
+  wots_addr_p = __zero_array_u32<8>(wots_addr_p);
+  wots_addr_p = __set_type(wots_addr_p, SPX_ADDR_TYPE_WOTS);
+  wots_addr = wots_addr_p;
+
+  tree_addr_p = tree_addr;
+  tree_addr_p = __zero_array_u32<8>(tree_addr_p);
+  tree_addr_p = __set_type(tree_addr_p, SPX_ADDR_TYPE_HASHTREE);
+  tree_addr = tree_addr_p;
+
+  optrand_p = optrand;
+  optrand_p = #randombytes(optrand_p);
+  optrand = optrand_p;
+
+  // TODO: Call you gen_message_random & hash message
+
+  sig_offset += SPX_N;
+
+  wots_addr_p = wots_addr;
+  wots_addr_p = __set_tree_addr(wots_addr_p, tree);
+
+  wots_addr_p = set_keypair_addr(wots_addr_p, idx_leaf);
+
+  // TODO: Call to fors sign
+
+  wots_addr = wots_addr_p;
+
+  sig_offset += SPX_FORS_BYTES;
+
+  for i = 0 to SPX_D {
+    tree_addr_p = tree_addr; wots_addr_p = wots_addr;
+
+    tree_addr_p = __set_layer_addr(tree_addr, i);
+    tree_addr_p = __set_tree_addr(tree_addr_p, tree);
+
+    wots_addr_p = __copy_subtree_addr(wots_addr_p, tree_addr_p);
+    wots_addr_p = __set_keypair_addr(wots_addr_p, idx_leaf);
+
+    tree_addr = tree_addr_p; wots_addr = wots_addr_p;
+
+    // TODO: Call to merkle sign
+    t = SPX_TREE_HEIGHT;
+    t *= SPX_N;
+    t += SPX_WOTS_BYTES;
+    sig_offset += t;
+    
+    /* Update the indices for the next layer. */
+    t = 1;
+    t <<= (SPX_TREE_HEIGHT & 63);
+    t -= 1;
+    u = tree;
+    u &= t;
+    idx_leaf = u;
+
+    tree >>= (SPX_TREE_HEIGHT & 63);
+  }
+  
+  siglen = SPX_BYTES;
+
+  return siglen;
+}//<>
+
+inline fn __crypto_sign_verify<MSG_LEN>(
+  reg ptr u8[SPX_BYTES] sig,
+  reg u64 siglen,
+  reg ptr u8[MSG_LEN] msg,
+  reg ptr u8[SPX_PK_BYTES] pk
+) -> reg u64
+{
+  stack u8[SPX_N] pub_seed sk_seed;
+  stack u32[8] wots_addr;
+  stack u32[8] tree_addr;
+  stack u32[8] wots_pk_addr;
+
+  reg ptr u8[SPX_N] pub_seed_p sk_seed_p;
+  reg ptr u32[8] wots_addr_p;
+  reg ptr u32[8] tree_addr_p;
+  reg ptr u32[8] wots_pk_addr_p;
+
+  reg ptr u8[SPX_N] pub_root;
+
+  reg u64 offset;
+  reg u64 res;
+  reg u64 t;
+
+  inline int i;
+
+  ?{}, res = #set0();
+
+  wots_addr_p = wots_addr;
+  wots_addr_p = __zero_array_u32<8>(wots_addr_p);
+  wots_addr = wots_addr_p;
+
+  tree_addr_p = tree_addr;
+  tree_addr_p = __zero_array_u32<8>(tree_addr_p);
+  tree_addr = tree_addr_p;
+
+  wots_pk_addr_p = wots_pk_addr;
+  wots_pk_addr_p = __zero_array_u32<8>(wots_pk_addr_p);
+  wots_pk_addr = wots_pk_addr_p;
+
+  pub_seed_p = pub_seed;
+  pub_seed_p, offset = _x_memcpy_u8u8<SPX_N,SPX_PK_BYTES>(pub_seed_p, offset, pk);
+
+  wots_addr_p = wots_addr; tree_addr_p = tree_addr; wots_pk_addr_p = wots_addr;
+  wots_addr_p = __set_type(wots_addr_p, SPX_ADDR_TYPE_WOTS);
+  tree_addr_p = __set_type(tree_addr_p, SPX_ADDR_TYPE_HASHTREE);
+  wots_pk_addr = __set_type(wots_pk_addr, SPX_ADDR_TYPE_WOTSPK);
+  wots_addr = wots_addr_p; tree_addr = tree_addr_p; wots_pk_addr = wots_addr_p;
+
+  /* Derive the message digest */
+  // TODO: Call to hash message
+
+  // Offset is now used for sig
+  offset = 0; offset += SPX_N;
+
+  /* Layer correctly defaults to 0, so no need to set_layer_addr */
+  wots_addr_p = wots_addr;
+  wots_addr_p = __set_tree_addr(wots_addr_p, tree);
+  wots_addr_p = __set_keypair_addr(wots_addr_p, idx_leaf);
+  wots_addr = wots_addr_p;
+
+  // TODO: Call to fors_pk_from_sig
+
+  offset += SPX_FORS_BYTES;
+  for i=0 to SPX_D {
+    wots_addr_p = wots_addr; tree_addr_p = tree_addr; wots_pk_addr_p = wots_addr;
+
+    tree_addr_p = __set_layer_addr(tree_addr_p, i);
+    tree_addr_p = __set_tree_addr(tree_addr_p, tree);
+    
+    wots_addr = wots_addr_p; tree_addr = tree_addr_p; wots_pk_addr = wots_addr_p;
+
+    // TODO: Call to wots_pk_from_sig
+    offset += SPX_WOTS_BYTES;
+
+    /* Compute the leaf node using the WOTS public key. */
+
+    /* Compute the root node of this subtree. */
+    t = SPX_TREE_HEIGHT; t *= SPX_N;
+    offset += t;
+
+    /* Update the indices for the next layer. */
+
+    tree >>= (SPX_TREE_HEIGHT & 63);
+  }
+
+  /* Check if the root node equals the root node in the public key. */
+  pub_root = pk[SPX_N : SPX_N];
+  t = __mem_eq_u8<SPX_N>(root, pub_root);
+  if (t != 0) { res = -1; }
+
+  return res;
+}//<>
+
+/**
+ * Returns an array containing the signature followed by the message.
+ */
+inline fn __crypto_sign<SIG_LEN,MSG_LEN>(
+
+) -> 
+{
+}//<>

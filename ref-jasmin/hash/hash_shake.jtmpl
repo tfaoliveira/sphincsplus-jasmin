@@ -145,7 +145,7 @@ inline fn __hash_message<MSG_LEN>(
   // Tree
   buf_tree_p = buf[SPX_FORS_MSG_BYTES : SPX_TREE_BYTES];
   tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, buf_tree_p);
-  t = !0;
+  t = 0; t = #NOT_64(t);
   u = 64;
   u -= SPX_TREE_BITS;
   t >>= (u & 63);
@@ -155,7 +155,7 @@ inline fn __hash_message<MSG_LEN>(
   buf_leaf_p = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES]; 
   t = __bytes_to_ull<SPX_LEAF_BYTES>(t, buf_leaf_p);
   leaf_idx = (32u)t;
-  t = !0;
+  t = 0; t = #NOT_64(t);
   u = 32;
   u -= SPX_LEAF_BITS;
   t >>= (u & 63);

@@ -1,7 +1,9 @@
 from Sphincs require "address/address.jinc"
 from Sphincs require "memcpy/memcpy.jtmpl"
-from Sphincs require "thash/thash_shake_simple.jtmpl" // TODO: Manage this in the makefile
+from Sphincs require "generic/conditions.jinc"
+from Sphincs require "generic/utils.jtmpl"
 
+// NOTE: The thash import is managed by the makefile
 
 param int SPX_WOTS_BYTES  = SPX_WOTS_LEN * SPX_N;
 
@@ -12,36 +14,54 @@ param int SPX_WOTS_BYTES  = SPX_WOTS_LEN * SPX_N;
  * Interprets in as start-th value of the chain.
  * addr has to contain the address of the chain.
  */
-inline fn __gen_chain<OUTLEN, INLEN>(
-  reg ptr u8[OUTLEN] out,
-  reg ptr u8[INLEN] in,
+inline fn __gen_chain(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] in,
   reg u32 start,
   reg u32 steps,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u32[8] addr
-) -> reg ptr u8[OUTLEN]
+) -> reg ptr u8[SPX_N], reg ptr u32[8]
 {
-  reg u32 i;
-  reg u64 offset;
-  
-  reg ptr u8[SPX_N] buf_p; 
-  buf_p = in[0:SPX_N];
-  stack ptr u8[SPX_N] buf_ps;
 
-  /* Initialize out with the value at position 'start'. */
-  offset = 0;
-  out, offset = _x_memcpy_u8u8<OUTLEN,SPX_N>(out, offset, buf_p);
-  buf_ps = buf_p; // spill 
+  reg bool cond;
+  reg u32 i t;
 
-  /* Iterate 'steps' calls to the hash function. */
+  stack u32 s_start s_steps;
+  stack u32 s_i s_t;
+
+  stack ptr u8[SPX_N] s_in;
+
+  stack u8[SPX_N] tmp; // copy of out (can call thash with (out,out): stack allocation: some writable reg ptr are not disjoints)
+
+  out, _ = _x_memcpy_u8u8<SPX_N, SPX_N>(out, 0, in);
+
+  s_in = in;
+
   i = start;
-  while (i < (start+steps) && i < SPX_WOTS_W) {
+  t = start; t += steps;
+
+  s_start = start; s_steps = steps; // SPILL
+
+  while {
+    // i < (start+steps) && i < SPX_WOTS_W
+    cond = __cond_u32_a_below_b_and_a_below_c(i, t, SPX_WOTS_W);
+  } (cond)
+  {
     addr = __set_hash_addr(addr, i);
-    out = __thash<1>(out, out, pub_seed, addr); // INBLOCKS = 1;
+
+    s_i = i; s_t = t; // spill
+    
+    tmp, _ = _x_memcpy_u8u8<SPX_N,SPX_N>(tmp, 0, out);
+    
+    // FIXME: Regalloc
+    // out = __thash_<1>(out, tmp, pub_seed, addr); // INBLOCKS = 1;
+
+    i = s_i; t = s_t; // unspill
     i += 1;
   }
 
-  return out;
+  return out, addr;
 }//<>
 
 /*
@@ -54,27 +74,38 @@ inline fn __base_w<OUTLEN,INLEN>(
 ) -> reg ptr u32[OUTLEN]
 {
   reg u64 in out;
-  reg u8  total t;
+  reg u8  total;
+  reg u8 t u;
+  reg u32 z;
   reg u64 bits consumed;
 
-  reg bool cond;
+  reg u64 x64;
 
   in   = 0;
   out  = 0;
   bits = 0;
-
   consumed = 0;
-  while { cond = (consumed < OUTLEN); } (cond) {
-    if (bits == 0) {
-      t = input[(int) in];
-      total = t;
-
+  while (consumed < OUTLEN)
+  {
+    if (bits == 0) 
+    {
+      total = input[(int) in];
       in += 1;
       bits += 8;
     }
-
     bits -= SPX_WOTS_LOGW;
-    output[(int) out] = (32u) (total >> bits) & (SPX_WOTS_W - 1);
+    
+    u = total;
+    // TODO: FIXME: x64 shouldnt be needed
+    x64 = (64u) u; // TODO: FIXME: x64 shouldnt be needed
+    x64 >>= (bits & 63); // TODO: FIXME: x64 shouldnt be needed
+    u = (8u) x64; // TODO: FIXME: x64 shouldnt be needed
+    // TODO: FIXME: x64 shouldnt be needed
+    t = SPX_WOTS_W;
+    t -= 1;
+    u &= t;
+    z = (32u) u;
+    output[(int) out] = z;
 
     out += 1;
     consumed += 1;
@@ -83,20 +114,28 @@ inline fn __base_w<OUTLEN,INLEN>(
   return output;
 }//<> 
 
-/*
 inline fn __wots_checksum(
-  reg ptr u32[??] csum_base_w,
-  reg ptr u32[??] msg_base_w
-) -> 
+  reg ptr u32[SPX_WOTS_LEN2] csum_base_w,
+  reg ptr u32[SPX_WOTS_LEN] msg_base_w
+) -> reg ptr u32[SPX_WOTS_LEN2]
 {
-  stack u32[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) // 8] csum_bytes;
+  stack u32[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] csum_bytes;
+  inline int i;
+  reg u64 csum t;
 
-  reg u32 csum;
   csum = 0;
+
+  /* Compute checksum. */
+  for i = 0 to SPX_WOTS_LEN1 
+  {
+    t = SPX_WOTS_W;
+    t -= 1;
+    t -= (64u) msg_base_w[i];
+    csum += t;
+  }
 
   return csum_base_w;
 }
-*/
 
 /* Takes a message and derives the matching chain lengths. */
 inline fn __chain_lengths<MSG_LEN>(
@@ -104,8 +143,15 @@ inline fn __chain_lengths<MSG_LEN>(
   reg ptr u8[MSG_LEN] msg
 ) -> reg ptr u32[SPX_WOTS_LEN]
 {
+  reg ptr u32[SPX_WOTS_LEN2] t;
+  
   lengths = __base_w<SPX_WOTS_LEN,MSG_LEN>(lengths, msg);
-  // TODO: WOTS CHECKSUM
+
+  t = lengths[SPX_WOTS_LEN1 : SPX_WOTS_LEN2];
+  t = __wots_checksum(t, lengths);
+
+  lengths[SPX_WOTS_LEN1 : SPX_WOTS_LEN2] = t;
+
   return lengths;
 }//<>
 
@@ -116,27 +162,106 @@ inline fn __chain_lengths<MSG_LEN>(
  */
 inline fn __wots_pk_from_sig<MSG_LEN>(
     reg ptr u8[SPX_WOTS_BYTES] pk,
-    reg const ptr u8[SPX_BYTES] sig,
-    reg const ptr u8[MSG_LEN] msg,
-    reg const ptr u8[SPX_N] pub_seed,
-    reg const ptr u8[SPX_N] sk_seed,
+    reg ptr u8[SPX_BYTES] sig,
+    reg ptr u8[MSG_LEN] msg,
+    reg ptr u8[SPX_N] pub_seed,
+    reg ptr u8[SPX_N] sk_seed,
     reg ptr u32[8] addr
 ) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
 {
   stack u32[SPX_WOTS_LEN] lengths;
   reg ptr u32[SPX_WOTS_LEN] lengths_p;
 
+  reg ptr u8[SPX_N] in out;
+  reg u32 start steps;
+  
+  stack ptr u8[SPX_WOTS_BYTES] s_pk;
+  stack ptr u8[SPX_BYTES] s_sig;
+  stack ptr u8[MSG_LEN] s_msg;
+  stack ptr u8[SPX_N] s_pub_seed;
+
+  inline int i;
+
   lengths_p = lengths;
   lengths_p = __chain_lengths<MSG_LEN>(lengths_p, msg);
+  lengths = lengths_p;
 
-  reg u32 i;
-  i = 0;
-  while (i < SPX_WOTS_LEN)
+  for i = 0 to SPX_WOTS_LEN
   {
     addr = __set_chain_addr(addr, i);
-    // __gen_chain(addr) TODO:
-    i += 1;
+
+    out = pk[i*SPX_N : SPX_N];
+    in = sig[i*SPX_N : SPX_N];
+    start = lengths[i];
+    steps = SPX_WOTS_W; steps -= 1; steps -= lengths[i];
+    
+    s_sig = sig; s_msg = msg; s_pub_seed = pub_seed; // spill
+    // out, addr = __gen_chain(out, in, start, steps, sk_seed, addr);
+    sig = s_sig; msg = s_msg; pub_seed = s_pub_seed; // unspill
+    pk[i * SPX_N : SPX_N] = out;
   }
 
   return pk, addr;
+}//<>
+
+
+
+
+
+
+///////////////////// LOCAL FUNCTIONS ////////////////////
+#[returnaddress="stack"]
+fn _gen_chain(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] in,
+  reg u32 start,
+  reg u32 steps,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[SPX_N], reg ptr u32[8]
+{
+  out, addr = __gen_chain(out, in, start, steps, pub_seed, addr);
+  return out, addr;
+}//<>
+
+inline fn __gen_chain__(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] in,
+  reg u32 start,
+  reg u32 steps,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[SPX_N], reg ptr u32[8]
+{
+  stack ptr u8[SPX_N] s_out;
+  stack ptr u8[SPX_N] s_in;
+  stack u32 s_start;
+  stack u32 s_steps;
+  stack ptr u8[SPX_N] s_pub_seed;
+  stack ptr u32[8] s_addr;
+
+  // Spill
+  s_out = out;
+  s_in = in;
+  s_start = start;
+  s_steps = steps;
+  
+  pub_seed = pub_seed;
+  addr = addr;
+
+  // Unspill
+  out = s_out;
+  in = s_in;
+  start = s_start;
+  steps = s_steps;
+  
+  out = out;
+  in = in;
+  start = start;
+  steps = steps;
+
+
+  out, addr = _gen_chain(out, in, start, steps, pub_seed, addr);
+  
+  return out, addr;
 }//<>

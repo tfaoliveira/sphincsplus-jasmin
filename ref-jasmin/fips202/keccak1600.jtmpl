@@ -93,7 +93,6 @@ inline fn __absorb<INLEN>(
   stack u64 s_inlen s_offset s_rate;
   stack ptr u8[INLEN] s_in;
   reg u8 trail_byte;
-  reg u64 t;
 
   // intermediate blocks
   inlen = INLEN;
@@ -210,7 +209,7 @@ inline fn __squeeze<OUTLEN>(
     s_outlen = outlen;
     s_rate = rate;
 
-    state = _keccakf1600(state);
+    state = _keccakf1600_(state);
 
     out = s_out;
     offset = s_offset;
@@ -223,7 +222,7 @@ inline fn __squeeze<OUTLEN>(
   s_out = out;
   s_offset = offset;
 
-  state = _keccakf1600(state);
+  state = _keccakf1600_(state);
 
   out = s_out;
   offset = s_offset;
@@ -280,7 +279,6 @@ fn _keccak1600<OUTLEN,INLEN>(
   return out;
 }//<>
 
-
 inline fn _keccak1600_<OUTLEN,INLEN>(
   reg ptr u8[OUTLEN] out,
   reg ptr u8[INLEN] in,
@@ -299,4 +297,3 @@ inline fn _keccak1600_<OUTLEN,INLEN>(
   out = out;
   return out;
 }//<>
-

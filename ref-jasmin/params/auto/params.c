@@ -4,102 +4,106 @@
 // - it includes the 'real' file
 #include "params.h"
 
-static void print(char *s, int v)
-{
-  printf("param int %s = %d;\n", s, v);
-}
+static void print(char *s, int v) { printf("param int %s = %d;\n", s, v); }
 
-int main(void)
-{
-  /* Hash output length in bytes. */  
-  print("SPX_N", SPX_N);
+int main(void) {
+    /* Hash output length in bytes. */
+    print("SPX_N", SPX_N);
 
-  /* Height of the hypertree. */
-  print("SPX_FULL_HEIGHT", SPX_FULL_HEIGHT);
+    /* Height of the hypertree. */
+    print("SPX_FULL_HEIGHT", SPX_FULL_HEIGHT);
 
-  /* Number of subtree layer. */
-  print("SPX_D", SPX_D);
-  /* FORS tree dimensions. */
-  print("SPX_FORS_HEIGHT", SPX_FORS_HEIGHT);
-  print("SPX_FORS_TREES", SPX_FORS_TREES);
-  /* Winternitz parameter, */
-  print("SPX_WOTS_W", SPX_WOTS_W);
+    /* Number of subtree layer. */
+    print("SPX_D", SPX_D);
+    /* FORS tree dimensions. */
+    print("SPX_FORS_HEIGHT", SPX_FORS_HEIGHT);
+    print("SPX_FORS_TREES", SPX_FORS_TREES);
+    /* Winternitz parameter, */
+    print("SPX_WOTS_W", SPX_WOTS_W);
 
-  /* For clarity */
-  print("SPX_ADDR_BYTES", SPX_ADDR_BYTES);
+    /* For clarity */
+    print("SPX_ADDR_BYTES", SPX_ADDR_BYTES);
 
-  /* WOTS parameters. */
-  print("SPX_WOTS_LOGW", SPX_WOTS_LOGW);
-  print("SPX_WOTS_LEN1", SPX_WOTS_LEN1);
+    /* WOTS parameters. */
+    print("SPX_WOTS_LOGW", SPX_WOTS_LOGW);
+    print("SPX_WOTS_LEN1", SPX_WOTS_LEN1);
 
-  /* SPX_WOTS_LEN2 is floor(log(len_1 * (w - 1)) / log(w)) + 1; we precompute */
-  print("SPX_WOTS_LEN2", SPX_WOTS_LEN2);
- 
-  print("SPX_WOTS_LEN", SPX_WOTS_LEN);
-  print("SPX_WOTS_BYTES", SPX_WOTS_BYTES);
-  print("SPX_WOTS_PK_BYTES", SPX_WOTS_PK_BYTES);
+    /* SPX_WOTS_LEN2 is floor(log(len_1 * (w - 1)) / log(w)) + 1; we precompute */
+    print("SPX_WOTS_LEN2", SPX_WOTS_LEN2);
 
-  /* Subtree size. */
-  print("SPX_TREE_HEIGHT", SPX_TREE_HEIGHT);
+    print("SPX_WOTS_LEN", SPX_WOTS_LEN);
+    print("SPX_WOTS_BYTES", SPX_WOTS_BYTES);
+    print("SPX_WOTS_PK_BYTES", SPX_WOTS_PK_BYTES);
 
-  /* FORS parameters. */
-  print("SPX_FORS_MSG_BYTES", SPX_FORS_MSG_BYTES);
-  print("SPX_FORS_BYTES", SPX_FORS_BYTES);
-  print("SPX_FORS_PK_BYTES", SPX_FORS_PK_BYTES); 
+    /* Subtree size. */
+    print("SPX_TREE_HEIGHT", SPX_TREE_HEIGHT);
 
-  /* Resulting SPX sizes. */
-  print("SPX_BYTES", SPX_BYTES);
-  print("SPX_PK_BYTES", SPX_PK_BYTES);
-  print("SPX_SK_BYTES", SPX_SK_BYTES);
+    /* FORS parameters. */
+    print("SPX_FORS_MSG_BYTES", SPX_FORS_MSG_BYTES);
+    print("SPX_FORS_BYTES", SPX_FORS_BYTES);
+    print("SPX_FORS_PK_BYTES", SPX_FORS_PK_BYTES);
 
-  /* offsets */
-  print("SPX_OFFSET_LAYER", SPX_OFFSET_LAYER);
-  print("SPX_OFFSET_TREE", SPX_OFFSET_TREE);
-  print("SPX_OFFSET_TYPE", SPX_OFFSET_TYPE);
-  print("SPX_OFFSET_KP_ADDR2", SPX_OFFSET_KP_ADDR2);
-  print("SPX_OFFSET_KP_ADDR1", SPX_OFFSET_KP_ADDR1);
-  print("SPX_OFFSET_CHAIN_ADDR", SPX_OFFSET_CHAIN_ADDR);
-  print("SPX_OFFSET_HASH_ADDR", SPX_OFFSET_HASH_ADDR);
-  print("SPX_OFFSET_TREE_HGT", SPX_OFFSET_TREE_HGT);
-  print("SPX_OFFSET_TREE_INDEX", SPX_OFFSET_TREE_INDEX);
+    /* Resulting SPX sizes. */
+    print("SPX_BYTES", SPX_BYTES);
+    print("SPX_PK_BYTES", SPX_PK_BYTES);
+    print("SPX_SK_BYTES", SPX_SK_BYTES);
 
-  int haraka = 0, sha2 = 0, shake = 0;
+    /* offsets */
+    print("SPX_OFFSET_LAYER", SPX_OFFSET_LAYER);
+    print("SPX_OFFSET_TREE", SPX_OFFSET_TREE);
+    print("SPX_OFFSET_TYPE", SPX_OFFSET_TYPE);
+    print("SPX_OFFSET_KP_ADDR2", SPX_OFFSET_KP_ADDR2);
+    print("SPX_OFFSET_KP_ADDR1", SPX_OFFSET_KP_ADDR1);
+    print("SPX_OFFSET_CHAIN_ADDR", SPX_OFFSET_CHAIN_ADDR);
+    print("SPX_OFFSET_HASH_ADDR", SPX_OFFSET_HASH_ADDR);
+    print("SPX_OFFSET_TREE_HGT", SPX_OFFSET_TREE_HGT);
+    print("SPX_OFFSET_TREE_INDEX", SPX_OFFSET_TREE_INDEX);
 
-  #if defined(SPX_HARAKA)
-  haraka = 1;
-  #elif defined(SPX_SHA2)
-  sha2 = 1;
-  #elif defined(SPX_SHAKE)
-  shake = 1;
-  #endif
+    print("SPX_ADDR_TYPE_WOTS", 0);
+    print("SPX_ADDR_TYPE_WOTSPK", 1);
+    print("SPX_ADDR_TYPE_HASHTREE", 2);
+    print("SPX_ADDR_TYPE_FORSTREE", 3);
+    print("SPX_ADDR_TYPE_FORSPK", 4);
+    print("SPX_ADDR_TYPE_WOTSPRF", 5);
+    print("SPX_ADDR_TYPE_FORSPRF", 6);
 
-  print("SPX_HARAKA", haraka);
-  print("SPX_SHA2", sha2);
-  print("SPX_SHAKE", shake);
+    int haraka = 0, sha2 = 0, shake = 0;
 
-  #if defined(SPX_SHA512)
-  print("SPX_SHA512", SPX_SHA512);
-  #endif
+#if defined(SPX_HARAKA)
+    haraka = 1;
+#elif defined(SPX_SHA2)
+    sha2 = 1;
+#elif defined(SPX_SHAKE)
+    shake = 1;
+#endif
 
-  // parameters from api.h
-  print("CRYPTO_SECRETKEYBYTES", SPX_SK_BYTES);
-  print("CRYPTO_PUBLICKEYBYTES", SPX_PK_BYTES);
-  print("CRYPTO_BYTES", SPX_BYTES);
-  print("CRYPTO_SEEDBYTES", 3*SPX_N);
+    print("SPX_HARAKA", haraka);
+    print("SPX_SHA2", sha2);
+    print("SPX_SHAKE", shake);
 
-  #if defined(SPX_SHAKE)
-  #define SPX_TREE_BITS (SPX_TREE_HEIGHT * (SPX_D - 1))
-  #define SPX_TREE_BYTES ((SPX_TREE_BITS + 7) / 8)
-  #define SPX_LEAF_BITS SPX_TREE_HEIGHT
-  #define SPX_LEAF_BYTES ((SPX_LEAF_BITS + 7) / 8)
-  #define SPX_DGST_BYTES (SPX_FORS_MSG_BYTES + SPX_TREE_BYTES + SPX_LEAF_BYTES)
+#if defined(SPX_SHA512)
+    print("SPX_SHA512", SPX_SHA512);
+#endif
 
-  print("SPX_TREE_BITS", SPX_TREE_BITS);
-  print("SPX_TREE_BYTES", SPX_TREE_BYTES);
-  print("SPX_LEAF_BITS", SPX_LEAF_BITS);
-  print("SPX_LEAF_BYTES", SPX_LEAF_BYTES);
-  print("SPX_DGST_BYTES", SPX_DGST_BYTES);
-  #endif
+    // parameters from api.h
+    print("CRYPTO_SECRETKEYBYTES", SPX_SK_BYTES);
+    print("CRYPTO_PUBLICKEYBYTES", SPX_PK_BYTES);
+    print("CRYPTO_BYTES", SPX_BYTES);
+    print("CRYPTO_SEEDBYTES", 3 * SPX_N);
 
-  return 0;
+#if defined(SPX_SHAKE)
+#define SPX_TREE_BITS (SPX_TREE_HEIGHT * (SPX_D - 1))
+#define SPX_TREE_BYTES ((SPX_TREE_BITS + 7) / 8)
+#define SPX_LEAF_BITS SPX_TREE_HEIGHT
+#define SPX_LEAF_BYTES ((SPX_LEAF_BITS + 7) / 8)
+#define SPX_DGST_BYTES (SPX_FORS_MSG_BYTES + SPX_TREE_BYTES + SPX_LEAF_BYTES)
+
+    print("SPX_TREE_BITS", SPX_TREE_BITS);
+    print("SPX_TREE_BYTES", SPX_TREE_BYTES);
+    print("SPX_LEAF_BITS", SPX_LEAF_BITS);
+    print("SPX_LEAF_BYTES", SPX_LEAF_BYTES);
+    print("SPX_DGST_BYTES", SPX_DGST_BYTES);
+#endif
+
+    return 0;
 }

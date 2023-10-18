@@ -9,7 +9,7 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 
 JASMIN   ?= jasminc
 JPP      ?= ../scripts/jpp
-JASMINPP ?= ../scripts/preprocessor
+PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
@@ -42,7 +42,7 @@ bin/test_generic_%.jpp: | bin/
 	cp test_generic.jazz $@
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(JASMINPP) --input_file $@ --output_file $@ --task "fn:zero_array_u32_jazz p:INLEN:$(GET_INLEN)"
+	$(PREPROCESSOR) --input_file $@ --output_file $@ --task "fn:zero_array_u32_jazz p:INLEN:$(GET_INLEN)" "fn:mem_eq_u8_jazz p:LEN:$(GET_INLEN)"
 
 
 .PRECIOUS: bin/test_generic_%.s

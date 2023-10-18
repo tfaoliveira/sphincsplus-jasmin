@@ -1,0 +1,412 @@
+from Sphincs require "address/address.jinc"
+from Sphincs require "hash/hash_shake.jtmpl"
+from Sphincs require "utils/utils.jinc"
+
+inline fn __fors_gen_sk(
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  sk = __prf_addr(sk, pub_seed, sk_seed, fors_leaf_addr);
+  return sk;
+}
+
+#[returnaddress="stack"]
+fn _fors_gen_sk(
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  sk = __fors_gen_sk(sk, pub_seed, sk_seed, fors_leaf_addr);
+  return sk;
+}
+
+inline fn __fors_gen_sk__(
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  sk = sk;
+  pub_seed = pub_seed;
+  sk_seed = sk_seed;
+  fors_leaf_addr = fors_leaf_addr;
+
+  sk = _fors_gen_sk(sk, pub_seed, sk_seed, fors_leaf_addr);
+  
+  sk = sk;
+  pub_seed = pub_seed;
+  sk_seed = sk_seed;
+  fors_leaf_addr = fors_leaf_addr;
+
+  return sk;
+}
+
+inline fn __fors_sk_to_leaf(
+  reg ptr u8[SPX_N] leaf,
+  reg ptr u8[SPX_N] sk, // INBLOCKS = 1 so SPX_N * INBLOCKS = SPX_N
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  leaf = __thash_<1>(leaf, sk, pub_seed, fors_leaf_addr);
+  return leaf;
+}
+
+#[returnaddress="stack"]
+fn _fors_sk_to_leaf(
+  reg ptr u8[SPX_N] leaf,
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  leaf = __fors_sk_to_leaf(leaf, sk, pub_seed, fors_leaf_addr);
+  return leaf;
+}
+
+inline fn __fors_sk_to_leaf__(
+  reg ptr u8[SPX_N] leaf,
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  leaf = leaf; leaf = leaf; sk = sk; pub_seed = pub_seed; fors_leaf_addr = fors_leaf_addr;
+  leaf = _fors_sk_to_leaf(leaf, sk, pub_seed, fors_leaf_addr);
+  leaf = leaf; leaf = leaf; sk = sk; pub_seed = pub_seed; fors_leaf_addr = fors_leaf_addr;
+  return leaf;
+}
+
+inline fn __fors_gen_leafx1(
+  reg ptr u8[SPX_N] leaf,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u32 addr_idx,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N], reg ptr u32[8]
+{
+  stack ptr u8[SPX_N] s_sk_seed;
+  stack u32 s_addr_idx;
+
+  reg u64 offset; 
+  stack u64 s_offset;
+  
+  stack u8[SPX_N] buf;
+  reg ptr u8[SPX_N] buf_p;
+  
+  fors_leaf_addr = __set_tree_index(fors_leaf_addr, addr_idx);
+  fors_leaf_addr = __set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSPRF);
+  s_addr_idx = addr_idx; // spill
+
+  leaf = __fors_gen_sk__(leaf, pub_seed, sk_seed, fors_leaf_addr); // FIXME: Se comentar isto, o __fors_sk_to_leaf__ ja funciona (?)
+  
+  fors_leaf_addr = __set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSTREE);
+
+  offset=0; buf_p = buf;
+  buf_p, offset = _x_memcpy_u8u8<SPX_N,SPX_N>(buf_p, offset, leaf);
+  s_offset = offset; // spill
+
+  s_sk_seed = sk_seed; s_addr_idx = addr_idx;  // spill
+  leaf = __fors_sk_to_leaf__(leaf, buf_p, pub_seed, fors_leaf_addr); // FIXME: Register allocation
+  sk_seed = s_sk_seed; addr_idx = s_addr_idx; // unspill
+
+  return leaf, fors_leaf_addr;
+}
+
+#[returnaddress="stack"]
+fn _fors_gen_leafx1(
+  reg ptr u8[SPX_N] leaf,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u32 addr_idx,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N], reg mut ptr u32[8]
+{
+  leaf, fors_leaf_addr = __fors_gen_leafx1(leaf, pub_seed, sk_seed, addr_idx, fors_leaf_addr);
+  return leaf, fors_leaf_addr;
+}
+
+inline fn __fors_gen_leafx1__(
+  reg ptr u8[SPX_N] leaf,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u32 addr_idx,
+  reg mut ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  leaf = leaf; pub_seed = pub_seed; sk_seed = sk_seed; addr_idx = addr_idx; fors_leaf_addr = fors_leaf_addr;
+  leaf, _ = _fors_gen_leafx1(leaf, pub_seed, sk_seed, addr_idx, fors_leaf_addr);
+  leaf = leaf; pub_seed = pub_seed; sk_seed = sk_seed; addr_idx = addr_idx; fors_leaf_addr = fors_leaf_addr;
+  return leaf;
+}
+
+inline fn __message_to_indices<MSG_LEN>(
+  reg ptr u32[SPX_FORS_TREES] indices,
+  reg ptr u8[MSG_LEN] m
+) -> reg ptr u32[SPX_FORS_TREES]
+{
+  inline int i j;
+  reg u64 offset;
+  reg u64 t u v;
+
+  offset = 0;
+  for i = 0 to SPX_FORS_TREES
+  {
+    indices[i] = 0;
+    for j = 0 to SPX_FORS_HEIGHT
+    {
+      // indices[i] ^= ((m[offset >> 3] >> (offset & 0x7)) & 1u) << j;
+      t = offset;
+      t >>= (3 & 63);
+
+      u = offset;
+      u &= 0x07;
+      u &= 1;
+
+      v = (64u) m[(int) t]; // t has to be 64u to assemble the address
+      v >>= (u & 63);
+      v <<= (j & 63);
+
+      indices[i] ^= (32u) v;
+
+      offset += 1;
+    }
+  }
+
+  return indices;
+}//<>
+
+/**
+ * Signs a message m, deriving the secret key from sk_seed and the FTS address.
+ * Assumes m contains at least SPX_FORS_HEIGHT * SPX_FORS_TREES bits.
+ */
+inline fn __fors_sign<MSG_LEN>(
+  reg ptr u8[SPX_FORS_BYTES] sig,
+  reg ptr u8[SPX_FORS_PK_BYTES] pk,
+  reg ptr u8[MSG_LEN] m,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg const ptr u32[8] fors_addr
+) -> reg ptr u8[SPX_FORS_BYTES], reg ptr u8[SPX_FORS_PK_BYTES]
+{
+  stack ptr u8[SPX_FORS_BYTES] s_sig;
+  stack ptr u8[SPX_FORS_PK_BYTES] s_pk;
+  stack ptr u8[MSG_LEN] s_m;
+  stack ptr u32[8] s_fors_addr;
+
+  stack u32[SPX_FORS_TREES] indices;
+  stack u8[SPX_FORS_TREES * SPX_N] roots;
+  stack u32[8] fors_tree_addr;
+  stack u32[8] fors_leaf_addr;
+  stack u32[8] fors_pk_addr;
+
+  reg u32 idx_offset; 
+  stack u32 s_idx_offset;
+  
+  reg u32 t; 
+  stack u32 s_t;
+
+  inline int i sig_offset;
+  
+  reg ptr u8[SPX_N] sig_buf;
+  stack ptr u8[SPX_N] s_sig_buf;
+
+  sig_offset = 0;
+
+  fors_tree_addr = __zero_array_u32<8>(fors_tree_addr);
+  fors_leaf_addr = __zero_array_u32<8>(fors_leaf_addr);
+  fors_pk_addr   = __zero_array_u32<8>(fors_pk_addr);
+
+  fors_tree_addr = __copy_keypair_addr(fors_tree_addr, fors_addr);
+  fors_leaf_addr = __copy_keypair_addr(fors_leaf_addr, fors_addr);
+  fors_pk_addr   = __copy_keypair_addr(fors_pk_addr, fors_addr);
+
+  fors_pk_addr = __set_type(fors_pk_addr, SPX_ADDR_TYPE_FORSPK);
+
+  indices = __message_to_indices<MSG_LEN>(indices, m);
+
+  for i=0 to SPX_FORS_TREES {
+    t = 1;
+    t <<= (SPX_FORS_HEIGHT & 63);
+    t *= i;
+    idx_offset = t;
+
+    fors_tree_addr = __set_tree_height(fors_tree_addr, 0);
+
+    t = indices[i]; 
+    t += idx_offset; 
+    fors_tree_addr = __set_tree_index(fors_tree_addr, t);
+
+    fors_tree_addr = __set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSPRF);
+
+    // Spill
+    s_pk = pk;
+    s_m = m;
+    s_idx_offset = idx_offset;
+    s_t = t;
+    s_fors_addr = fors_addr;
+    
+    sig[sig_offset : SPX_N] = __fors_sk_to_leaf__(sig[sig_offset : SPX_N], pub_seed, sk_seed, fors_tree_addr); // FIXME: reg alloc
+    
+    // Unspill
+    pk = s_pk;
+    m = s_m;
+    idx_offset = s_idx_offset;
+    t = s_t;
+    fors_addr = s_fors_addr;
+
+    fors_tree_addr = __set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSTREE);
+
+    /* Compute the authentication path for this leaf node. */
+    // TODO: Call to treehashx1
+    
+    
+    sig_offset += SPX_N * SPX_FORS_HEIGHT;
+  }
+
+  pk[0:SPX_N] = __thash_<SPX_FORS_TREES>(pk[0:SPX_N], roots, pub_seed, fors_pk_addr);
+  
+  return sig, pk;
+}//<>
+
+
+#[returnaddress="stack"]
+fn _fors_sign<MSG_LEN>(
+  reg ptr u8[SPX_FORS_BYTES] sig,
+  reg ptr u8[SPX_FORS_PK_BYTES] pk,
+  reg ptr u8[MSG_LEN] m,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg const ptr u32[8] fors_addr
+) -> reg ptr u8[SPX_FORS_BYTES], reg ptr u8[SPX_FORS_PK_BYTES]
+{
+  sig, pk = __fors_sign<MSG_LEN>(sig, pk, m, pub_seed, sk_seed, fors_addr);
+  return sig, pk;
+}//<>
+
+inline fn __fors_sign__<MSG_LEN>(
+  reg ptr u8[SPX_FORS_BYTES] sig,
+  reg ptr u8[SPX_FORS_PK_BYTES] pk,
+  reg ptr u8[MSG_LEN] m,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg const ptr u32[8] fors_addr
+) -> reg ptr u8[SPX_FORS_BYTES], reg ptr u8[SPX_FORS_PK_BYTES]
+{
+  sig = sig;
+  pk = pk;
+  m = m;
+  pub_seed = pub_seed;
+  sk_seed = sk_seed;
+  fors_addr = fors_addr;
+
+  sig, pk = __fors_sign<MSG_LEN>(sig, pk, m, pub_seed, sk_seed, fors_addr);
+
+  sig = sig;
+  pk = pk;
+  m = m;
+  pub_seed = pub_seed;
+  sk_seed = sk_seed;
+  fors_addr = fors_addr;
+
+  return sig, pk;
+}//<>
+
+/**
+ * Derives the FORS public key from a signature.
+ * This can be used for verification by comparing to a known public key, or to
+ * subsequently verify a signature on the derived public key. The latter is the
+ * typical use-case when used as an FTS below an OTS in a hypertree.
+ * Assumes m contains at least SPX_FORS_HEIGHT * SPX_FORS_TREES bits.
+ */
+inline fn __fors_pk_from_sig<MSG_LEN>(
+  reg ptr u8[SPX_FORS_PK_BYTES] pk,
+  reg mut ptr u8[SPX_FORS_BYTES] sig,
+  reg ptr u8[MSG_LEN] m,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg const ptr u32[8] fors_addr
+) -> reg ptr u8[SPX_FORS_PK_BYTES]
+{
+  stack u32[SPX_FORS_TREES] indices;
+  reg ptr u32[SPX_FORS_TREES] indices_p;
+  
+  stack u8[SPX_FORS_TREES * SPX_N] roots;
+  reg ptr u8[SPX_FORS_TREES * SPX_N] roots_p;
+
+  stack u32[8] fors_tree_addr;
+  reg ptr u32[8] fors_tree_addr_p;
+
+  stack u8[SPX_N] leaf;
+  reg ptr u8[SPX_N] leaf_p;
+
+  stack u32[8] fors_pk_addr;
+  reg ptr u32[8] fors_pk_addr_p;
+ 
+  reg u32 idx_offset; stack u32 s_idx_offset;
+  reg u32 t; stack u32 st;
+
+  reg ptr u8[SPX_N] sig_buf;
+  reg ptr u8[SPX_N] root_buf;
+
+  inline int i sig_offset;
+
+  sig_offset = 0;
+
+  fors_tree_addr_p = fors_tree_addr;
+  fors_tree_addr_p = __zero_array_u32<8>(fors_tree_addr_p);
+
+  fors_pk_addr_p = fors_pk_addr;
+  fors_pk_addr_p = __zero_array_u32<8>(fors_pk_addr_p);
+
+  fors_tree_addr_p = __copy_keypair_addr(fors_tree_addr_p, fors_addr);
+  fors_pk_addr_p = __copy_keypair_addr(fors_pk_addr_p, fors_addr);
+  
+  fors_tree_addr_p = __set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSTREE);
+  fors_pk_addr_p = __set_type(fors_pk_addr_p, SPX_ADDR_TYPE_FORSPK);
+
+  indices_p = indices; 
+  indices_p = __message_to_indices<MSG_LEN>(indices_p, m);
+
+  for i=0 to SPX_FORS_TREES
+  {
+    t = 1;
+    t <<= (SPX_FORS_HEIGHT & 63);
+    t *= i;
+    idx_offset = t;
+
+    fors_tree_addr_p = __set_tree_height(fors_tree_addr_p, 0);
+    
+    t=indices[i]; t+=idx_offset; 
+    fors_tree_addr_p = __set_tree_index(fors_tree_addr_p, t);
+
+    st = t; s_idx_offset = idx_offset;
+
+    /* Derive the leaf from the included secret key part. */
+    // leaf = __fors_sk_to_leaf__(leaf, sig[sig_offset : SPX_N], sk_seed, fors_tree_addr_p); // TODO: FIXME: reg alloc
+    
+    // TODO: CALL SO FORS_SK_TO_LEAF
+    sig_offset += SPX_N;
+
+    idx_offset = s_idx_offset;
+
+    /* Derive the corresponding root node of this tree. */
+    root_buf = roots[i*SPX_N : SPX_N]; t = indices[i];
+    // root_buf, fors_tree_addr = __compute_root(root_buf, leaf_p, t, idx_offset, fors_tree_addr);
+    roots[i*SPX_N : SPX_N] = root_buf;
+    sig_offset += SPX_N * SPX_FORS_HEIGHT;
+  }
+
+  /* Hash horizontally across all tree roots to derive the public key. */
+  roots_p = roots;
+  pk = __thash<SPX_FORS_TREES>(pk, roots_p, pub_seed, fors_pk_addr_p);
+
+
+  return pk;
+}//<>

@@ -12,6 +12,31 @@ export fn cond_u64_a_below_b_and_a_below_c_jazz(reg u64 a b c _res) {
     (u8)[_res] = r;
 }
 
+export fn cond_u32_a_below_b_and_a_below_c_jazz(reg u64 _a _b _c _res) {
+    reg u32 a b c;
+    reg u8 r;
+    reg bool res;
+
+    a = (32u) _a;
+    b = (32u) _b;
+    c = (32u) _c;
+
+    a = a; b = b; c = c;
+    res = __cond_u32_a_below_b_and_a_below_c(a, b, c);
+    r = #SETcc(res);
+
+    (u8)[_res] = r;
+}
+
+export fn cond_u64_a_dif_b_and_a_dif_c_jazz(reg u64 a b c _res) {
+    reg u8 r;
+    reg bool res;
+    res = __cond_u64_a_dif_b_and_a_dif_c(a, b, c);
+    
+    r = #SETcc(res);
+    (u8)[_res] = r;
+}
+
 export fn zero_array_u32_jazz<INLEN>(reg u64 addr) {
     stack u32[INLEN] a;
     reg ptr u32[INLEN] ap;
@@ -31,6 +56,38 @@ export fn ull_to_bytes_jazz(reg u64 _out in)
     __store_u8_array<8>(out_p, _out);
 }
 
+export fn bytes_to_ull_jazz(reg u64 _in) -> reg u64
+{
+  reg u64 res;
+  stack u8[8] in;
+  reg ptr u8[8] in_p;
+
+  in_p = in;
+  in_p = __load_u8_array<8>(in_p, _in);
+
+  res = __bytes_to_ull<8>(res, in_p); 
+
+  in = in_p;
+  return res;
+}
+
+// Returns 0 if both arrays are equal
+export fn mem_eq_u8_jazz<LEN>(reg u64 _a _b) -> reg u64
+{
+  reg u64 r;
+
+  stack u8[LEN] a b;
+  reg ptr u8[LEN] ap bp;
+
+  ap = a; bp = b;
+  ap = __load_u8_array<LEN>(ap, _a);
+  bp = __load_u8_array<LEN>(bp, _b);
+
+  r = __mem_eq_u8<LEN>(ap, bp);
+
+  return r;
+}//<>
+
 export fn get_sk_prf_from_sk_jazz(reg u64 _sk _prf) {
     stack u8[SPX_SK_BYTES] sk;
     reg ptr u8[SPX_SK_BYTES] sk_p;
@@ -43,7 +100,7 @@ export fn get_sk_prf_from_sk_jazz(reg u64 _sk _prf) {
     sk_p = __load_u8_array<SPX_SK_BYTES>(sk_p, _sk);
     prf_p = __load_u8_array<SPX_N>(prf_p, _prf);
 
-    prf_p = __get_sk_prf_from_sk(sk_p, prf_p);
+    prf_p = __get_sk_prf_from_sk(prf_p, sk_p);
 
     __store_u8_array<SPX_N>(prf_p, _prf);
 }

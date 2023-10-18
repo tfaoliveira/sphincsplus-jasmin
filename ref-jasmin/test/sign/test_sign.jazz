@@ -1,0 +1,206 @@
+from Sphincs require "sign/sign.jtmpl"
+from Sphincs require "generic/utils.jtmpl"
+
+/*
+ * Generates an SPX key pair given a seed of length
+ * Format sk: [SK_SEED || SK_PRF || PUB_SEED || root]
+ * Format pk: [PUB_SEED || root]
+ */
+export fn crypto_sign_seed_keypair_jazz(
+  reg u64 _pk _sk _seed
+) -> reg u64
+{
+  reg u64 r;
+
+  stack u8[SPX_PK_BYTES] pk;
+  reg ptr u8[SPX_PK_BYTES] pk_p;
+
+  stack u8[SPX_SK_BYTES] sk;
+  reg ptr u8[SPX_SK_BYTES] sk_p;
+
+  stack u8[CRYPTO_SEEDBYTES] seed;
+  reg ptr u8[CRYPTO_SEEDBYTES] seed_p;
+
+  stack u64 s_pk s_sk s_seed;
+
+  pk_p = pk;
+  pk_p = __load_u8_array<SPX_PK_BYTES>(pk_p, _pk);
+
+  sk_p = sk;
+  sk_p = __load_u8_array<SPX_SK_BYTES>(sk_p, _sk);
+
+  seed_p = seed;
+  seed_p = __load_u8_array<CRYPTO_SEEDBYTES>(seed_p, _seed);
+
+  s_pk = _pk; s_sk = _sk; s_seed = _seed; // spill
+  pk_p, sk_p = __crypto_sign_seed_keypair(pk_p, sk_p, seed_p);
+  _pk = s_pk; _sk = s_sk; // unspill
+
+  __store_u8_array<SPX_PK_BYTES>(pk_p, _pk);
+  __store_u8_array<SPX_SK_BYTES>(sk_p, _sk);
+
+  ?{}, r = #set0();
+  return r;
+}
+
+export fn crypto_sign_keypair_jazz(reg u64 _pk _sk) -> reg u64
+{
+  stack u8[SPX_PK_BYTES] pk;
+  reg ptr u8[SPX_PK_BYTES] pk_p;
+
+  stack u8[SPX_SK_BYTES] sk;
+  reg ptr u8[SPX_SK_BYTES] sk_p;
+
+  reg u64 r;
+
+  stack u64 s_pk s_sk;
+
+  pk_p = pk;
+  pk_p = __load_u8_array<SPX_PK_BYTES>(pk_p, _pk);
+
+  sk_p = sk;
+  sk_p = __load_u8_array<SPX_SK_BYTES>(sk_p, _sk);
+
+  s_pk = _pk; s_sk = _sk; // spill
+  pk_p, sk_p = __crypto_sign_keypair(pk_p, sk_p);
+  _pk = s_pk; _sk = s_sk; // unspill
+  __store_u8_array<SPX_PK_BYTES>(pk_p, _pk);
+  __store_u8_array<SPX_SK_BYTES>(sk_p, _sk);
+
+  ?{}, r = #set0();
+  return r;
+}
+
+export fn crypto_sign_signature_jazz<SIG_LEN, MSG_LEN>(
+  reg u64 _sig _sig_len _msg _sk
+) -> reg u64
+{
+  stack u8[SIG_LEN] sig;
+  reg ptr u8[SIG_LEN] sig_p;
+  stack u8[MSG_LEN] msg;
+  reg ptr u8[MSG_LEN] msg_p;
+  reg u64 r;
+  stack u64 s_sig s_sig_len s_msg s_sk; // spills
+
+  sig_p = sig;
+  sig_p = __load_u8_array<SIG_LEN>(sig_p, _sig);
+
+  msg_p = msg;
+  msg_p = __load_u8_array<MSG_LEN>(msg_p, _msg);
+
+  s_sig = _sig; s_sig_len = _sig_len; s_msg = _msg; s_sk = _sk; // spill
+  // call to local function
+  _sig = s_sig; _sig_len = s__sig_len// unspill
+
+  __store_u8_array<SIG_LEN>(sig_p, _sig);
+  [_sig_len] = SPX_BYTES;
+
+  ?{}, r = #set0();
+  return r;
+}//<>
+
+
+
+
+export fn crypto_sign_jazz() -> reg u64
+{
+  reg u64 t;
+  ?{}, t = #set0();
+  return t;
+}
+
+export fn crypto_sign_verify_jazz<MSG_LEN,SIG_LEN>(
+  reg u64 _sig _msg _pk
+) -> reg u64
+{
+  reg u64 res;
+  reg u64 siglen;
+
+  stack u8[SIG_LEN] sig; // TODO: FIX THE LENGTH
+  reg ptr u8[SIG_LEN] sig_p;
+
+  stack u8[MSG_LEN] msg;
+  reg ptr u8[MSG_LEN] msg_p;
+
+  stack u8[SPX_PK_BYTES] pk;
+  reg ptr u8[SPX_PK_BYTES] pk_p;
+
+  ?{}, res = #set0();
+  siglen = SIG_LEN;
+
+  if (siglen != SPX_BYTES)
+  {
+    res = -1;
+  } else {
+    msg_p = msg; pk_p = pk;
+    msg_p = __load_u8_array<MSG_LEN>(msg_p, _msg);
+    pk_p = __load_u8_array<SPX_PK_BYTES>(pk_p, _pk);
+
+    // TODO: Spills before calling crypto sign verify
+
+    res = __crypto_sign_verify<MSG_LEN>(sig, SIG_LEN, msg, pk_p);
+  }
+
+
+  return res;
+}//<>
+
+export fn crypto_sign_open_jazz<MSG_LEN,SIG_LEN>(
+  reg u64 _m mlen _sm  _pk
+) -> reg u64
+{
+  reg u64 res;
+  
+  reg u64 smlen;
+
+  inline int i;
+ 
+  reg u8 t;
+  reg u64 t64;
+  reg u64 res_sign;
+  
+  stack u8[MSG_LEN] m;
+  reg ptr u8[MSG_LEN] m_p;
+
+  stack u8[SPX_BYTES+MSG_LEN] sm;
+  reg ptr u8[SPX_BYTES+MSG_LEN] sm_p;
+
+  stack u8[SPX_PK_BYTES] pk;
+  reg ptr u8[SPX_PK_BYTES] pk_p;
+
+  ?{}, res = #set0();
+  smlen = SIG_LEN;
+
+  if(smlen < SPX_BYTES) {
+    m_p = m;
+    m_p = __zero_array_u8<MSG_LEN>(m_p);
+    m = m_p;
+    [mlen] = 0;
+    res = -1;
+  } else {
+    t64 = smlen;
+    t64 -= SPX_BYTES;
+    [mlen] = t64;
+
+    // TODO: Call to crypto sign verify
+    res_sign=0; // TODO: FIXME: Replace with call to sign verify
+    // Spills
+    // Unspills
+    // If it works, exit code == 0
+    if (res_sign != 0) {
+      m_p = m;
+      m_p = __zero_array_u8<MSG_LEN>(m_p);
+      m = m_p;
+      [mlen] = 0;
+      res = -1;
+    } else {
+      /* If verification was successful, move the message to the right place. */
+      for i=0 to MSG_LEN { t = sm_p[SPX_BYTES+i]; m[i] = t; }
+    }
+  }
+
+
+  
+
+  return res;
+}//<>
