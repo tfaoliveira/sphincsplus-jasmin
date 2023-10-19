@@ -1,5 +1,7 @@
 // NOTE: requires are 'managed' by the Makefile; check rule for 'bin/test_thash_%.jpp'
 
+from Sphincs require "generic/utils.jtmpl"
+
 export fn thash<INBLOCKS>(reg u64 _out _in _pub_seed _addr)
 {
   stack u8[SPX_N] out;
@@ -67,3 +69,37 @@ export fn thash<INBLOCKS>(reg u64 _out _in _pub_seed _addr)
     i += 1;
   }
 }//<>
+
+export fn thash_inplace_jazz(
+  reg u64 _out _pub_seed _addr
+)
+{
+  stack u64 s_out s_pub_seed s_addr;
+
+  stack u8[SPX_N] out;
+  stack u8[SPX_N] pub_seed;
+  stack u32[8] addr;
+
+  reg ptr u8[SPX_N] out_p;
+  reg ptr u8[SPX_N] pub_seed_p;
+  reg ptr u32[8] addr_p;
+
+  s_out = _out; s_pub_seed = _pub_seed; s_addr = _addr; // spill
+
+  _out = s_out;
+  out_p = out;
+  out_p = __load_u8_array<SPX_N>(out_p, _out);
+
+  _pub_seed = s_pub_seed;
+  pub_seed_p = pub_seed;
+  pub_seed_p = __load_u8_array<SPX_N>(pub_seed_p, _pub_seed);
+
+  _addr = s_addr;
+  addr_p = addr;
+  addr_p = __load_u32_array<8>(addr_p, _addr);
+
+  out_p = __thash_inplace_(out_p, pub_seed_p, addr_p);
+
+  _out = s_out;
+  __store_u8_array<SPX_N>(out_p, _out);
+}
