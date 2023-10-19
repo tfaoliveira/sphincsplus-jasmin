@@ -1,6 +1,22 @@
 from Sphincs require "wots/wots.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
 
+inline fn __load_pub_seed(
+  reg ptr u8[SPX_N] pub_seed,
+  reg u64 addr
+) -> stack u8[SPX_N]
+{
+  inline int i;
+  reg u8 t;
+
+  for i = 0 to SPX_N {
+    t = (u8)[addr + i];
+    pub_seed[i] = t;
+  }
+
+  return pub_seed;
+}
+
 inline fn __load_ctx(
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
@@ -21,6 +37,7 @@ inline fn __load_ctx(
   return pub_seed, sk_seed;
 }
 
+/*
 export fn gen_chain_jazz(
   reg  u64 _out _in _start _steps _pub_seed _addr
 )
@@ -114,48 +131,48 @@ export fn wots_checksum_jazz(
 
   __store_u32_array<SPX_WOTS_LEN2>(csum_base_w_p, _csum_base_w);
 }
+*/
 
 export fn wots_pk_from_sig_jazz<MSG_LEN>(reg u64 _pk _sig _msg _ctx _addr)
 {
     stack u8[SPX_WOTS_BYTES] pk;
     stack u8[SPX_BYTES] sig;
     stack u8[SPX_N] pub_seed;
-    stack u8[SPX_N] sk_seed;
     stack u8[MSG_LEN] msg;
     stack u32[8] addr;
 
-    reg ptr u8[SPX_WOTS_BYTES] pk_p;
-    reg ptr u8[SPX_BYTES] sig_p;
-    reg ptr u8[SPX_N] pub_seed_p;
-    reg ptr u8[SPX_N] sk_seed_p;
-    reg ptr u8[MSG_LEN] msg_p;
-    reg ptr u32[8] addr_p;
-
     stack u64 s_pk s_sig s_msg s_ctx s_addr;
-    
-    pk_p = pk;
-    pk_p = __load_u8_array<SPX_WOTS_BYTES>(pk_p, _pk);
 
-    sig_p = sig;
-    sig_p = __load_u8_array<SPX_BYTES>(sig_p, _sig);
+    // Spill everything (start from clean state)
+    s_pk = _pk; s_sig = _sig; s_msg = _msg; s_ctx = _ctx; s_addr = _addr; 
 
-    msg_p = msg;
-    msg_p = __load_u8_array<MSG_LEN>(msg_p, _msg);
+    _pk = s_pk;
+    pk = __load_u8_array<SPX_WOTS_BYTES>(pk, _pk);
 
-    pub_seed_p = pub_seed; sk_seed_p = sk_seed;
-    pub_seed_p, sk_seed_p = __load_ctx(pub_seed_p, sk_seed_p, _ctx);
+    _sig = s_sig;
+    sig = __load_u8_array<SPX_BYTES>(sig, _sig);
 
-    addr_p = addr;
-    addr_p = __load_u32_array<8>(addr_p, _addr);
+    _msg = s_msg;
+    msg = __load_u8_array<MSG_LEN>(msg, _msg);
 
-    s_pk = _pk; s_sig = _sig; s_msg = _msg; s_ctx = _ctx; s_addr = _addr; // spill
-    pk_p, addr_p = __wots_pk_from_sig<MSG_LEN>(pk_p, sig_p, msg_p, pub_seed_p, sk_seed_p, addr_p);
+    _ctx = s_ctx;
+    pub_seed = __load_pub_seed(pub_seed, _ctx);
+
+    _addr = s_addr;
+    addr = __load_u32_array<8>(addr, _addr);
+
+    s_pk = _pk; 
+    s_addr = _addr;
+    // _sig _addr e _msg ja nao estao live
+
+    pk, addr = __wots_pk_from_sig__<MSG_LEN>(pk, sig, msg, pub_seed, addr);
+
     _pk = s_pk; _addr = s_addr; // unspill
-
-    __store_u8_array<SPX_WOTS_BYTES>(pk_p, _pk);
-    __store_u32_array<8>(addr_p, _addr);
+    __store_u8_array<SPX_WOTS_BYTES>(pk, _pk);
+    __store_u32_array<8>(addr, _addr);
 }//<>
 
+/*
 export fn chain_lengths_jazz<MSG_LEN>(reg u64 _lengths _msg)
 {
   stack u32[SPX_WOTS_LEN] lengths;
@@ -181,3 +198,4 @@ export fn chain_lengths_jazz<MSG_LEN>(reg u64 _lengths _msg)
   __store_u32_array<SPX_WOTS_LEN>(lengths_p, _lengths);
 }//<>
 
+*/
