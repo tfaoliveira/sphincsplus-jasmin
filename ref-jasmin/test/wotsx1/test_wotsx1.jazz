@@ -31,12 +31,10 @@ inline fn __load_leaf_info_x1(
 }
 
 export fn wots_gen_leafx1_jazz(
-  reg u64 _pk _pub_seed _sk_seed _leaf_idx _info
+  reg u64 _dest _pub_seed _sk_seed _leaf_idx _info
 )
 {
-  stack u8[SPX_PK_BYTES] pk;
-  stack u8[SPX_N] pub_seed sk_seed;
-
+  stack u8[SPX_N] dest pub_seed sk_seed;
   reg u32 leaf_idx;
 
   // [struct leaf_info]
@@ -46,9 +44,9 @@ export fn wots_gen_leafx1_jazz(
   stack u32[8] leaf_addr pk_addr;
   // [struct leaf_info]
 
-  stack u64 s_pk s_pub_seed s_sk_seed s_leaf_idx s_info;
+  stack u64 s_dest s_pub_seed s_sk_seed s_leaf_idx s_info;
 
-  pk = __load_u8_array<SPX_PK_BYTES>(pk, _pk);
+  dest = __load_u8_array<SPX_N>(dest, _dest);
   pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
   sk_seed = __load_u8_array<SPX_N>(sk_seed, _sk_seed);
   leaf_idx = (u32)[_leaf_idx];
@@ -57,15 +55,15 @@ export fn wots_gen_leafx1_jazz(
 
   steps = __zero_array_u32<SPX_WOTS_LEN>(steps);
 
-  // Spill
-  s_pk = _pk;
-  s_pub_seed = _pub_seed;
-  s_sk_seed = _sk_seed;
-  s_leaf_idx = _leaf_idx;
+  s_dest = _dest;
   s_info = _info;
 
-  pk = __wots_gen_leafx1(pk, pub_seed, sk_seed, leaf_idx, wots_sig, wots_sign_leaf, steps, leaf_addr, pk_addr);
+  dest, wots_sig, leaf_addr, pk_addr = __wots_gen_leafx1(dest, pub_seed, sk_seed, leaf_idx, wots_sig, wots_sign_leaf, steps, leaf_addr, pk_addr);
 
-  _pk = s_pk;
-  __store_u8_array<SPX_PK_BYTES>(pk, _pk);
+  _dest = s_dest;
+  __store_u8_array<SPX_N>(dest, _dest);
+
+  _info = s_info;
+  // TODO write to info
 }
+

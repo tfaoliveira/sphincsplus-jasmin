@@ -9,171 +9,167 @@ from Sphincs require "hash/hash_shake.jtmpl"
  * that we're signing with this WOTS key
  */
 inline fn __wots_gen_leafx1(
-  reg ptr u8[SPX_PK_BYTES] pk, // TODO: MAKE SPX_N
-  reg ptr u8[SPX_N] pub_seed sk_seed,
+  reg ptr u8[SPX_N] dest,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
   reg u32 leaf_idx,
-  reg mut ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] wots_sig,
+  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] wots_sig,
   reg u32 wots_sign_leaf,
-  reg ptr u32[SPX_WOTS_LEN] steps,
-  reg mut ptr u32[8] leaf_addr pk_addr
-) -> reg ptr u8[SPX_PK_BYTES]
+  reg ptr u32[SPX_WOTS_LEN] wots_steps,
+  reg ptr u32[8] leaf_addr,
+  reg ptr u32[8] pk_addr
+) ->
+  reg ptr u8[SPX_N], // dest
+  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES], // wots_sig
+  reg ptr u32[8], // leaf_addr
+  reg ptr u32[8] // pk_addr
 {
-
-  reg u32 wots_k wots_k_mask;
-  
-  inline int i pk_offset;
-
-  stack u8[SPX_WOTS_BYTES] pk_buffer;
-
-  reg u32 t;
-
-  reg u32 k stop;
-
-  stack u32 s_wots_k s_wots_k_mask s_t s_leaf_idx s_wots_sign_leaf s_k s_stop;
-  stack ptr u8[SPX_PK_BYTES] s_pk;
-  stack ptr u8[SPX_N] s_pub_seed s_sk_seed;
+  stack ptr u8[SPX_N] s_dest s_pub_seed s_sk_seed;
+  stack u32 s_leaf_idx;
   stack ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] s_wots_sig;
-  stack ptr u32[SPX_WOTS_LEN] s_steps;
+  stack u32 s_wots_sign_leaf;
+  stack ptr u32[SPX_WOTS_LEN] s_wots_steps;
   stack ptr u32[8] s_leaf_addr s_pk_addr;
 
-  reg ptr u8[SPX_N] buf;
+  //
+  reg u32 wots_k_mask;
+  stack u32 s_wots_k_mask;
+  inline int i;
+  stack u8[SPX_WOTS_BYTES] pk_buffer;
+  reg ptr u8[SPX_WOTS_BYTES] pk_buffer_p;
+  reg ptr u8[SPX_N] buffer;
+  reg u32 wots_k;
+  stack u32 s_wots_k;
+  reg u32 chain hash type;
+  reg u32 k stop;
+  reg u64 offset;
+  reg ptr u8[SPX_N] wots_sig_spx_n;
+  stack u32 s_k;
 
-  if (leaf_idx == wots_sign_leaf) {
-    wots_sign_leaf = 0;
-  } else {
-    t = 0; t = #NOT_32(t);
-    wots_sign_leaf = t;
+  // move 'everything' into the stack
+  s_dest = dest;
+  s_pub_seed = pub_seed;
+  s_sk_seed = sk_seed;
+  s_wots_sig = wots_sig;
+  s_wots_sign_leaf = wots_sign_leaf;
+  s_wots_steps = wots_steps;
+
+  //
+
+  wots_k_mask = #set0_32();
+
+  if (leaf_idx != wots_sign_leaf)
+  {
+    wots_k_mask = #NOT_32(wots_k_mask);
   }
+
+  s_wots_k_mask = wots_k_mask;
 
   leaf_addr = __set_keypair_addr(leaf_addr, leaf_idx);
   pk_addr = __set_keypair_addr(pk_addr, leaf_idx);
 
-  pk_offset = 0;
+  s_pk_addr = pk_addr;
+
+  // for (i = 0, buffer = pk_buffer; i < SPX_WOTS_LEN; i++, buffer += SPX_N) {
   for i = 0 to SPX_WOTS_LEN
   {
-    wots_k = steps[i];
-    wots_k |= wots_k_mask;
+    wots_steps = s_wots_steps;
+    wots_k     = wots_steps[i];
+    wots_k    |= s_wots_k_mask;
+    s_wots_k   = wots_k;
 
-    /* Start with the secret seed */
-    leaf_addr = __set_chain_addr(leaf_addr, i);
-    leaf_addr = __set_hash_addr(leaf_addr, 0);
-    leaf_addr = __set_type(leaf_addr, SPX_ADDR_TYPE_WOTSPRF);
-  
-    // Spill
-    s_pk = pk;
-    s_pub_seed = pub_seed;
-    s_sk_seed = sk_seed;
-    s_leaf_idx = leaf_idx;
-    s_wots_sig = wots_sig;
-    s_wots_sign_leaf = wots_sign_leaf;
-    s_steps = steps;
+
+    // start with the secret seed
+    //  set_chain_addr(leaf_addr, i);
+    //  set_hash_addr(leaf_addr, 0);
+    //  set_type(leaf_addr, SPX_ADDR_TYPE_WOTSPRF);
+    chain = i;
+    leaf_addr = __set_chain_addr(leaf_addr, chain);
+
+    hash = 0;
+    leaf_addr = __set_hash_addr(leaf_addr, hash);
+
+    type = SPX_ADDR_TYPE_WOTSPRF;
+    leaf_addr = __set_type(leaf_addr, type);
+
     s_leaf_addr = leaf_addr;
-    s_pk_addr = pk_addr;
-    s_wots_k_mask = wots_k_mask;
-    s_wots_k = wots_k;
-    s_t = t;
-    s_k = k;
-    s_stop = stop;
 
 
-    pk_buffer[i*SPX_N : SPX_N] = __prf_addr(pk_buffer[i*SPX_N : SPX_N], pub_seed, sk_seed, leaf_addr);
-
-    // Unspill
-    pk = s_pk;
+    //  prf_addr(buffer, ctx, leaf_addr);
+    //  set_type(leaf_addr, SPX_ADDR_TYPE_WOTS);
+    buffer = pk_buffer[i*SPX_N : SPX_N];
     pub_seed = s_pub_seed;
     sk_seed = s_sk_seed;
-    leaf_idx = s_leaf_idx;
-    wots_sig = s_wots_sig;
-    wots_sign_leaf = s_wots_sign_leaf;
-    steps = s_steps;
+    buffer = __prf_addr(buffer, pub_seed, sk_seed, leaf_addr);
+
     leaf_addr = s_leaf_addr;
-    pk_addr = s_pk_addr;
-    wots_k_mask = s_wots_k_mask;
-    wots_k = s_wots_k;
-    t = s_t;
-    k = s_k;
-    stop = s_stop;
+    type = SPX_ADDR_TYPE_WOTS;
+    leaf_addr = __set_type(leaf_addr, type);
+    s_leaf_addr = leaf_addr;
 
-    leaf_addr = __set_type(leaf_addr, SPX_ADDR_TYPE_WOTS);
 
-    k = 0; stop = 0; // TODO: Break / goto em jasmin?
-
-    while (stop != 1) {
-      /* Check if this is the value that needs to be saved as a */
-      /* part of the WOTS signature */
-      if (k == wots_k) {
-        wots_sig[i*SPX_N : SPX_N], _ = _x_memcpy_u8u8<SPX_N, SPX_N>(wots_sig[i*SPX_N : SPX_N], 0, pk_buffer[i*SPX_N : SPX_N]);
+    // iterate down the WOTS chain
+    // for (k=0;; k++)
+    k = 0;
+    stop = 0; // we introduce stop to handle the corresponding 'break' statement
+    while (stop != 1)
+    {
+      // check if this is the value that needs to be saved as a
+      // part of the WOTS signature
+      wots_k = s_wots_k;
+      if (k == wots_k)
+      {
+        // memcpy( info->wots_sig + i * SPX_N, buffer, SPX_N );
+        wots_sig = s_wots_sig;
+        wots_sig_spx_n = wots_sig[i*SPX_N : SPX_N];
+        offset = 0;
+        s_wots_sig[i*SPX_N : SPX_N], _ = _x_memcpy_u8u8<SPX_N, SPX_N>(wots_sig_spx_n, offset, buffer);
       }
       
-      /* Check if we hit the top of the chain */
+      // check if we hit the top of the chain (break)
       if (k == SPX_WOTS_W - 1) { stop = 1; }
 
-      /* Iterate one step on the chain */
-      if (stop != 1) {
-        leaf_addr = __set_hash_addr(leaf_addr, k);
-
-        // Spill
-        s_sk_seed = sk_seed;
-        s_leaf_idx = leaf_idx;
-        s_wots_sig = wots_sig;
-        s_wots_sign_leaf = wots_sign_leaf;
-        s_steps = steps;
-        s_leaf_addr = leaf_addr;
-        s_wots_k = wots_k;
-        s_wots_k_mask = wots_k_mask;
-        s_t = t;
+      // iterate one step on the chain
+      if (stop != 1)
+      {
         s_k = k;
-        s_stop = stop;
 
-        // FIXME: reg alloc
-        pk[0:SPX_N] = __thash_<SPX_WOTS_LEN>(pk[0:SPX_N], pk_buffer, pub_seed, pk_addr);
+        // iterate one step on the chain
+        //  set_hash_addr(leaf_addr, k);
+        //  thash(buffer, buffer, 1, ctx, leaf_addr);
 
-        // Unspill
-        sk_seed = s_sk_seed;
-        leaf_idx = s_leaf_idx;
-        wots_sig = s_wots_sig;
-        wots_sign_leaf = s_wots_sign_leaf;
-        steps = s_steps;
         leaf_addr = s_leaf_addr;
-        wots_k = s_wots_k;
-        wots_k_mask = s_wots_k_mask;
-        t = s_t;
+        hash = k;
+        leaf_addr = __set_hash_addr(leaf_addr, hash);
+        s_leaf_addr = leaf_addr;
+
+        pub_seed = s_pub_seed;
+        buffer = __thash_inplace_(buffer, pub_seed, leaf_addr);
+
         k = s_k;
-        stop = s_stop;
+        stop = 0;
       }
 
-      k+=1;
+      k += 1;
     }
-  }
 
-  // Spill
-  s_sk_seed = sk_seed;
-  s_leaf_idx = leaf_idx;
-  s_wots_sig = wots_sig;
-  s_wots_sign_leaf = wots_sign_leaf;
-  s_steps = steps;
-  s_leaf_addr = leaf_addr;
-  s_wots_k = wots_k;
-  s_wots_k_mask = wots_k_mask;
-  s_t = t;
-  s_k = k;
-  s_stop = stop;
+    pk_buffer[i*SPX_N : SPX_N] = buffer;
+    leaf_addr = s_leaf_addr;
+  } // end of for i = 0 to SPX_WOTS_LEN
 
-  // FIXME:
-  // pk[0:SPX_N] = __thash_<SPX_WOTS_LEN>(pk[0:SPX_N], pk_buffer, pub_seed, pk_addr);
+  // Do the final thash to generate the public keys
+  //  thash(dest, pk_buffer, SPX_WOTS_LEN, ctx, pk_addr);
 
-  // Unspill
-  sk_seed = s_sk_seed;
-  leaf_idx = s_leaf_idx;
+  dest = s_dest;
+  pk_buffer_p = pk_buffer;
+  pub_seed = s_pub_seed;
+  pk_addr = s_pk_addr;
+
+  dest = __thash_<SPX_WOTS_LEN>(dest, pk_buffer_p, pub_seed, pk_addr);
+
   wots_sig = s_wots_sig;
-  wots_sign_leaf = s_wots_sign_leaf;
-  steps = s_steps;
   leaf_addr = s_leaf_addr;
-  wots_k = s_wots_k;
-  wots_k_mask = s_wots_k_mask;
-  t = s_t;
-  k = s_k;
-  stop = s_stop;
+  pk_addr = s_pk_addr;
 
-  return pk;
+  return dest, wots_sig, leaf_addr, pk_addr;
 }
