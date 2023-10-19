@@ -231,32 +231,43 @@ inline fn __wots_pk_from_sig<MSG_LEN>(
     reg ptr u32[8] addr
 ) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
 {
-  stack u32[SPX_WOTS_LEN] lengths;
-
-  reg u32 start steps;
-  
   stack ptr u8[SPX_WOTS_BYTES] s_pk;
   stack ptr u8[SPX_BYTES] s_sig;
   stack ptr u8[MSG_LEN] s_msg;
+  stack ptr u8[SPX_N] s_pub_seed;
 
+  stack u32[SPX_WOTS_LEN] lengths;
+  reg ptr u8[SPX_N] pk_spx_n sig_spx_n;
+  reg u32 start steps;
   inline int i;
 
   lengths = __chain_lengths<MSG_LEN>(lengths, msg);
 
-  // depois daqui msg ja nao ta live (nao e preciso spill)
+  s_pk = pk;
+  s_sig = sig;
+  s_pub_seed = pub_seed;
 
   for i = 0 to SPX_WOTS_LEN
   {
     addr = __set_chain_addr(addr, i);
 
     start = lengths[i];
-    steps = SPX_WOTS_W; steps -= 1; steps -= lengths[i];
+    steps = SPX_WOTS_W;
+    steps -= 1;
+    steps -= lengths[i];
 
-    // Nada para spill
-    
-    pk[i*SPX_N : SPX_N], addr = __gen_chain_(pk[i*SPX_N : SPX_N], sig[i*SPX_N : SPX_N], start, steps, pub_seed, addr);
+    pk = s_pk;
+    pk_spx_n = pk[i*SPX_N : SPX_N];
+
+    sig = s_sig;
+    sig_spx_n = sig[i*SPX_N : SPX_N];
+
+    pub_seed = s_pub_seed;
+
+    s_pk[i*SPX_N : SPX_N], addr = __gen_chain_(pk_spx_n, sig_spx_n, start, steps, pub_seed, addr);
   }
 
+  pk = s_pk;
   return pk, addr;
 }//<>
 
