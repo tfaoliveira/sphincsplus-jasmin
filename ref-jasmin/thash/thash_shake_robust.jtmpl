@@ -84,7 +84,6 @@ inline fn __thash_<INBLOCKS>(
 }//<>
 
 //////////////////////////////////////////////////////////////////
-// TODO define inplace for ROBUST [INBLOCKS = 1]
 inline fn __thash_inplace(
   reg ptr u8[SPX_N] out,
   reg ptr u8[SPX_N] pub_seed,

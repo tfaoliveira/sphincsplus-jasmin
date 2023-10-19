@@ -39,6 +39,7 @@ inline fn __gen_chain(
   t = start;
   t += steps;
 
+  // start & steps are no longer live
 
   while {
     // i < (start+steps) && i < SPX_WOTS_W
@@ -61,6 +62,46 @@ inline fn __gen_chain(
   }
 
   addr = s_addr;
+
+  return out, addr;
+}//<>
+
+#[returnaddress="stack"]
+fn _gen_chain(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] in,
+  reg u32 start,
+  reg u32 steps,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[SPX_N], reg ptr u32[8]
+{
+  out, addr = __gen_chain(out, in, start, steps, pub_seed, addr);
+  return out, addr;
+}//<>
+
+inline fn __gen_chain_(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] in,
+  reg u32 start,
+  reg u32 steps,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[SPX_N], reg ptr u32[8]
+{
+  stack ptr u8[SPX_N] s_out;
+  stack ptr u8[SPX_N] s_in;
+  stack u32 s_start;
+  stack u32 s_steps;
+  stack ptr u8[SPX_N] s_pub_seed;
+  stack ptr u32[8] s_addr;
+
+  // Allow for full register swap
+  s_out = out; s_in = in; s_start = start; s_steps = steps; s_pub_seed = pub_seed; s_addr = addr;
+
+  out = s_out; in = s_in; start = s_start; steps = s_steps; pub_seed = s_pub_seed; addr = s_addr;
+
+  out, addr = _gen_chain(out, in, start, steps, pub_seed, addr);
 
   return out, addr;
 }//<>
@@ -156,6 +197,27 @@ inline fn __chain_lengths<MSG_LEN>(
   return lengths;
 }//<>
 
+#[returnaddress="stack"]
+fn _chain_lengths<MSG_LEN>(
+  reg ptr u32[SPX_WOTS_LEN] lengths,
+  reg ptr u8[MSG_LEN] msg
+) -> reg ptr u32[SPX_WOTS_LEN]
+{
+  lengths = __chain_lengths<MSG_LEN>(lengths, msg);
+  return lengths;
+}//<>
+
+inline fn __chain_lengths__<MSG_LEN>(
+  reg ptr u32[SPX_WOTS_LEN] lengths,
+  reg ptr u8[MSG_LEN] msg
+) -> reg ptr u32[SPX_WOTS_LEN]
+{
+  lengths = lengths; msg = msg;
+  lengths = _chain_lengths<MSG_LEN>(lengths, msg);
+  lengths = lengths; msg = msg;
+  return lengths;
+}//<>
+
 /**
  * Takes a WOTS signature and an n-byte message, computes a WOTS public key.
  *
@@ -166,83 +228,75 @@ inline fn __wots_pk_from_sig<MSG_LEN>(
     reg ptr u8[SPX_BYTES] sig,
     reg ptr u8[MSG_LEN] msg,
     reg ptr u8[SPX_N] pub_seed,
-    reg ptr u8[SPX_N] sk_seed,
     reg ptr u32[8] addr
 ) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
 {
   stack u32[SPX_WOTS_LEN] lengths;
-  reg ptr u32[SPX_WOTS_LEN] lengths_p;
 
-  reg ptr u8[SPX_N] in out;
   reg u32 start steps;
   
   stack ptr u8[SPX_WOTS_BYTES] s_pk;
   stack ptr u8[SPX_BYTES] s_sig;
   stack ptr u8[MSG_LEN] s_msg;
-  stack ptr u8[SPX_N] s_pub_seed;
 
   inline int i;
 
-  lengths_p = lengths;
-  lengths_p = __chain_lengths<MSG_LEN>(lengths_p, msg);
-  lengths = lengths_p;
+  lengths = __chain_lengths<MSG_LEN>(lengths, msg);
+
+  // depois daqui msg ja nao ta live (nao e preciso spill)
 
   for i = 0 to SPX_WOTS_LEN
   {
     addr = __set_chain_addr(addr, i);
 
-    out = pk[i*SPX_N : SPX_N];
-    in = sig[i*SPX_N : SPX_N];
     start = lengths[i];
     steps = SPX_WOTS_W; steps -= 1; steps -= lengths[i];
+
+    // Nada para spill
     
-    s_sig = sig; s_msg = msg; s_pub_seed = pub_seed; // spill
-    // out, addr = __gen_chain(out, in, start, steps, sk_seed, addr);
-    sig = s_sig; msg = s_msg; pub_seed = s_pub_seed; // unspill
-    pk[i * SPX_N : SPX_N] = out;
+    pk[i*SPX_N : SPX_N], addr = __gen_chain_(pk[i*SPX_N : SPX_N], sig[i*SPX_N : SPX_N], start, steps, pub_seed, addr);
   }
 
   return pk, addr;
 }//<>
 
-
-///////////////////// LOCAL FUNCTIONS ////////////////////
 #[returnaddress="stack"]
-fn _gen_chain(
-  reg ptr u8[SPX_N] out,
-  reg ptr u8[SPX_N] in,
-  reg u32 start,
-  reg u32 steps,
-  reg ptr u8[SPX_N] pub_seed,
-  reg ptr u32[8] addr
-) -> reg ptr u8[SPX_N], reg ptr u32[8]
+fn _wots_pk_from_sig<MSG_LEN>(
+    reg ptr u8[SPX_WOTS_BYTES] pk,
+    reg ptr u8[SPX_BYTES] sig,
+    reg ptr u8[MSG_LEN] msg,
+    reg ptr u8[SPX_N] pub_seed,
+    reg ptr u32[8] addr
+) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
 {
-  out, addr = __gen_chain(out, in, start, steps, pub_seed, addr);
-  return out, addr;
+  pk, addr = __wots_pk_from_sig<MSG_LEN>(pk, sig, msg, pub_seed, addr);
+  return pk, addr;
 }//<>
 
-inline fn __gen_chain_(
-  reg ptr u8[SPX_N] out,
-  reg ptr u8[SPX_N] in,
-  reg u32 start,
-  reg u32 steps,
-  reg ptr u8[SPX_N] pub_seed,
-  reg ptr u32[8] addr
-) -> reg ptr u8[SPX_N], reg ptr u32[8]
+inline fn __wots_pk_from_sig__<MSG_LEN>(
+    reg ptr u8[SPX_WOTS_BYTES] pk,
+    reg ptr u8[SPX_BYTES] sig,
+    reg ptr u8[MSG_LEN] msg,
+    reg ptr u8[SPX_N] pub_seed,
+    reg ptr u32[8] addr
+) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
 {
-  stack ptr u8[SPX_N] s_out;
-  stack ptr u8[SPX_N] s_in;
-  stack u32 s_start;
-  stack u32 s_steps;
+
+  stack ptr u8[SPX_WOTS_BYTES] s_pk;
+  stack ptr u8[SPX_BYTES] s_sig;
+  stack ptr u8[MSG_LEN] s_msg;
   stack ptr u8[SPX_N] s_pub_seed;
   stack ptr u32[8] s_addr;
+  
+  // Spill everything (start from clean state)
+  s_pk = pk; s_sig = sig; s_msg = msg; s_pub_seed = pub_seed; s_addr = addr; // spill
+  
+  pk = s_pk; sig = s_sig; msg = s_msg; pub_seed = s_pub_seed; addr = s_addr; // unspill
 
-  // Allow for full register swap
-  s_out = out; s_in = in; s_start = start; s_steps = steps; s_pub_seed = pub_seed; s_addr = addr;
+  pk, addr = _wots_pk_from_sig<MSG_LEN>(pk, sig, msg, pub_seed, addr);
 
-  out = s_out; in = s_in; start = s_start; steps = s_steps; pub_seed = s_pub_seed; addr = s_addr;
+  pk = pk;
+  addr = addr;
 
-  out, addr = _gen_chain(out, in, start, steps, pub_seed, addr);
-
-  return out, addr;
+  return pk, addr;
 }//<>

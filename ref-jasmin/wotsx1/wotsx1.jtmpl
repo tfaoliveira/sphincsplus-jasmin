@@ -126,7 +126,7 @@ inline fn __wots_gen_leafx1(
         s_stop = stop;
 
         // FIXME: reg alloc
-        // pk[0:SPX_N] = __thash_<SPX_WOTS_LEN>(pk[0:SPX_N], pk_buffer, pub_seed, pk_addr);
+        pk[0:SPX_N] = __thash_<SPX_WOTS_LEN>(pk[0:SPX_N], pk_buffer, pub_seed, pk_addr);
 
         // Unspill
         sk_seed = s_sk_seed;
