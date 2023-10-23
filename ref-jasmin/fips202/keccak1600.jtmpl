@@ -63,8 +63,7 @@ inline fn __add_final_block<INLEN>(
   offset <<= 3;
   i <<= 3;
   inlen8 = INLEN;
-  inlen8 -= offset;
-  while ( i < inlen8 )
+  while ( offset < inlen8 )
   {
     c = in[(int) offset];
     state[u8 (int)i] ^= c;
@@ -103,7 +102,7 @@ inline fn __absorb<INLEN>(
     state, offset = __add_full_block<INLEN>(state, in, offset, rate);
 
     s_in = in;
-    s_inlen = inlen; 
+    s_inlen = inlen;
     s_offset = offset;
     s_rate = rate;
 
@@ -174,8 +173,7 @@ inline fn __xtr_bytes<OUTLEN>(
   offset <<= 3;
   i <<= 3;
   outlen8 = OUTLEN;
-  outlen8 -= offset;
-  while ( i < outlen8 )
+  while ( offset < outlen8 )
   {
     c = state[u8 (int)i];
     out[(int)offset] = c;
