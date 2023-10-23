@@ -15,7 +15,7 @@ PREPROCESSOR ?= ../scripts/preprocessor
 
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple
+THASH_LIST    := simple robust
 MSG_LEN_LIST  := $(shell seq 1 4) 64 100
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach L,$(MSG_LEN_LIST),$(H)_$(P)_$(T)_$(L)))))
@@ -44,7 +44,7 @@ bin/test_merkle_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --workers 8 -d --input_file $@ --output_file $@
+	$(PREPROCESSOR) --workers 8 --input_file $@ --output_file $@
 
 .PRECIOUS: bin/test_merkle_%.s
 bin/test_merkle_%.s: bin/test_merkle_%.jpp

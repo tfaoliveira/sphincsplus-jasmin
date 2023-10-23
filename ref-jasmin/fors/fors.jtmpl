@@ -335,86 +335,105 @@ inline fn __fors_sign__<MSG_LEN>(
  */
 inline fn __fors_pk_from_sig<MSG_LEN>(
   reg ptr u8[SPX_FORS_PK_BYTES] pk,
-  reg mut ptr u8[SPX_FORS_BYTES] sig,
+  reg ptr u8[SPX_FORS_BYTES] sig,
   reg ptr u8[MSG_LEN] m,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
-  reg const ptr u32[8] fors_addr
+  reg ptr u32[8] fors_addr
 ) -> reg ptr u8[SPX_FORS_PK_BYTES]
 {
+  ////////////////////////////////////////
+  
+  stack ptr u8[SPX_FORS_PK_BYTES] s_pk;
+  stack ptr u8[SPX_FORS_BYTES] s_sig;
+  stack ptr u8[SPX_N] s_pub_seed;
+  stack ptr u8[SPX_N] s_sk_seed;
+
+  ////////////////////////////////////////
+
   stack u32[SPX_FORS_TREES] indices;
-  reg ptr u32[SPX_FORS_TREES] indices_p;
   
   stack u8[SPX_FORS_TREES * SPX_N] roots;
-  reg ptr u8[SPX_FORS_TREES * SPX_N] roots_p;
 
   stack u32[8] fors_tree_addr;
-  reg ptr u32[8] fors_tree_addr_p;
 
   stack u8[SPX_N] leaf;
-  reg ptr u8[SPX_N] leaf_p;
 
   stack u32[8] fors_pk_addr;
-  reg ptr u32[8] fors_pk_addr_p;
  
-  reg u32 idx_offset; stack u32 s_idx_offset;
-  reg u32 t; stack u32 st;
+  reg u32 idx_offset; 
+  stack u32 s_idx_offset;
+  
+  reg u32 t; 
+  stack u32 s_t;
 
   reg ptr u8[SPX_N] sig_buf;
   reg ptr u8[SPX_N] root_buf;
 
   inline int i sig_offset;
 
+  ////////////////////////
+  s_pk = pk;
+  s_pub_seed = pub_seed;
+  s_sk_seed = sk_seed;
+  s_sig = sig;
+
   sig_offset = 0;
 
-  fors_tree_addr_p = fors_tree_addr;
-  fors_tree_addr_p = __zero_array_u32<8>(fors_tree_addr_p);
+  fors_tree_addr = __zero_array_u32<8>(fors_tree_addr);
+  fors_pk_addr = __zero_array_u32<8>(fors_pk_addr);
 
-  fors_pk_addr_p = fors_pk_addr;
-  fors_pk_addr_p = __zero_array_u32<8>(fors_pk_addr_p);
-
-  fors_tree_addr_p = __copy_keypair_addr(fors_tree_addr_p, fors_addr);
-  fors_pk_addr_p = __copy_keypair_addr(fors_pk_addr_p, fors_addr);
+  fors_tree_addr = __copy_keypair_addr(fors_tree_addr, fors_addr);
+  fors_pk_addr = __copy_keypair_addr(fors_pk_addr, fors_addr);
   
-  fors_tree_addr_p = __set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSTREE);
-  fors_pk_addr_p = __set_type(fors_pk_addr_p, SPX_ADDR_TYPE_FORSPK);
+  fors_tree_addr = __set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSTREE);
+  fors_pk_addr = __set_type(fors_pk_addr, SPX_ADDR_TYPE_FORSPK);
 
-  indices_p = indices; 
-  indices_p = __message_to_indices<MSG_LEN>(indices_p, m);
+  indices = __message_to_indices<MSG_LEN>(indices, m);
 
-  for i=0 to SPX_FORS_TREES
-  {
-    t = 1;
-    t <<= (SPX_FORS_HEIGHT & 63);
-    t *= i;
-    idx_offset = t;
+  for i = 0 to SPX_FORS_TREES {
+    idx_offset = 1;
+    idx_offset <<= (SPX_FORS_HEIGHT & 63);
+    idx_offset *= i;
 
-    fors_tree_addr_p = __set_tree_height(fors_tree_addr_p, 0);
+    fors_tree_addr = __set_tree_height(fors_tree_addr, 0);
     
-    t=indices[i]; t+=idx_offset; 
-    fors_tree_addr_p = __set_tree_index(fors_tree_addr_p, t);
+    t = indices[i]; 
+    t += idx_offset; 
 
-    st = t; s_idx_offset = idx_offset;
+    fors_tree_addr = __set_tree_index(fors_tree_addr, t);
+
+    s_t = t;
 
     /* Derive the leaf from the included secret key part. */
-    // leaf = __fors_sk_to_leaf__(leaf, sig[sig_offset : SPX_N], sk_seed, fors_tree_addr_p); // TODO: FIXME: reg alloc
+    // sig = s_sig;
+    sig = s_sig;
+    s_sig = sig;
+    sk_seed = s_sk_seed;
+    leaf = __fors_sk_to_leaf__(leaf, sig[sig_offset : SPX_N], sk_seed, fors_tree_addr);
     
-    // TODO: CALL SO FORS_SK_TO_LEAF
     sig_offset += SPX_N;
 
-    idx_offset = s_idx_offset;
-
     /* Derive the corresponding root node of this tree. */
-    root_buf = roots[i*SPX_N : SPX_N]; t = indices[i];
-    // root_buf, fors_tree_addr = __compute_root(root_buf, leaf_p, t, idx_offset, fors_tree_addr);
-    roots[i*SPX_N : SPX_N] = root_buf;
+    t = indices[i];
+    pub_seed = s_pub_seed;
+    /*
+    roots[i*SPX_N : SPX_N], fors_tree_addr = __compute_root(roots[i*SPX_N : SPX_N], 
+                                                            leaf, 
+                                                            t, 
+                                                            idx_offset,
+                                                            // POINTER TO SIG + sig_offset // FIXME: Como e que tenho o ptr?
+                                                            SPX_FORS_HEIGHT,
+                                                            pub_seed,
+                                                            fors_tree_addr);
+    */
     sig_offset += SPX_N * SPX_FORS_HEIGHT;
   }
 
   /* Hash horizontally across all tree roots to derive the public key. */
-  roots_p = roots;
-  // pk = __thash<SPX_FORS_TREES>(pk, roots_p, pub_seed, fors_pk_addr_p);
-
+  pub_seed = s_pub_seed;
+  pk = s_pk;
+  pk = __thash<SPX_FORS_TREES>(pk, roots, pub_seed, fors_pk_addr);
 
   return pk;
 }//<>

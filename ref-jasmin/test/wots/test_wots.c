@@ -32,6 +32,7 @@
 extern void wots_pk_from_signature_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *msg,
                                         const spx_ctx *ctx, uint32_t addr[8]);
 
+#define chain_lengths_jazz NAMESPACE1(chain_lengths_jazz, MSG_LEN)
 extern void chain_lengths_jazz(uint8_t *lengths, const uint8_t *msg);
 
 static void random_addr(uint32_t addr[8]) {
@@ -60,14 +61,27 @@ void test_wots_pk_from_sig() {
         wots_pk_from_signature_jazz(pk0, sig, msg, &ctx, addr);
         wots_pk_from_sig(pk1, sig, msg, &ctx, addr);
 
-        // assert(memcmp(pk0, pk1, SPX_WOTS_BYTES) == 0);
+        assert(memcmp(pk0, pk1, SPX_WOTS_BYTES) == 0);
     }
 }
 
-int main (void) {
+void test_chain_lengths(void) {
+    unsigned int lengths0[SPX_WOTS_LEN];
+    uint8_t lengths1[SPX_WOTS_LEN];
+    uint8_t msg[MSG_LEN];
+
+    for (int t = 0; t < TESTS; t++) {
+        randombytes(msg, MSG_LEN);
+        chain_lengths(lengths0, msg);
+        chain_lengths_jazz(lengths1, msg);
+
+        assert(memcmp(lengths0, lengths1, SPX_WOTS_LEN) == 0);
+    }
+}
+
+int main(void) {
     test_wots_pk_from_sig();
-
-    printf("PASS: wots\n");
-
+    test_chain_lengths();
+    printf("PASS: wots { msg len : %d }\n", MSG_LEN);
     return 0;
 }

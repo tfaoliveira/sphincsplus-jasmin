@@ -1,0 +1,19 @@
+from Sphincs require "memcmp/memcmp.jtmpl"
+from Sphincs require "generic/utils.jtmpl"
+
+////////////////////////////////////////////////////////////////////////////////
+
+export fn memcmp_jazz<INLEN>(
+  reg u64 _a _b
+) -> reg u64
+{
+  stack u8[INLEN] a b;
+  reg u64 r;
+
+  a = __load_u8_array<INLEN>(a, _a);
+  b = __load_u8_array<INLEN>(b, _a);
+
+  r = __memcpy_u8u<INLEN>(a, b);
+
+  return r;
+}//<>

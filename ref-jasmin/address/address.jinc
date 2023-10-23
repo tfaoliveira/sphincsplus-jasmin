@@ -32,6 +32,7 @@ inline fn __set_tree_addr(
 
   inline int i;
 
+  tree = tree;
   tree = #BSWAP_64(tree); // little-endian
 
   // at the time of this implementation, SPX_OFFSET_TREE is defined as

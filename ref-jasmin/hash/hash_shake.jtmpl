@@ -44,6 +44,7 @@ inline fn __gen_message_random<MSG_LEN>(
   reg ptr u8[MSG_LEN] m
 ) -> reg ptr u8[SPX_N]
 {
+  /*
   stack u64[26] shake256_state;
   reg ptr u64[26] shake256_state_p;
 
@@ -72,6 +73,26 @@ inline fn __gen_message_random<MSG_LEN>(
 
   R = s_R; // unspill
   R, _ = __shake256_inc_squeeze<SPX_N>(R, shake256_state_p);
+
+  return R;
+  */
+
+  // uint8_t buf[2 * SPX_N + MSG_LEN];
+  // memcpy(buf, sk_prf, SPX_N);
+  // memcpy(buf + SPX_N, optrand, SPX_N);
+  // memcpy(buf + 2 * SPX_N, m, MSG_LEN);
+  // shake256(R, SPX_N, buf, 2 * SPX_N + MSG_LEN);
+
+  stack u8[2 * SPX_N + MSG_LEN] buf;
+  reg u64 offset;
+
+  offset = 0;
+
+  buf, offset = _x_memcpy_u8u8<2 * SPX_N + MSG_LEN, SPX_N>(buf, offset, sk_prf);
+  buf, offset = _x_memcpy_u8u8<2 * SPX_N + MSG_LEN, SPX_N>(buf, offset, optrand);
+  buf, _      = _x_memcpy_u8u8<2 * SPX_N + MSG_LEN, MSG_LEN>(buf, offset, m);
+
+  R = __shake256<SPX_N, 2 * SPX_N + MSG_LEN>(R, buf);
 
   return R;
 }//<>

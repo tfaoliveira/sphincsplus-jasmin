@@ -43,49 +43,22 @@ inline fn __keccak_inc_absorb<INLEN>(
 
     while (i < t) 
     {
-      s_rate_8 = rate_8; // spill
-      s_in = in; // spill
-
       t = state[25]; 
       t += i;
 
       u = t;
+      t >>= (3 & 63);
+
       u &= 0x07;
       u <<= (3 & 63);
 
-      v = (64u) in[(int) i];
-      v <<= (u & 63);
+      z = offset_in;
+      z += i;
+      v = (64u) in[(int) z];
 
-      t >>= (3 & 63);
+      v <<= (u & 63);
       state[(int) t] ^= v;
 
-      /* Permute state */
-      // Spill
-      s_in = in;
-      s_inlen = inlen;
-      s_offset_in = offset_in;
-      s_rate_8 = rate_8;
-      s_t = t;
-      s_i = i;
-      s_u = u;
-      s_v = v;
-      s_z = z;
-
-
-      state[0:25] = _keccakf1600_(state[0:25]);
-
-      // Unspill
-      in = s_in;
-      inlen = s_inlen;
-      offset_in = s_offset_in;
-      rate_8 = s_rate_8;
-      t = s_t;
-      i = s_i;
-      u = s_u;
-      v = s_v;
-      z = s_z;
-
-      t = (64u) rate_8; t -= state[25];
       i += 1;
     }
 
@@ -107,7 +80,7 @@ inline fn __keccak_inc_absorb<INLEN>(
       s_z = z;
 
 
-      state[0:25] = _keccakf1600_(state[0:25]);
+    //  state[0:25] = _keccakf1600_(state[0:25]);
 
       // Unspill
       in = s_in;
@@ -120,9 +93,11 @@ inline fn __keccak_inc_absorb<INLEN>(
       v = s_v;
       z = s_z;
 
-    t = inlen; t += state[25]; // to compute the loop condition
+    t = inlen;
+    t += state[25]; // to compute the loop condition
   }
 
+  i = 0;
   while (i < inlen)
   {
     t = state[25]; 

@@ -21,7 +21,6 @@ inline fn __cond_u64_a_below_b_and_a_below_c(reg u64 a b c) -> reg bool
 }
 
 // cond = a < b && a < c
-// TODO: Use CMP_32 instead of casting to u64
 inline fn __cond_u32_a_below_b_and_a_below_c(reg u32 a b c) -> reg bool
 {
   reg bool c1 c2 c3;
@@ -45,7 +44,7 @@ inline fn __cond_u64_a_dif_b_and_a_dif_c(reg u64 a b c) -> reg bool
   reg u8 bc1 bc2;
   reg u64 t u;
 
-  res = __cond_u64_a_below_b_and_a_below_c(a, b, c);
+  res = __cond_u64_a_below_b_and_a_below_c(a, b, c); // ??
 
   ?{ "!=" = cond1 } = #CMP_64(a, b); 
   bc1 = #SETcc(cond1);
@@ -57,4 +56,21 @@ inline fn __cond_u64_a_dif_b_and_a_dif_c(reg u64 a b c) -> reg bool
   ?{ "!=" = res } = #TEST_8(bc1, bc2);
 
   return res;
+}
+
+// cond = a != b && c != d
+inline fn __cond_u64_a_dif_b_and_c_dif_d(reg u64 a b c d) -> reg bool
+{
+  reg bool cond1 cond2 cond3;
+  reg u8 bc1 bc2;
+
+  ?{ "!=" = cond1 } = #CMP_64(a, b); 
+  bc1 = #SETcc(cond1);
+
+  ?{ "!=" = cond2 } = #CMP_64(c, d); 
+  bc2 = #SETcc(cond2);
+
+  ?{ "!=" = cond3 } = #TEST_8(bc1, bc2);
+
+  return cond3;
 }

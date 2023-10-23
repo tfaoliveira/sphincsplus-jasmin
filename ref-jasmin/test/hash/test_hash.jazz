@@ -118,7 +118,7 @@ export fn gen_msg_random_jazz<MSG_LEN>(
   stack u64 s_R s_sk_prf s_optrand s_m;
 
   R_p = R; 
-  R_p = __load_u8_array<SPX_N>(R_p, _R);
+  // R_p = __load_u8_array<SPX_N>(R_p, _R);
   
   sk_prf_p = sk_prf; 
   sk_prf_p = __load_u8_array<SPX_N>(sk_prf_p, _sk_prf);
@@ -129,7 +129,7 @@ export fn gen_msg_random_jazz<MSG_LEN>(
   m_p = m;
   m_p = __load_u8_array<MSG_LEN>(m_p, _m);
 
-  s_R = _R; s_sk_prf = _sk_prf; s_optrand = _optrand; s_m = _m; // spill
+  s_R = _R;
 
   R_p = __gen_message_random<MSG_LEN>(R_p, sk_prf_p, optrand_p, m_p);
   

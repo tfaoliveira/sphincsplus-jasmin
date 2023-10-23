@@ -13,6 +13,10 @@ PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
+NUM_CORES := $(shell nproc)
+
+# ------------------------------------------------------------------------------
+
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
 THASH_LIST    := simple
@@ -44,7 +48,7 @@ bin/test_sign_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --workers 8 -d --input_file $@ --output_file $@ --task "fn:crypto_sign_open_jazz p:MSG_LEN:$(GET_MSG_LEN) p:SIG_LEN:$(GET_MSG_LEN)"
+	$(PREPROCESSOR) --workers $(NUM_CORES) --input_file $@ --output_file $@ # --task "fn:crypto_sign_open_jazz p:MSG_LEN:$(GET_MSG_LEN) p:SIG_LEN:$(GET_MSG_LEN)"
 
 .PRECIOUS: bin/test_sign_%.s
 bin/test_sign_%.s: bin/test_sign_%.jpp

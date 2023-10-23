@@ -37,7 +37,6 @@ inline fn __load_ctx(
   return pub_seed, sk_seed;
 }
 
-/*
 export fn gen_chain_jazz(
   reg  u64 _out _in _start _steps _pub_seed _addr
 )
@@ -131,7 +130,6 @@ export fn wots_checksum_jazz(
 
   __store_u32_array<SPX_WOTS_LEN2>(csum_base_w_p, _csum_base_w);
 }
-*/
 
 export fn wots_pk_from_sig_jazz<MSG_LEN>(reg u64 _pk _sig _msg _ctx _addr)
 {
@@ -172,7 +170,6 @@ export fn wots_pk_from_sig_jazz<MSG_LEN>(reg u64 _pk _sig _msg _ctx _addr)
     __store_u32_array<8>(addr, _addr);
 }//<>
 
-/*
 export fn chain_lengths_jazz<MSG_LEN>(reg u64 _lengths _msg)
 {
   stack u32[SPX_WOTS_LEN] lengths;
@@ -197,5 +194,3 @@ export fn chain_lengths_jazz<MSG_LEN>(reg u64 _lengths _msg)
   s_lengths = _lengths; // spill
   __store_u32_array<SPX_WOTS_LEN>(lengths_p, _lengths);
 }//<>
-
-*/

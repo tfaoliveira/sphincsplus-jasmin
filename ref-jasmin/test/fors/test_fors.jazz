@@ -113,10 +113,6 @@ export fn fors_gen_leafx1_jazz(
 
   // Spill
   s_leaf = _leaf;
-  s_pub_seed = _pub_seed;
-  s_sk_seed = _sk_seed;
-  s_addr_idx = _addr_idx;
-  s_fors_leaf_addr = _fors_leaf_addr;
 
   leaf_p = __fors_gen_leafx1__(leaf_p, pub_seed_p, sk_seed_p, addr_idx, fors_leaf_addr_p);
 
@@ -252,12 +248,7 @@ export fn fors_pk_from_sig_jazz<MSG_LEN>(
   addr_p = __zero_array_u32<8>(addr_p);
 
   // Spill
-  s_sig = _sig;
   s_pk = _pk;
-  s_msg = _msg;
-  s_pub_seed = _pub_seed;
-  s_sk_seed = _sk_seed;
-  s_fors_addr = _fors_addr;
 
   pk_p = __fors_pk_from_sig<MSG_LEN>(pk_p, sig_p, msg_p, pub_seed_p, sk_seed_p, addr_p);
 
