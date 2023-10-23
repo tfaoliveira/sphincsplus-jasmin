@@ -12,7 +12,7 @@ PREPROCESSOR  ?= ../scripts/preprocessor
 # -- note: to add more tests, update the following list. as an example, to test
 #          for 128 bytes of output and 1024 bytes of input, add '128_1024' after
 #          the last element of TLIST
-TLIST      := 32_64 32_96 32_128 32_768 32_2208 64_64
+TLIST      := 32_64 32_96 32_128 32_768 32_2208 64_64 150_768
 
 TESTS      := $(addprefix bin/test_shake256_, $(TLIST))
 OUT        := $(addsuffix .out, $(TESTS))

@@ -47,6 +47,9 @@ extern void shake256_inc_squeeze(uint8_t *output, size_t outlen,
                                  uint64_t *s_inc);  // from fips202.c
 
 void test_shake256(void);
+void test_shake_zero(void);
+
+
 void test_shake256_inc(void);
 void test_inc_ref(void);
 void test_shake_absorb_inc(void) ;
@@ -154,12 +157,30 @@ void test_shake_absorb_inc(void) {
 #undef RATE
 }
 
+void test_shake_zero(void) {
+     uint8_t out0[OUTLEN], out1[OUTLEN];
+    uint8_t in0[INLEN], in1[INLEN];
+
+    int t;
+
+    for (t = 0; t < TESTS; t++) {
+        memset(in0, 0, INLEN);
+        memset(in1, 0, INLEN);
+
+        shake256_jazz(out0, in0);
+        shake256(out1, OUTLEN, in1, INLEN);
+
+        assert(memcmp(out0, out1, OUTLEN) == 0);
+    }
+}
+
 int main() {
     srand(42);
-    // test_shake256();
+    test_shake256();
+    test_shake_zero();
     // test_shake256_inc();
     // test_inc_ref();
-    test_shake_absorb_inc();
+    // test_shake_absorb_inc();
     printf("PASS: shake256 = { outlen : %d ; inlen : %d; }\n", OUTLEN, INLEN);
     return 0;
 }
