@@ -59,8 +59,6 @@ export fn fors_sk_to_leaf_jazz(
 
   stack u64 s_leaf s_sk s_pub_seed s_fors_leaf_addr;
 
-  leaf_p = leaf;
-  leaf_p = __load_u8_array<SPX_N>(leaf_p, _leaf);
 
   sk_p = sk;
   sk_p = __load_u8_array<SPX_N>(sk_p, _sk);
@@ -73,16 +71,14 @@ export fn fors_sk_to_leaf_jazz(
 
   // Spill
   s_leaf = _leaf;
-  s_sk = _sk;
-  s_pub_seed = _pub_seed;
-  s_fors_leaf_addr = _fors_leaf_addr;
 
+  leaf_p = leaf;
+  leaf_p = __fors_sk_to_leaf__(leaf_p, sk_p, pub_seed_p, fors_leaf_addr_p);
 
   _leaf = s_leaf;
   __store_u8_array<SPX_N>(leaf_p, _leaf);
 }
 
-/*
 export fn fors_gen_leafx1_jazz(
   reg u64 _leaf _pub_seed _sk_seed _addr_idx _fors_leaf_addr
 )
@@ -153,7 +149,6 @@ export fn message_to_indices_jazz<MSG_LEN>(
   _indices = s_indices;
   __store_u32_array<SPX_FORS_TREES>(indices_p, _indices);
 }//<>
-*/
 
 export fn fors_sign_jazz<MSG_LEN>(
   reg u64 _sig _pk _msg _pub_seed _sk_seed _fors_addr
@@ -213,7 +208,6 @@ export fn fors_sign_jazz<MSG_LEN>(
   // TODO: STore pk
 }//<>
 
-/*
 export fn fors_pk_from_sig_jazz<MSG_LEN>(
   reg u64 _pk _sig _msg _pub_seed _sk_seed _fors_addr
 )
@@ -270,4 +264,3 @@ export fn fors_pk_from_sig_jazz<MSG_LEN>(
   _pk = s_pk;
   __store_u8_array<SPX_FORS_PK_BYTES>(pk_p, _pk);
 }//<>
-*/

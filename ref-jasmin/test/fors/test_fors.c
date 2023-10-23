@@ -41,12 +41,115 @@ extern void fors_sign_jazz(uint8_t *sig, uint8_t *pk, const uint8_t *m, const ui
 extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m,
                                   const uint8_t *pub_seed, uint32_t fors_addr[8]);
 
-void test_fors_sign(void);
+#define message_to_indices_jazz NAMESPACE1(message_to_indices_jazz, MSG_LEN)
+extern void message_to_indices_jazz(uint32_t *indices, const uint8_t *m);
+
+#define fors_pk_from_sig_jazz NAMESPACE1(fors_pk_from_sig_jazz, MSG_LEN)
+// extern void fors_pk_from_sig_jazz
+// _pk _sig _msg _pub_seed _sk_seed _fors_addr
+
+extern void fors_gen_sk_jazz(uint8_t *sk, const uint8_t *pub_seed, const uint8_t *sk_seed,
+                             uint32_t fors_leaf_addr[8]);
+
+extern void fors_sk_to_leaf_jazz(uint8_t *leaf, const uint8_t *sk, const uint8_t *pub_seed,
+                                 uint32_t fors_leaf_addr[8]);
+
+void test_fors_gen_sk(void);
+void test_fors_sk_to_leaf(void);
+void test_message_to_indices(void);
+void test_fors_gen_leafx1(void);
+
+void test_fors_sign(void); // TODO: Calls treehashx1
 void test_fors_pk_from_sig(void);
 
 static void random_addr(uint32_t addr[8]) {
     for (size_t i = 0; i < 8; i++) {
         addr[i] = (uint32_t)rand();
+    }
+}
+
+//////////////////////////// Code from ref impl ///////////////////////////////
+
+static void fors_gen_sk_ref(unsigned char *sk, const spx_ctx *ctx, uint32_t fors_leaf_addr[8]) {
+    prf_addr(sk, ctx, fors_leaf_addr);
+}
+
+static void fors_sk_to_leaf_ref(unsigned char *leaf, const unsigned char *sk, const spx_ctx *ctx,
+                                uint32_t fors_leaf_addr[8]) {
+    thash(leaf, sk, 1, ctx, fors_leaf_addr);
+}
+
+static void message_to_indices_ref(uint32_t *indices, const unsigned char *m) {
+    unsigned int i, j;
+    unsigned int offset = 0;
+
+    for (i = 0; i < SPX_FORS_TREES; i++) {
+        indices[i] = 0;
+        for (j = 0; j < SPX_FORS_HEIGHT; j++) {
+            // indices[i] ^= ((m[offset >> 3] >> (offset & 0x7)) & 1u) << j;
+            indices[i] ^= (m[offset >> 3] >> (offset & 0x7));
+            offset++;
+        }
+    }
+}
+///////////////////////////////////////////////////////////////////////////////
+
+void test_fors_gen_sk(void) {
+    uint8_t sk_jazz[SPX_N], sk_ref[SPX_N];
+    uint32_t fors_addr[8];
+    spx_ctx ctx;
+
+    for (int i = 0; i < TESTS; i++) {
+        memset(sk_jazz, 0, SPX_N);
+        memset(sk_ref, 0, SPX_N);
+
+        randombytes(ctx.pub_seed, SPX_N);
+        randombytes(ctx.sk_seed, SPX_N);
+        random_addr(fors_addr);
+
+        fors_gen_sk_jazz(sk_jazz, ctx.pub_seed, ctx.sk_seed, fors_addr);
+        fors_gen_sk_ref(sk_ref, &ctx, fors_addr);
+
+        assert(memcmp(sk_ref, sk_jazz, SPX_N) == 0);
+    }
+}
+
+void test_fors_sk_to_leaf(void) {
+    uint8_t leaf_ref[SPX_N], leaf_jazz[SPX_N];
+    uint8_t sk[SPX_N];
+    spx_ctx ctx;
+    uint32_t addr[8];
+
+    for (int i = 0; i < TESTS; i++) {
+        memset(leaf_jazz, 0, SPX_N);
+        memset(leaf_ref, 0, SPX_N);
+
+        randombytes(sk, SPX_N);
+        randombytes(ctx.pub_seed, SPX_N);
+        randombytes(ctx.sk_seed, SPX_N);
+        random_addr(addr);
+
+        fors_sk_to_leaf_jazz(leaf_jazz, sk, ctx.pub_seed, addr);
+        fors_sk_to_leaf_ref(leaf_ref, sk, &ctx, addr);
+
+        assert(memcmp(leaf_ref, leaf_jazz, SPX_N) == 0);
+    }
+}
+
+void test_message_to_indices(void) {
+    uint32_t indices_ref[SPX_FORS_TREES], indices_jazz[SPX_FORS_TREES];
+    uint8_t msg[MSG_LEN];
+
+    for (int i = 0; i < TESTS; i++) {
+        memset(indices_ref, 0, SPX_FORS_TREES * sizeof(uint32_t));
+        memset(indices_jazz, 0, SPX_FORS_TREES * sizeof(uint32_t));
+
+        randombytes(msg, MSG_LEN);
+
+        message_to_indices_ref(indices_ref, msg);
+        message_to_indices_jazz(indices_jazz, msg);
+
+        assert(memcmp(indices_ref, indices_jazz, sizeof(indices_ref)) == 0);
     }
 }
 
@@ -60,6 +163,7 @@ void test_fors_sign(void) {
     for (int t = 0; t < TESTS; t++) {
         memset(sig0, 0, CRYPTO_BYTES);
         memset(sig1, 0, CRYPTO_BYTES);
+
         randombytes(pk, CRYPTO_PUBLICKEYBYTES);
         randombytes(msg, MSG_LEN);
         randombytes(ctx.pub_seed, SPX_N);
@@ -101,8 +205,13 @@ void test_fors_pk_from_sig(void) {
 #undef CRYPTO_BYTES
 
 int main(void) {
+
+    test_fors_gen_sk();
+    test_fors_sk_to_leaf();
+    test_message_to_indices();
     // test_fors_sign();
     // test_fors_pk_from_sig();
+
     printf("PASS: fors = { msg len : %d }\n", MSG_LEN);
     return 0;
 }

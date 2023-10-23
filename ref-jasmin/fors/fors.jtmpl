@@ -88,33 +88,39 @@ inline fn __fors_gen_leafx1(
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
   reg u32 addr_idx,
-  reg ptr u32[8] fors_leaf_addr
+  reg ptr u32[8] fors_leaf_addr // void* info in ref impl
 ) -> reg ptr u8[SPX_N], reg ptr u32[8]
 {
+  stack ptr u8[SPX_N] s_pub_seed;
   stack ptr u8[SPX_N] s_sk_seed;
   stack u32 s_addr_idx;
+  stack ptr u32[8] s_fors_leaf_addr;
+
+  ///////////////////////////////////////
 
   reg u64 offset; 
-  stack u64 s_offset;
-  
   stack u8[SPX_N] buf;
   reg ptr u8[SPX_N] buf_p;
-  
+
   fors_leaf_addr = __set_tree_index(fors_leaf_addr, addr_idx);
   fors_leaf_addr = __set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSPRF);
-  s_addr_idx = addr_idx; // spill
-
-  leaf = __fors_gen_sk__(leaf, pub_seed, sk_seed, fors_leaf_addr); // FIXME: Se comentar isto, o __fors_sk_to_leaf__ ja funciona (?)
   
+  s_pub_seed = pub_seed; 
+  s_sk_seed = sk_seed; 
+  s_addr_idx = s_addr_idx; 
+  s_fors_leaf_addr = fors_leaf_addr;
+
+  leaf = __fors_gen_sk__(leaf, pub_seed, sk_seed, fors_leaf_addr); 
+  
+  fors_leaf_addr = s_fors_leaf_addr;
   fors_leaf_addr = __set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSTREE);
 
-  offset=0; buf_p = buf;
+  offset=0; 
+  buf_p = buf;
   buf_p, offset = _x_memcpy_u8u8<SPX_N,SPX_N>(buf_p, offset, leaf);
-  s_offset = offset; // spill
 
-  s_sk_seed = sk_seed; s_addr_idx = addr_idx;  // spill
-  leaf = __fors_sk_to_leaf__(leaf, buf_p, pub_seed, fors_leaf_addr); // FIXME: Register allocation
-  sk_seed = s_sk_seed; addr_idx = s_addr_idx; // unspill
+  pub_seed = s_pub_seed;
+  leaf = __fors_sk_to_leaf__(leaf, buf_p, pub_seed, fors_leaf_addr);
 
   return leaf, fors_leaf_addr;
 }
@@ -152,12 +158,14 @@ inline fn __message_to_indices<MSG_LEN>(
 ) -> reg ptr u32[SPX_FORS_TREES]
 {
   inline int i j;
-  reg u64 offset;
-  reg u64 t u v;
+  reg u64 offset; 
+  reg u64 u v;
+  reg u64 t; // t has to be u64 otherwise asmgen: not able to assemble address
+
+  reg u64 x;
 
   offset = 0;
-  for i = 0 to SPX_FORS_TREES
-  {
+  for i = 0 to SPX_FORS_TREES {
     indices[i] = 0;
     for j = 0 to SPX_FORS_HEIGHT
     {
@@ -166,12 +174,12 @@ inline fn __message_to_indices<MSG_LEN>(
       t >>= (3 & 63);
 
       u = offset;
-      u &= 0x07;
-      u &= 1;
+      u &= 0x7; // FIXME: ERRO AQUI
 
       v = (64u) m[(int) t]; // t has to be 64u to assemble the address
       v >>= (u & 63);
-      v <<= (j & 63);
+      // v &= 1; 
+      // v <<= (j & 63);
 
       indices[i] ^= (32u) v;
 
@@ -306,7 +314,7 @@ inline fn __fors_sign__<MSG_LEN>(
   sk_seed = sk_seed;
   fors_addr = fors_addr;
 
-  sig, pk = __fors_sign<MSG_LEN>(sig, pk, m, pub_seed, sk_seed, fors_addr);
+  // sig, pk = __fors_sign<MSG_LEN>(sig, pk, m, pub_seed, sk_seed, fors_addr);
 
   sig = sig;
   pk = pk;
@@ -405,8 +413,9 @@ inline fn __fors_pk_from_sig<MSG_LEN>(
 
   /* Hash horizontally across all tree roots to derive the public key. */
   roots_p = roots;
-  pk = __thash<SPX_FORS_TREES>(pk, roots_p, pub_seed, fors_pk_addr_p);
+  // pk = __thash<SPX_FORS_TREES>(pk, roots_p, pub_seed, fors_pk_addr_p);
 
 
   return pk;
 }//<>
+
