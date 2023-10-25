@@ -1,0 +1,8 @@
+from Sphincs require "fips202/shake256_ptr/shake256_ptr.jinc"
+
+export fn shake256_ptr_jazz(
+    reg u64 output output_length input input_length
+)
+{
+    __shake256_ref1(output, output_length, input, input_length);
+}
