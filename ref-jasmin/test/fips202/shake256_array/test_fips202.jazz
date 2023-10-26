@@ -1,4 +1,4 @@
-from Sphincs require "fips202/shake256.jtmpl"
+from Sphincs require "fips202/shake256_array/shake256.jtmpl"
 
 export fn shake256<OUTLEN,INLEN>(reg u64 _out _in)
 {

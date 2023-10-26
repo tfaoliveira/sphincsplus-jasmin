@@ -1,0 +1,68 @@
+from Sphincs require "fips202/shake256_inc/shake256_inc.jinc"
+from Sphincs require "generic/utils.jtmpl"
+
+export fn shake256_inc_init_jazz(reg u64 _state)
+{
+  stack u64[26] state;
+  reg ptr u64[26] state_p;
+
+  state_p = state;
+  state_p = __load_u64_array<26>(state_p, _state);
+
+  state_p = __shake256_inc_init_(state_p);
+
+  __store_u64_array<26>(state_p, _state);
+}
+
+export fn shake256_inc_absorb_jazz(reg u64 _state _in _inlen)
+{
+  stack u64[26] state;
+  reg ptr u64[26] state_p;
+
+  stack u64 s_state;
+
+  state_p = state;
+  state_p = __load_u64_array<26>(state_p, _state); 
+
+  s_state = _state;
+
+  state_p = __shake256_inc_absorb_(state_p, _in, _inlen);
+
+  _state = s_state;
+  __store_u64_array<26>(state_p, _state);
+}
+
+export fn shake256_inc_finalize_jazz(
+  reg u64 _state
+)
+{
+  stack u64[26] state;
+  reg ptr u64[26] state_p;
+
+  stack u64 s_state;
+
+  state_p = state;
+  state_p = __load_u64_array<26>(state_p, _state); 
+
+  s_state = _state;
+
+  state_p = __shake256_inc_finalize(state_p);
+
+  _state = s_state;
+  __store_u64_array<26>(state_p, _state);
+}
+
+export fn shake256_inc_squeeze_jazz(
+  reg u64 _out _outlen _state
+)
+{
+  stack u64[26] state;
+  reg ptr u64[26] state_p;
+
+  stack u64 s_state;
+
+  state_p = state;
+  state_p = __load_u64_array<26>(state_p, _state); 
+
+  _ = __shake256_inc_squeeze(_out, _outlen, state);
+}

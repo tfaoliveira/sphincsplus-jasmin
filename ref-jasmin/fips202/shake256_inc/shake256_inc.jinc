@@ -1,0 +1,374 @@
+from Sphincs require "generic/conditions.jinc"
+from Sphincs require "fips202/shake256_ptr/keccak1600.jinc"
+
+////////////////////////////////// INIT //////////////////////////////////
+
+inline fn __keccak_inc_init(reg ptr u64[26] state) -> reg ptr u64[26] {
+  inline int i;
+  reg u64 t;
+
+  ?{}, t = #set0();
+
+  for i = 0 to 26 { state[i] = t; }
+
+  return state;
+}
+
+fn __shake256_inc_init(reg ptr u64[26] state) -> reg ptr u64[26] {
+  state = state;
+  state = __keccak_inc_init(state);
+  return state;
+}
+
+inline fn __shake256_inc_init_(
+  reg ptr u64[26] state
+) -> reg ptr u64[26]
+{
+  state = state;
+  state = __shake256_inc_init(state);
+  state = state;
+  return state;
+}
+
+////////////////////////////////// ABSORB ////////////////////////////////
+inline fn __keccak_inc_absorb(
+  reg ptr u64[26] state,
+  reg u64 in,
+  reg u64 inlen,
+  inline int rate
+) -> reg ptr u64[26]
+{
+  reg u64 i;
+  reg u64 offset_in;
+
+  reg u64 t u v z;
+
+  reg u8 t8;
+
+  stack u64 s_inlen s_in s_i s_offset_in s_t s_u s_v s_z;
+  stack ptr u64[26] s_state;
+
+  offset_in = 0;
+
+  t = inlen;
+  t += state[25]; // // t holds the value of inlen + state[25]
+
+  while (t >=u rate) {
+    i = 0;
+
+    t = rate;
+    t -= state[25];
+
+    while (i < t) {
+      // s_inc[(s_inc[25] + i) >> 3] ^= (uint64_t)m[i] << (8 * ((s_inc[25] + i) & 0x07));
+      t = state[25];
+      t += i;
+
+      u = t;
+      t >>= (3 & 63); // index: s_inc[25] + i) >> 3
+
+      u &= 0x07;
+      u *= 8; // TODO: replace by a shift
+
+      z = in;
+      z += offset_in;
+      z += i;
+
+      v = (64u) (u8) [z];
+      v <<= (u & 63);
+
+      state[(int) t] ^= v;
+
+      // t : (state[25] + i) >> 3
+      // u : 8 * ((state[25] + i) & 0x07) 
+      // z : i (after adjsuting for offset)
+      // v : (uint64_t) in[i] << (8 * ((state[25] + i) & 0x07))
+
+      t = rate;
+      t -= state[25];
+
+      i += 1;
+    }
+
+    t = rate;
+    t -= state[25];
+    inlen -= t;      // mlen -= (size_t)(r - s_inc[25]);
+    offset_in += t;  // m += r - s_inc[25];
+
+    state[25] = 0;
+
+    //////////////////// PERMUTE STATE //////////////////////////////////////
+    s_in = in;
+    s_inlen = inlen;
+    s_i = i;
+    s_offset_in = offset_in;
+    s_t = t;
+    s_u = u;
+    s_v = v;
+    s_z = z;
+
+    state[0:25] = _keccakf1600_ref1(state[0:25]);
+
+    in = s_in;
+    inlen = s_inlen;
+    i = s_i;
+    offset_in = s_offset_in;
+    u = s_u;
+    v = s_v;
+    z = s_z;
+    //////////////////// PERMUTE STATE //////////////////////////////////////
+
+    // To compute the loop condition
+    t = inlen;
+    t += state[25]; // // t holds the value of inlen + state[25]
+  }
+
+  // second for loop
+  i = 0;
+  while (i < inlen) {
+    // s_inc[(s_inc[25] + i) >> 3] ^= (uint64_t)m[i] << (8 * ((s_inc[25] + i) & 0x07));
+    t = state[25];
+    t += i;
+    t >>= (3 & 63); // index: s_inc[25] + i) >> 3
+
+    u = state[25]; // TODO: replace with u = t
+    u += i;        // TODO: replace with u = t
+    u &= 0x07;
+    u *= 8; // TODO: replace by a shift
+
+    z = in;
+    z += offset_in;
+    z += i;
+
+    v = (64u) (u8) [z];
+    v <<= (u & 63);
+
+    state[(int) t] ^= v;
+
+    // t : (state[25] + i) >> 3
+    // u : 8 * ((state[25] + i) & 0x07) 
+    // z : i (after adjsuting for offset)
+    // v : (uint64_t) in[i] << (8 * ((state[25] + i) & 0x07))
+
+    i += 1;
+  }
+
+  state[25] += inlen;
+
+  return state;
+}
+
+#[returnaddress="stack"]
+fn __shake256_inc_absorb(
+  reg ptr u64[26] state,
+  reg u64 in,
+  reg u64 inlen
+) -> reg ptr u64[26]
+{
+  inline int rate;
+
+  rate = (1088/8); // = 136
+
+  state = __keccak_inc_absorb(state, in, inlen, rate);
+  return state;
+}
+
+inline fn __shake256_inc_absorb_(
+  reg ptr u64[26] state,
+  reg u64 in,
+  reg u64 inlen
+) -> reg ptr u64[26]
+{
+  state = state;
+  in = in;
+  inlen = inlen;
+
+  state = __shake256_inc_absorb(state, in, inlen);
+
+  state = state;
+  in = in;
+  inlen = inlen;
+
+  return state;
+}
+////////////////////////////////// FINALIZE //////////////////////////////
+
+inline fn __keccak_inc_finalize_(
+  reg ptr u64[26] state,
+  reg u64 rate,
+  reg u8 trail_byte
+) -> reg ptr u64[26] 
+{
+  reg u64 t u v;
+
+  // s_inc[s_inc[25] >> 3] ^= (uint64_t)p << (8 * (s_inc[25] & 0x07));
+  t = state[25];
+  t >>= (3 & 63);
+
+  u = state[25];   // TODO: Replace with u = t;
+  u &= 0x07;
+  u *= 8; // TODO: Replace with a shift by 3
+
+  v = (64u) trail_byte;
+  v <<= (u & 63);
+
+  state[(int) t] ^= v;
+
+  // s_inc[(r - 1) >> 3] ^= (uint64_t)128 << (8 * ((r - 1) & 0x07));
+  t = rate;
+  t -= 1;
+  t >>= (3 & 63);
+
+  u = rate; // TODO: Replace with u = t; 
+  u -= 1;   // TODO: Replace with u = t;
+  u &= 0x07; 
+  u *= 8; // TODO: replace with a shift by 3
+
+  v = 128;
+  v <<= (u & 63);
+
+  state[(int) t] ^= v;
+  
+  // s_inc[25] = 0;
+  state[25] = 0;
+  return state;
+}
+
+inline fn __shake256_inc_finalize(
+  reg ptr u64[26] state
+) -> reg ptr u64[26] 
+{
+  reg u64 rate;
+  reg u8 trail_byte;
+
+  rate = (1088/8); // = 136
+  trail_byte = 0x1F;
+
+  state = __keccak_inc_finalize_(state, rate, trail_byte);
+  return state;
+}
+
+////////////////////////////////// SQUEEZE ///////////////////////////////
+inline fn __keccak_inc_squeeze_(
+  reg u64 out,
+  reg u64 outlen,
+  reg ptr u64[26] state,
+  reg u64 rate
+) -> reg ptr u64[26]
+{
+  stack u64 s_out s_outlen s_rate;
+
+  reg u64 i t u v offset_out;
+  reg u8 z;
+
+  stack u64 s_i s_t s_u s_v s_offset_out s_z;
+  stack u8 s_z;
+
+  reg bool cond;
+
+  offset_out = 0;
+
+   // for (i = 0; i < outlen && i < s_inc[25]; i++)
+  i = 0;
+  while { cond = __cond_u64_a_below_b_and_a_below_c(i, outlen, state[25]); } (!cond) { // FIXME: ???? TODO:
+    // h[i] = (uint8_t)(s_inc[(r - s_inc[25] + i) >> 3] >> (8 * ((r - s_inc[25] + i) & 0x07)));
+    
+    t = rate;
+    t -= state[25];
+    t += i;
+    t &= 0x07;
+    t *= 8; // TODO: Replace with a shift
+
+    u = rate;       // TODO: replace with u = t
+    u -= state[25]; // TODO: replace with u = t
+    u += i;         // TODO: replace with u = t  
+    u >>= (3 & 63);
+
+    v = state[(int) u];
+    v >>= (t & 63);
+
+    // t : (8 * ((r - s_inc[25] + i) & 0x07))
+    // u : (r - s_inc[25] + i) >> 3
+    // v : s_inc[(r - s_inc[25] + i) >> 3] >> (8 * ((r - s_inc[25] + i) & 0x07)) 
+
+    (u8) [out + i] = (8u) v;
+
+    i += 1;
+  }
+
+  offset_out += i;
+  outlen -= i;
+  state[25] -= i;
+
+   // Then squeeze the remaining necessary blocks 
+  while (outlen > 0) {
+    // Spill
+    s_out = out;
+    s_outlen = outlen;
+    s_rate = rate;
+    s_i = i;
+    s_t = t;
+    s_u = u;
+    s_v = v;
+    s_offset_out = offset_out;
+
+    state[0:25] = _keccakf1600_ref1(state[0:25]);
+
+    // Unspill
+    out = s_out;
+    outlen = s_outlen;
+    rate = s_rate;
+    offset_out = s_offset_out;
+
+    // for (i = 0; i < outlen && i < r; i++)
+    i = 0;
+    while {
+      cond = __cond_u64_a_below_b_and_a_below_c(i, outlen, rate);
+    } (cond) {
+      // h[i] = (uint8_t)(s_inc[i >> 3] >> (8 * (i & 0x07)));
+
+      t = i;
+      t  &= 0x07;
+      t *= 8; // TODO: Replace by shift by 3
+
+      u = i;
+      u >>= (3 & 63);
+
+      v = state[(int) u];
+      v >>= (t & 63);
+
+      // t : 8 * (i & 0x07)
+      // u : i >> 3
+      // v : s_inc[i >> 3] >> (8 * (i & 0x07))
+
+      t = offset_out;
+      t += i;
+      
+      (u8) [out + t] = (8u) v;
+      i += 1;
+    } 
+
+    offset_out += i;
+    outlen -= i;
+    state[25] = rate;
+    state[25] -= i;
+  }
+  
+  return state;
+}
+
+// #[returnaddress="stack"]
+inline fn __shake256_inc_squeeze(
+  reg u64 out,
+  reg u64 outlen,
+  reg ptr u64[26] state
+) -> reg ptr u64[26]
+{
+  reg u64 rate;
+
+  rate = (1088/8); // = 136
+
+  state = __keccak_inc_squeeze_(out, outlen, state, rate);
+
+  return state;
+}//<>

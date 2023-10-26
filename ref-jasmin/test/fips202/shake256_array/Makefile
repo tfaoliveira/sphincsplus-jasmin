@@ -7,9 +7,9 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
-JASMIN   ?= jasminc
-JPP      ?= ../scripts/jpp
-PREPROCESSOR ?= ../scripts/preprocessor
+JASMIN       ?= jasminc
+JPP          ?= ../../scripts/jpp
+PREPROCESSOR ?= ../../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
@@ -50,7 +50,7 @@ $(JPP_FILES):
 .PRECIOUS: bin/test_fips202_%.jpp
 bin/test_fips202_%.jpp: | bin/
 	cp test_fips202.jazz $@
-	$(JPP) -I Sphincs:../../ -in $@ -out $@
+	$(JPP) -I Sphincs:../../../ -in $@ -out $@
 	$(PREPROCESSOR) --input_file $@ --output_file $@ --task "fn:shake256  p:OUTLEN:$(GET_OUTLEN) p:INLEN:$(GET_INLEN)"
 
 .PRECIOUS: bin/test_fips202_%.s
@@ -59,8 +59,8 @@ bin/test_fips202_%.s: bin/test_fips202_%.jpp
 
 $(TESTS):
 bin/test_fips202_%: bin/test_fips202_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DOUTLEN=$(GET_OUTLEN) -DINLEN=$(GET_INLEN) -I../common -I../../ \
-test_fips202.c $< ../../fips202.c
+	$(CC) $(CFLAGS) -o $@ -DOUTLEN=$(GET_OUTLEN) -DINLEN=$(GET_INLEN) -I../../common -I../../../ \
+test_fips202.c $< ../../../fips202.c
 
 bin/test_fips202_%.out: bin/test_fips202_%
 	@./$<
