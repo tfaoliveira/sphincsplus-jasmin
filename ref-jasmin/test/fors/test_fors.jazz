@@ -106,7 +106,7 @@ export fn fors_gen_leafx1_jazz(
   sk_seed_p = sk_seed;
   sk_seed_p = __load_u8_array<SPX_N>(sk_seed_p, _sk_seed);
 
-  addr_idx = (u32)[_addr_idx];
+  addr_idx = (32u) _addr_idx;
 
   fors_leaf_addr_p = fors_leaf_addr;
   fors_leaf_addr_p = __load_u32_array<8>(fors_leaf_addr_p, _fors_leaf_addr);

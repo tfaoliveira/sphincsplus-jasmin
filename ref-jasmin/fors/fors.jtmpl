@@ -95,12 +95,11 @@ inline fn __fors_gen_leafx1(
   stack ptr u8[SPX_N] s_sk_seed;
   stack u32 s_addr_idx;
   stack ptr u32[8] s_fors_leaf_addr;
+  
+  inline int i; 
+  reg u8 t;
 
   ///////////////////////////////////////
-
-  reg u64 offset; 
-  stack u8[SPX_N] buf;
-  reg ptr u8[SPX_N] buf_p;
 
   fors_leaf_addr = __set_tree_index(fors_leaf_addr, addr_idx);
   fors_leaf_addr = __set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSPRF);
@@ -115,13 +114,9 @@ inline fn __fors_gen_leafx1(
   fors_leaf_addr = s_fors_leaf_addr;
   fors_leaf_addr = __set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSTREE);
 
-  offset=0; 
-  buf_p = buf;
-  buf_p, offset = _x_memcpy_u8u8<SPX_N,SPX_N>(buf_p, offset, leaf);
-
   pub_seed = s_pub_seed;
-  leaf = __fors_sk_to_leaf__(leaf, buf_p, pub_seed, fors_leaf_addr);
-
+  leaf = __thash_inplace_(leaf, pub_seed, fors_leaf_addr);
+  
   return leaf, fors_leaf_addr;
 }
 

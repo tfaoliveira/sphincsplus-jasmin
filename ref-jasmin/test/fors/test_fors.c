@@ -89,8 +89,7 @@ static void message_to_indices_ref(uint32_t *indices, const unsigned char *m) {
     for (i = 0; i < SPX_FORS_TREES; i++) {
         indices[i] = 0;
         for (j = 0; j < SPX_FORS_HEIGHT; j++) {
-            // indices[i] ^= ((m[offset >> 3] >> (offset & 0x7)) & 1u) << j;
-            indices[i] ^= (m[offset >> 3] >> (offset & 0x7));
+            indices[i] ^= ((m[offset >> 3] >> (offset & 0x7)) & 1u) << j;
             offset++;
         }
     }
@@ -174,7 +173,7 @@ void test_fors_gen_leafx1(void) {
     uint8_t leaf_ref[SPX_N], leaf_jazz[SPX_N];
     spx_ctx ctx;
     uint32_t addr_idx;
-    uint32_t addr[8];
+    struct fors_gen_leaf_info info;
 
     for (int i = 0; i < TESTS; i++) {
         memset(leaf_ref, 0, SPX_N);
@@ -183,13 +182,10 @@ void test_fors_gen_leafx1(void) {
         randombytes(ctx.pub_seed, SPX_N);
         randombytes(ctx.sk_seed, SPX_N);
         randombytes((uint8_t *)&addr_idx, sizeof(uint32_t));
-        random_addr(addr);
+        randombytes((uint8_t *)info.leaf_addrx, 8 * sizeof(uint32_t));
 
-        puts("Chegou aqui");
-        fors_gen_leafx1_ref(leaf_ref, &ctx, addr_idx, (void *)addr);
-        puts("Chegou aqui 2");
-        fors_gen_leafx1_jazz(leaf_jazz, ctx.pub_seed, ctx.sk_seed, addr_idx, addr);
-        puts("Chegou aqui 3");
+        fors_gen_leafx1_ref(leaf_ref, &ctx, addr_idx, (void *)&info);
+        fors_gen_leafx1_jazz(leaf_jazz, ctx.pub_seed, ctx.sk_seed, addr_idx, info.leaf_addrx);
 
         assert(memcmp(leaf_ref, leaf_jazz, SPX_N) == 0);
     }
