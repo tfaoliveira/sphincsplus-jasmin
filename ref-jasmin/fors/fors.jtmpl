@@ -152,34 +152,43 @@ inline fn __message_to_indices<MSG_LEN>(
   reg ptr u8[MSG_LEN] m
 ) -> reg ptr u32[SPX_FORS_TREES]
 {
-  inline int i j;
+  reg u64 i j;
   reg u64 offset; 
-  reg u64 u v;
+  reg u32 u v z w;
   reg u64 t; // t has to be u64 otherwise asmgen: not able to assemble address
 
-  reg u64 x;
 
   offset = 0;
-  for i = 0 to SPX_FORS_TREES {
-    indices[i] = 0;
-    for j = 0 to SPX_FORS_HEIGHT
-    {
+  i = 0; j = 0;
+  
+  while(i < SPX_FORS_TREES) {
+    indices[(int) i] = 0;
+    while(j < SPX_FORS_HEIGHT) {
       // indices[i] ^= ((m[offset >> 3] >> (offset & 0x7)) & 1u) << j;
       t = offset;
       t >>= (3 & 63);
 
       u = offset;
-      u &= 0x7; // FIXME: ERRO AQUI
+      u &= 0x7;
 
-      v = (64u) m[(int) t]; // t has to be 64u to assemble the address
-      v >>= (u & 63);
-      // v &= 1; 
-      // v <<= (j & 63);
+      v = (32u) m[(int) t];
+      v >>= u & 63;
+      v &= 1;
+      v <<= (j & 63);
 
-      indices[i] ^= (32u) v;
+      z = v;
+
+      // t : offset >> 3
+      // u : (offset & 0x7)
+      // v : m[offset >> 3] >> (offset & 0x7) & 1u << j
+
+      indices[(int) i] ^= z;
 
       offset += 1;
+      j += 1;
     }
+
+    i += 1;
   }
 
   return indices;

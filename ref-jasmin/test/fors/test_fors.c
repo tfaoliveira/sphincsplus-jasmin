@@ -108,6 +108,7 @@ static void fors_gen_leafx1_ref(unsigned char *leaf, const spx_ctx *ctx, uint32_
     set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSTREE);
     fors_sk_to_leaf(leaf, leaf, ctx, fors_leaf_addr);
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void test_fors_gen_sk(void) {
@@ -164,8 +165,10 @@ void test_message_to_indices(void) {
 
         message_to_indices_ref(indices_ref, msg);
         message_to_indices_jazz(indices_jazz, msg);
+        print_str_u8("ref", (uint8_t*)indices_ref, SPX_FORS_TREES * sizeof(uint32_t));
+        print_str_u8("jazz", (uint8_t*)indices_jazz, SPX_FORS_TREES * sizeof(uint32_t));
 
-        assert(memcmp(indices_ref, indices_jazz, sizeof(indices_ref)) == 0);
+        assert(memcmp(indices_ref, indices_jazz, SPX_FORS_TREES * sizeof(uint32_t)) == 0);
     }
 }
 
@@ -245,7 +248,7 @@ void test_fors_pk_from_sig(void) {
 int main(void) {
     test_fors_gen_sk();
     test_fors_sk_to_leaf();
-    // test_message_to_indices(); // FIXME: This tests fails
+    test_message_to_indices();  // FIXME: This tests fails
     test_fors_gen_leafx1();
     // test_fors_sign();
     // test_fors_pk_from_sig();
