@@ -1,0 +1,47 @@
+/*
+for tuple in "lu,<u" "leu,<=u" "gu,>u" "geu,>=u" "eq,==" "neq,!=" "ls,<s" "les,<=s" "gs,>s" "ges,>=s" ; do
+ IFS=','; set -- $tuple; fnm=$1; cnd=$2;
+ for type in u8 u16 u32 u64; do size=${type/u/}; echo "inline fn __cmp_${fnm}_${type}(reg $type a b) -> reg bool { reg bool c; ?{ \"$cnd\" = c} = #CMP_$size(a,b); return c; }"; done
+done
+*/
+
+inline fn __cmp_lu_u8(reg u8 a b) -> reg bool { reg bool c; ?{ "<u" = c} = #CMP_8(a,b); return c; }
+inline fn __cmp_lu_u16(reg u16 a b) -> reg bool { reg bool c; ?{ "<u" = c} = #CMP_16(a,b); return c; }
+inline fn __cmp_lu_u32(reg u32 a b) -> reg bool { reg bool c; ?{ "<u" = c} = #CMP_32(a,b); return c; }
+inline fn __cmp_lu_u64(reg u64 a b) -> reg bool { reg bool c; ?{ "<u" = c} = #CMP_64(a,b); return c; }
+inline fn __cmp_leu_u8(reg u8 a b) -> reg bool { reg bool c; ?{ "<=u" = c} = #CMP_8(a,b); return c; }
+inline fn __cmp_leu_u16(reg u16 a b) -> reg bool { reg bool c; ?{ "<=u" = c} = #CMP_16(a,b); return c; }
+inline fn __cmp_leu_u32(reg u32 a b) -> reg bool { reg bool c; ?{ "<=u" = c} = #CMP_32(a,b); return c; }
+inline fn __cmp_leu_u64(reg u64 a b) -> reg bool { reg bool c; ?{ "<=u" = c} = #CMP_64(a,b); return c; }
+inline fn __cmp_gu_u8(reg u8 a b) -> reg bool { reg bool c; ?{ ">u" = c} = #CMP_8(a,b); return c; }
+inline fn __cmp_gu_u16(reg u16 a b) -> reg bool { reg bool c; ?{ ">u" = c} = #CMP_16(a,b); return c; }
+inline fn __cmp_gu_u32(reg u32 a b) -> reg bool { reg bool c; ?{ ">u" = c} = #CMP_32(a,b); return c; }
+inline fn __cmp_gu_u64(reg u64 a b) -> reg bool { reg bool c; ?{ ">u" = c} = #CMP_64(a,b); return c; }
+inline fn __cmp_geu_u8(reg u8 a b) -> reg bool { reg bool c; ?{ ">=u" = c} = #CMP_8(a,b); return c; }
+inline fn __cmp_geu_u16(reg u16 a b) -> reg bool { reg bool c; ?{ ">=u" = c} = #CMP_16(a,b); return c; }
+inline fn __cmp_geu_u32(reg u32 a b) -> reg bool { reg bool c; ?{ ">=u" = c} = #CMP_32(a,b); return c; }
+inline fn __cmp_geu_u64(reg u64 a b) -> reg bool { reg bool c; ?{ ">=u" = c} = #CMP_64(a,b); return c; }
+inline fn __cmp_eq_u8(reg u8 a b) -> reg bool { reg bool c; ?{ "==" = c} = #CMP_8(a,b); return c; }
+inline fn __cmp_eq_u16(reg u16 a b) -> reg bool { reg bool c; ?{ "==" = c} = #CMP_16(a,b); return c; }
+inline fn __cmp_eq_u32(reg u32 a b) -> reg bool { reg bool c; ?{ "==" = c} = #CMP_32(a,b); return c; }
+inline fn __cmp_eq_u64(reg u64 a b) -> reg bool { reg bool c; ?{ "==" = c} = #CMP_64(a,b); return c; }
+inline fn __cmp_neq_u8(reg u8 a b) -> reg bool { reg bool c; ?{ "!=" = c} = #CMP_8(a,b); return c; }
+inline fn __cmp_neq_u16(reg u16 a b) -> reg bool { reg bool c; ?{ "!=" = c} = #CMP_16(a,b); return c; }
+inline fn __cmp_neq_u32(reg u32 a b) -> reg bool { reg bool c; ?{ "!=" = c} = #CMP_32(a,b); return c; }
+inline fn __cmp_neq_u64(reg u64 a b) -> reg bool { reg bool c; ?{ "!=" = c} = #CMP_64(a,b); return c; }
+inline fn __cmp_ls_u8(reg u8 a b) -> reg bool { reg bool c; ?{ "<s" = c} = #CMP_8(a,b); return c; }
+inline fn __cmp_ls_u16(reg u16 a b) -> reg bool { reg bool c; ?{ "<s" = c} = #CMP_16(a,b); return c; }
+inline fn __cmp_ls_u32(reg u32 a b) -> reg bool { reg bool c; ?{ "<s" = c} = #CMP_32(a,b); return c; }
+inline fn __cmp_ls_u64(reg u64 a b) -> reg bool { reg bool c; ?{ "<s" = c} = #CMP_64(a,b); return c; }
+inline fn __cmp_les_u8(reg u8 a b) -> reg bool { reg bool c; ?{ "<=s" = c} = #CMP_8(a,b); return c; }
+inline fn __cmp_les_u16(reg u16 a b) -> reg bool { reg bool c; ?{ "<=s" = c} = #CMP_16(a,b); return c; }
+inline fn __cmp_les_u32(reg u32 a b) -> reg bool { reg bool c; ?{ "<=s" = c} = #CMP_32(a,b); return c; }
+inline fn __cmp_les_u64(reg u64 a b) -> reg bool { reg bool c; ?{ "<=s" = c} = #CMP_64(a,b); return c; }
+inline fn __cmp_gs_u8(reg u8 a b) -> reg bool { reg bool c; ?{ ">s" = c} = #CMP_8(a,b); return c; }
+inline fn __cmp_gs_u16(reg u16 a b) -> reg bool { reg bool c; ?{ ">s" = c} = #CMP_16(a,b); return c; }
+inline fn __cmp_gs_u32(reg u32 a b) -> reg bool { reg bool c; ?{ ">s" = c} = #CMP_32(a,b); return c; }
+inline fn __cmp_gs_u64(reg u64 a b) -> reg bool { reg bool c; ?{ ">s" = c} = #CMP_64(a,b); return c; }
+inline fn __cmp_ges_u8(reg u8 a b) -> reg bool { reg bool c; ?{ ">=s" = c} = #CMP_8(a,b); return c; }
+inline fn __cmp_ges_u16(reg u16 a b) -> reg bool { reg bool c; ?{ ">=s" = c} = #CMP_16(a,b); return c; }
+inline fn __cmp_ges_u32(reg u32 a b) -> reg bool { reg bool c; ?{ ">=s" = c} = #CMP_32(a,b); return c; }
+inlinefn __cmp_ges_u64(reg u64 a b) -> reg bool { reg bool c; ?{ ">=s" = c} = #CMP_64(a,b); return c; }
