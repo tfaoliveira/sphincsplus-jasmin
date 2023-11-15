@@ -34,6 +34,26 @@ void test_absorb_n_blocks(int nblocks);
 void test_shake_shake_inc(int nblocks);
 
 // /////////////////////////////////////////////////////////////////////////////
+#if 0
+// note: do not remove me; integrate with debub macro && assert
+void dump_test_env_state(
+  char *str,
+  size_t inlen,
+  size_t outlen,
+  uint64_t state_jazz[26],
+  uint64_t state_ref[26]
+)
+{
+  printf("debug: %s\n", str);
+  printf("inlen  : %zu\n", inlen);
+  printf("outlen : %zu\n", outlen);
+
+  print_str_u8("state_jazz", (uint8_t*) state_jazz, 26*sizeof(uint64_t));
+  print_str_u8("state_ref ", (uint8_t*) state_ref,  26*sizeof(uint64_t));
+  printf("\n\n");
+}
+#endif
+// /////////////////////////////////////////////////////////////////////////////
 void test_absorb_n_blocks(int nblocks)
 {
   #define MAXIN (257)
