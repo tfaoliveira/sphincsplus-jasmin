@@ -15,7 +15,7 @@ run: bin/test_shake256_ptr.out
 
 .PRECIOUS: bin/test_shake256_ptr.s
 bin/test_shake256_ptr.s: test_shake256_ptr.jazz | bin/
-	jasminc -I Sphincs:../../../ -nowarning $< -o $@
+	$(JASMIN) -I Sphincs:../../../ -nowarning $< -o $@
 
 bin/test_shake256_ptr: bin/test_shake256_ptr.s | bin/
 	$(CC) $(CFLAGS) -o $@ -I../../common -I../../ test_shake256_ptr.c $< ../../../fips202.c

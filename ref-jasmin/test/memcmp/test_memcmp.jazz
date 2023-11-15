@@ -13,7 +13,7 @@ export fn memcmp_jazz<INLEN>(
   a = __load_u8_array<INLEN>(a, _a);
   b = __load_u8_array<INLEN>(b, _a);
 
-  r = __memcpy_u8u<INLEN>(a, b);
+  r = __memcmp_u8<INLEN>(a, b);
 
   return r;
 }//<>

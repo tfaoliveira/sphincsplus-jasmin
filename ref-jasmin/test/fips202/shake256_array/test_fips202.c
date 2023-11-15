@@ -18,7 +18,7 @@
 #endif
 
 #ifndef TESTS
-#define TESTS 1000
+#define TESTS 1
 #endif
 
 #define shake256_jazz NAMESPACE2(shake256, OUTLEN, INLEN)

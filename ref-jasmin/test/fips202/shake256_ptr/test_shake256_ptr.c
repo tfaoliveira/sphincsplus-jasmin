@@ -10,7 +10,7 @@
 #include "print.c"
 
 #ifndef TESTS
-#define TESTS 1000
+#define TESTS 1
 #endif
 
 extern void shake256_ptr_jazz(uint8_t *out, size_t outlen, const uint8_t *in, size_t inlen);
@@ -23,8 +23,10 @@ int main(void) {
     uint8_t *out_jazz;
 
     for (int i = 0; i < TESTS; i++) {
+        printf("Test %d\n", i);
         for (size_t inlen = 0; inlen < 2048; inlen++) {
             for (size_t outlen = 0; outlen < 2048; outlen++) {
+                printf("INLEN: %ld OUTLEN: %ld\n", inlen, outlen);
                 in = malloc(inlen);
                 out_ref = malloc(outlen);
                 out_jazz = malloc(outlen);

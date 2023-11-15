@@ -50,7 +50,7 @@ bin/test_thash_%.jpp: | bin/
 
 .PRECIOUS: bin/test_thash_%.s
 bin/test_thash_%.s: bin/test_thash_%.jpp
-	jasminc -nowarning $< -o $@
+	$(JASMIN) -nowarning $< -o $@
 
 $(TESTS):
 bin/test_thash_%: bin/test_thash_%.s | bin/

@@ -48,7 +48,7 @@ bin/test_merkle_%.jpp: | bin/
 
 .PRECIOUS: bin/test_merkle_%.s
 bin/test_merkle_%.s: bin/test_merkle_%.jpp
-	jasminc -nowarning $< -o $@
+	$(JASMIN) -nowarning $< -o $@
 
 $(TESTS):
 bin/test_merkle_%: bin/test_merkle_%.s | bin/

@@ -1,4 +1,4 @@
-from Sphincs require "fips202/shake256.jtmpl"
+from Sphincs require "fips202/shake256_array/shake256.jtmpl"
 from Sphincs require "memcpy/memcpy.jtmpl"
 
 inline fn __thash<INBLOCKS>(

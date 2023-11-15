@@ -47,7 +47,7 @@ bin/test_hash_%.jpp: | bin/
 
 .PRECIOUS: bin/test_hash_%.s
 bin/test_hash_%.s: bin/test_hash_%.jpp
-	jasminc -nowarning $< -o $@
+	$(JASMIN) -nowarning $< -o $@
 
 $(TESTS):
 bin/test_hash_%: bin/test_hash_%.s | bin/

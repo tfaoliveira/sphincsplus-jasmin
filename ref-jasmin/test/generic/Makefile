@@ -47,7 +47,7 @@ bin/test_generic_%.jpp: | bin/
 
 .PRECIOUS: bin/test_generic_%.s
 bin/test_generic_%.s: bin/test_generic_%.jpp
-	jasminc -lazy-regalloc -nowarning $< -o $@
+	$(JASMIN) -lazy-regalloc -nowarning $< -o $@
 
 $(TESTS):
 bin/test_generic_%: bin/test_generic_%.s | bin/

@@ -4,6 +4,7 @@ CC     ?= clang
 CFLAGS ?= -O3 -Wall -Wextra -Wpedantic -Wvla -Werror -std=c99 \
 	        -Wundef -Wshadow -Wcast-align -Wpointer-arith -Wmissing-prototypes \
 	        -fstrict-aliasing -fno-common -pipe -g
+
 JASMIN ?= jasminc
 JPP    ?= ../scripts/jpp
 PREPROCESSOR  ?= ../scripts/preprocessor
@@ -50,7 +51,7 @@ bin/test_memcpy_%.jpp:
 	
 .PRECIOUS: bin/test_memcpy_%.s
 bin/test_memcpy_%.s: bin/test_memcpy_%.jpp
-	jasminc $< -o $@
+	$(JASMIN) $< -o $@
 
 $(TESTS):
 bin/test_memcpy_u8u8_%: bin/test_memcpy_%.s | bin/

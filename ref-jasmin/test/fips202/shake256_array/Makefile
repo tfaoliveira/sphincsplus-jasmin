@@ -13,21 +13,8 @@ PREPROCESSOR ?= ../../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
-# inlen focused
-#OUTLEN_LIST := 1
-#INLEN_LIST := $(shell seq 1 280)
-
-# outlen focused
-#OUTLEN_LIST := $(shell seq 1 280)
-#INLEN_LIST := 1
-
-# wookie
-#OUTLEN_LIST := 32 64 
-#INLEN_LIST := 1024 2048
-
-# some more
-OUTLEN_LIST := $(shell seq 1 32) 33 34 63 64 65 
-INLEN_LIST := 1 135 136 137 271 272 273 407 408 409
+OUTLEN_LIST := $(shell seq 1 2048)
+INLEN_LIST := $(shell seq 1 2048)
 
 TLIST := $(foreach O,$(OUTLEN_LIST), $(foreach I,$(INLEN_LIST), $(O)_$(I)))
 
@@ -55,7 +42,7 @@ bin/test_fips202_%.jpp: | bin/
 
 .PRECIOUS: bin/test_fips202_%.s
 bin/test_fips202_%.s: bin/test_fips202_%.jpp
-	jasminc -nowarning $< -o $@
+	$(JASMIN) -nowarning $< -o $@
 
 $(TESTS):
 bin/test_fips202_%: bin/test_fips202_%.s | bin/

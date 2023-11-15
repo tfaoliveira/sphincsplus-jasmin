@@ -27,7 +27,7 @@ bin/test_shake256_inc.jpp: | bin/
 
 .PRECIOUS: bin/test_shake256_inc.s
 bin/test_shake256_inc.s: bin/test_shake256_inc.jpp | bin/
-	jasminc -I Sphincs:../../../ -nowarning $< -o $@
+	$(JASMIN) -I Sphincs:../../../ -nowarning $< -o $@
 
 bin/test_shake256_inc: bin/test_shake256_inc.s | bin/
 	$(CC) $(CFLAGS) -o $@ -I../../common -I../../ test_shake256_inc.c $< ../../../fips202.c
