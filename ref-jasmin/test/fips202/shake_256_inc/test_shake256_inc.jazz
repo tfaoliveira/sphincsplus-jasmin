@@ -64,5 +64,10 @@ export fn shake256_inc_squeeze_jazz(
   state_p = state;
   state_p = __load_u64_array<26>(state_p, _state); 
 
-  _ = __shake256_inc_squeeze(_out, _outlen, state);
+  s_state = _state;
+
+  state_p = __shake256_inc_squeeze(_out, _outlen, state_p);
+  _state = s_state;
+  __store_u64_array<26>(state_p, _state);
 }
+
