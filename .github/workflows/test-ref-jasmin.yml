@@ -1,8 +1,11 @@
 name: Tests for jasmin-ref implementation
 
 on:
-  - push
-  - pull_request
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
   build:
@@ -16,4 +19,4 @@ jobs:
       - uses: actions/checkout@v1
       - name: Run tests
         run:
-          JASMIN=$(which_jasminc) make -C ${{ matrix.directory }}
+          JASMIN=$(which_jasminc) make -C test/${{ matrix.directory }} run
