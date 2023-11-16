@@ -1,0 +1,19 @@
+name: Tests for jasmin-ref implementation
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  build:
+    runs-on: [self-hosted, linux, X64, amd64-main]
+    strategy:
+      matrix:
+        directory:
+          - fips202/shake256_inc/
+          - thash
+    steps:
+      - uses: actions/checkout@v1
+      - name: Run tests
+        run:
+          JASMIN=$(which_jasminc) make -C ${{ matrix.directory }}
