@@ -51,7 +51,7 @@ bin/test_address_%.jpp: | bin/
 
 .PRECIOUS: bin/test_address_%.s
 bin/test_address_%.s: bin/test_address_%.jpp
-	jasminc $< -o $@
+	$(JASMIN) $< -o $@
 
 $(TESTS):
 bin/test_address_%: bin/test_address_%.s | bin/

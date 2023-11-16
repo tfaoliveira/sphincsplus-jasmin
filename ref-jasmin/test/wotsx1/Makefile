@@ -48,7 +48,7 @@ bin/test_wotsx1_%.jpp: | bin/
 
 .PRECIOUS: bin/test_wotsx1_%.s
 bin/test_wotsx1_%.s: bin/test_wotsx1_%.jpp
-	jasminc -nowarning $< -o $@
+	$(JASMIN) -nowarning $< -o $@
 
 $(TESTS):
 bin/test_wotsx1_%: bin/test_wotsx1_%.s | bin/
