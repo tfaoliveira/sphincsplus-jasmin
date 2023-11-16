@@ -17,6 +17,9 @@ jobs:
           - thash
     steps:
       - uses: actions/checkout@v1
+      - name: Compile tests
+        run:
+          JASMIN=$(which_jasminc) make -C ref-jasmin/test/${{ matrix.directory }}
       - name: Run tests
         run:
           JASMIN=$(which_jasminc) make -C ref-jasmin/test/${{ matrix.directory }} run
