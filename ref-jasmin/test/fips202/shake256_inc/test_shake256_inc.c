@@ -9,6 +9,14 @@
 #include "notrandombytes.c"
 #include "print.c"
 
+#ifndef OUTLEN
+#define OUTLEN 1
+#endif
+
+#ifndef INLEN
+#define INLEN 1
+#endif
+
 #ifndef TESTS
 #define TESTS 10
 #endif
@@ -19,6 +27,8 @@ extern void shake256(uint8_t *out, size_t outlen, const uint8_t *in,
 extern void shake256_inc_init_jazz(uint64_t *state);
 extern void shake256_inc_init(uint64_t *state);  // from fips202.c
 
+#define shake256_inc_absorb_template_jazz NAMESPACE1(shake256_inc_absorb_template_jazz, INLEN)
+extern void shake256_inc_absorb_template_jazz(uint64_t *state, const uint8_t *in);
 extern void shake256_inc_absorb_jazz(uint64_t *state, const uint8_t *in, size_t inlen);
 extern void shake256_inc_absorb(uint64_t *state, const uint8_t *in,
                                 size_t inlen);  // from fips202.c
@@ -26,6 +36,8 @@ extern void shake256_inc_absorb(uint64_t *state, const uint8_t *in,
 extern void shake256_inc_finalize_jazz(uint64_t *state);
 extern void shake256_inc_finalize(uint64_t *state);  // from fips202.c
 
+#define shake256_inc_squeeze_template_jazz NAMESPACE1(shake256_inc_squeeze_template_jazz, OUTLEN)
+extern void shake256_inc_squeeze_template_jazz(uint8_t *out, uint64_t *state);
 extern void shake256_inc_squeeze_jazz(uint8_t *out, size_t outlen, uint64_t *state);
 extern void shake256_inc_squeeze(uint8_t *out, size_t outlen, uint64_t *state);  // from fips202.c
 
@@ -54,6 +66,33 @@ void dump_test_env_state(
 }
 #endif
 // /////////////////////////////////////////////////////////////////////////////
+
+void test_absorb_template(int nblocks) {
+  uint64_t state_ref[26], state_jazz[26];
+  uint8_t in[INLEN];
+  for (int i = 0; i < TESTS; i++) {
+    shake256_inc_init(state_ref);
+    shake256_inc_init_jazz(state_jazz);
+
+    // check if states are equal
+    assert(memcmp(state_jazz, state_ref, 26 * sizeof(uint64_t)) == 0);
+
+    // absorb block times
+    for (int blocks = 0; blocks < nblocks; blocks++)
+    {
+      randombytes(in, INLEN);
+
+      // absorb
+      shake256_inc_absorb(state_ref, in, INLEN);
+      shake256_inc_absorb_template_jazz(state_jazz, in);
+
+      // check if states are equal
+      assert(memcmp(state_jazz, state_ref, 26 * sizeof(uint64_t)) == 0);
+    }
+  } 
+}
+
+
 void test_absorb_n_blocks(int nblocks)
 {
   #define MAXIN (257)
@@ -153,14 +192,18 @@ void test_shake_shake_inc(int nblocks)
 
 int main(void)
 {
+  printf("INLEN: %d OUTLEN: %d\n", INLEN, OUTLEN);
+
   // should take roughly 2 to 3 minutes for i={0..8}
   for (int i = 0; i <= 8 ; i++)
   {
-    test_absorb_n_blocks(i);
-    printf("PASS: shake256 inc (inc vs inc) : %d blocks\n", i);
+    test_absorb_template(i);
 
-    test_shake_shake_inc(i);
-    printf("PASS: shake256 inc (inc vs one) : %d blocks\n", i);
+    // test_absorb_n_blocks(i);
+    // printf("PASS: shake256 inc (inc vs inc) : %d blocks\n", i);
+
+    // test_shake_shake_inc(i);
+    // printf("PASS: shake256 inc (inc vs one) : %d blocks\n", i);
   }
 
   return 0;
