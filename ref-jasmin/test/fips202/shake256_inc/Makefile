@@ -40,7 +40,7 @@ $(JPP_FILES):
 bin/test_shake256_inc_%.jpp: | bin/
 	cp test_shake256_inc.jazz $@
 	$(JPP) -I Sphincs:../../../ -in $@ -out $@
-	$(PREPROCESSOR) --input_file $@ --output_file $@ --task "fn:shake256_inc_absorb_template_jazz p:INLEN:$(GET_INLEN)" # "fn:shake256_inc_squeeze_template_jazz p:OUTLEN:$(GET_OUTLEN)"
+	$(PREPROCESSOR) --input_file $@ --output_file $@ --task "fn:shake256_inc_absorb_template_jazz p:INLEN:$(GET_INLEN)" "fn:shake256_inc_squeeze_template_jazz p:OUTLEN:$(GET_OUTLEN)"
 
 
 .PRECIOUS: bin/test_shake256_inc_%.s

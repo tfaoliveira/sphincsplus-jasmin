@@ -41,12 +41,12 @@ extern void shake256_inc_squeeze_template_jazz(uint8_t *out, uint64_t *state);
 extern void shake256_inc_squeeze_jazz(uint8_t *out, size_t outlen, uint64_t *state);
 extern void shake256_inc_squeeze(uint8_t *out, size_t outlen, uint64_t *state);  // from fips202.c
 
-void test_absorb_one_block(void);
+void test_shake_inc_templates(int nblocks);
 void test_absorb_n_blocks(int nblocks);
 void test_shake_shake_inc(int nblocks);
 
 // /////////////////////////////////////////////////////////////////////////////
-#if 0
+#if 1
 // note: do not remove me; integrate with debub macro && assert
 void dump_test_env_state(
   char *str,
@@ -67,10 +67,15 @@ void dump_test_env_state(
 #endif
 // /////////////////////////////////////////////////////////////////////////////
 
-void test_absorb_template(int nblocks) {
+void test_shake_inc_templates(int nblocks) {
   uint64_t state_ref[26], state_jazz[26];
   uint8_t in[INLEN];
+  uint8_t out_ref[OUTLEN], out_jazz[OUTLEN];
+
   for (int i = 0; i < TESTS; i++) {
+    memset(out_jazz, 0, OUTLEN);
+    memset(out_ref, 0, OUTLEN);
+
     shake256_inc_init(state_ref);
     shake256_inc_init_jazz(state_jazz);
 
@@ -89,6 +94,21 @@ void test_absorb_template(int nblocks) {
       // check if states are equal
       assert(memcmp(state_jazz, state_ref, 26 * sizeof(uint64_t)) == 0);
     }
+
+    // finalize
+    shake256_inc_finalize(state_ref);
+    shake256_inc_finalize_jazz(state_jazz);
+
+    // check if states are equal
+    assert(memcmp(state_jazz, state_ref, 26 * sizeof(uint64_t)) == 0);
+
+    // squeeze
+    shake256_inc_squeeze(out_ref, OUTLEN, state_ref);
+    shake256_inc_squeeze_template_jazz(out_jazz, state_jazz);
+    
+    // check if states & outputs are equal
+    assert(memcmp(state_jazz, state_ref, 26 * sizeof(uint64_t)) == 0);
+    assert(memcmp(out_jazz, out_ref, OUTLEN) == 0);
   } 
 }
 
@@ -197,14 +217,16 @@ int main(void)
   // should take roughly 2 to 3 minutes for i={0..8}
   for (int i = 0; i <= 8 ; i++)
   {
-    test_absorb_template(i);
+    test_shake_inc_templates(i);
 
-    // test_absorb_n_blocks(i);
-    // printf("PASS: shake256 inc (inc vs inc) : %d blocks\n", i);
+    test_absorb_n_blocks(i);
+    printf("PASS: shake256 inc (inc vs inc) : %d blocks\n", i);
 
-    // test_shake_shake_inc(i);
-    // printf("PASS: shake256 inc (inc vs one) : %d blocks\n", i);
+    test_shake_shake_inc(i);
+    printf("PASS: shake256 inc (inc vs one) : %d blocks\n", i);
   }
+
+  printf("\n");
 
   return 0;
 }

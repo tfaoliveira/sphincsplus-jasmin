@@ -75,7 +75,7 @@ export fn shake256_inc_absorb_template_jazz<INLEN>(
   reg u64 _state _in
 )
 {
-  // TODO: fix warning extra assignment
+  // TODO: fix extra assignment warning
   stack u64[26] state;
   stack u8[INLEN] in;
   stack u64 s_state;
@@ -88,12 +88,11 @@ export fn shake256_inc_absorb_template_jazz<INLEN>(
   __store_u64_array<26>(state, _state);
 }//<>
 
-/*
 export fn shake256_inc_squeeze_template_jazz<OUTLEN>(
   reg u64 _out _state
 )
 {
-  // TODO: Fix warning extra assignment 
+  // TODO: Fix extra assignment warning
   stack u64[26] state;
   stack u8[OUTLEN] out;
 
@@ -108,8 +107,7 @@ export fn shake256_inc_squeeze_template_jazz<OUTLEN>(
 
   _state = s_state;
   _out = s_out;
-
+  
   __store_u64_array<26>(state, _state);
   __store_u8_array<OUTLEN>(out, _out);
 }//<>
-*/

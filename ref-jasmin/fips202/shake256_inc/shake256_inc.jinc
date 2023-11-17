@@ -236,7 +236,6 @@ inline fn __shake256_inc_finalize(
 
 
 // SQUEEZE /////////////////////////////////////////////////////////////////////
-
 inline fn __keccak_inc_squeeze_copy_from_state(
   reg u64 out,
   reg u64 outlen,
@@ -280,13 +279,13 @@ inline fn __keccak_inc_squeeze_(
   stack u64 s_out s_outlen s_rate;
 
   // first consume any bytes we still have sitting around
-    limit = state[25];
-    offset = rate;
-    offset -= state[25];
+  limit = state[25];
+  offset = rate;
+  offset -= state[25];
 
   index, out, outlen = __keccak_inc_squeeze_copy_from_state(out, outlen, limit, state, offset);
 
-    state[25] = index;
+  state[25] = index;
 
   // then squeeze the remaining necessary blocks
   s_rate = rate;
@@ -296,16 +295,16 @@ inline fn __keccak_inc_squeeze_(
      s_out = out;
      s_outlen = outlen;
 
-     state[0:25] = _keccakf1600_ref1(state[0:25]);
+    state[0:25] = _keccakf1600_ref1(state[0:25]);
 
-       out = s_out;
-       outlen = s_outlen;
-       limit = s_rate;
-       offset = 0;
+    out = s_out;
+    outlen = s_outlen;
+    limit = s_rate;
+    offset = 0;
 
-     index, out, outlen = __keccak_inc_squeeze_copy_from_state(out, outlen, limit, state, offset);
+    index, out, outlen = __keccak_inc_squeeze_copy_from_state(out, outlen, limit, state, offset);
 
-       state[25] = index;
+    state[25] = index;
   }
 
   return state;
@@ -488,4 +487,103 @@ inline fn __shake256_inc_absorb_t<INLEN>(
   in = in;
 
   return state;
+}//<>
+
+/// SQUEEZE WITH TEMPLATES ///////////////////////////////
+inline fn __keccak_inc_squeeze_copy_from_state_t<OUTLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg u64 outlen,
+  reg u64 limit,
+  reg ptr u64[26] state,
+  reg u64 offset_state,
+  reg u64 offset_out)
+  ->
+  reg u64,
+  reg ptr u8[OUTLEN],
+  reg u64,
+  reg u64
+{
+  reg u64 i index z;
+  reg u8 value;
+  reg bool cond;
+
+  i = 0;
+  while { cond = __cond_u64_a_below_b_and_a_below_c(i, outlen, limit); } (cond)
+  {
+    value = state[u8 (int) offset_state];
+
+    z = offset_out;
+    z += i;
+    out[(int) z] = value;
+    offset_state += 1;
+    i += 1;
+  }
+
+  offset_out += i;
+  outlen -= i;
+  index = limit - i; // register renaming
+
+  return index, out, outlen, offset_out;
+}//<>
+
+inline fn __keccak_inc_squeeze_t<OUTLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg ptr u64[26] state,
+  reg u64 rate
+) -> reg ptr u8[OUTLEN], reg ptr u64[26]
+{
+  reg u64 limit  index outlen;
+  reg u64 offset_state offset_out;
+  stack u64 s_outlen s_rate s_offset_out;
+  stack ptr u8[OUTLEN] s_out;
+  
+  outlen = OUTLEN;
+  offset_out = 0;
+
+  // first consume any bytes we still have sitting around
+  limit = state[25];
+  offset_state = rate;
+  offset_state -= state[25];
+
+  index, out, outlen, offset_out = __keccak_inc_squeeze_copy_from_state_t<OUTLEN>(out, outlen, limit, state, offset_state, offset_out);
+
+  state[25] = index;
+
+  // then squeeze the remaining necessary blocks
+  s_rate = rate;
+
+  while( outlen > 0 )
+  {
+    s_out = out;
+    s_outlen = outlen;
+    s_offset_out = offset_out;
+
+    state[0:25] = _keccakf1600_ref1(state[0:25]);
+
+    out = s_out;
+    outlen = s_outlen;
+    limit = s_rate;
+    offset_state = 0;
+    offset_out = s_offset_out;
+
+    index, out, outlen, offset_out = __keccak_inc_squeeze_copy_from_state_t<OUTLEN>(out, outlen, limit, state, offset_state, offset_out);
+
+    state[25] = index;
+  }
+
+  return out, state;
+}//<>
+
+inline fn __shake256_inc_squeeze_t<OUTLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg ptr u64[26] state
+) -> reg ptr u8[OUTLEN], reg ptr u64[26]
+{
+  reg u64 rate;
+
+  rate = (1088/8); // = 136
+
+  out, state = __keccak_inc_squeeze_t<OUTLEN>(out, state, rate);
+
+  return out, state;
 }//<>
