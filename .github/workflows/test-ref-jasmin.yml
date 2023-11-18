@@ -18,6 +18,7 @@ jobs:
           - fips202/shake256_inc/
           - fips202/shake256_ptr
           - generic
+          - hash
           - memcmp
           - memcpy
           - thash

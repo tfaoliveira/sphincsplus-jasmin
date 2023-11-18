@@ -1,5 +1,5 @@
-from Sphincs require "fips202/shake256.jtmpl"
-from Sphincs require "fips202/shake256_inc.jtmpl"
+from Sphincs require "fips202/shake256_array/shake256.jtmpl"
+from Sphincs require "fips202/shake256_inc/shake256_inc.jinc" // FIXME: extension should be jtmpl
 from Sphincs require "memcpy/memcpy.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
 
@@ -35,33 +35,48 @@ inline fn __prf_addr(
 /*
  * Computes the message-dependent randomness R, using a secret seed and an
  * optional randomization value as well as the message
- * MSG_LEN is the message length
  */
-inline fn __gen_message_random<MSG_LEN>(
+inline fn __gen_message_random(
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_N] sk_prf,
   reg ptr u8[SPX_N] optrand, // optional randomization value
-  reg ptr u8[MSG_LEN] m
+  reg u64 msg,
+  reg u64 msg_len
 ) -> reg ptr u8[SPX_N]
 {
-  stack u8[2 * SPX_N + MSG_LEN] buf;
-  reg u64 offset;
+  stack u64[26] shake_state;
+  reg ptr u64[26] shake_state_p;
 
-  // TODO: Remove this
-  inline int i; reg u8 t;
-  for i = 0 to 2 * SPX_N + MSG_LEN { t = 0; buf[i] = t; }
-  for i = 0 to SPX_N { t = 0; R[i] = t; }
+  stack ptr u8[SPX_N] s_R, s_sk_prf, s_optrand;
+  stack u64 s_msg s_msg_len;
 
-  offset = 0;
+  // Spill
+  s_R = R;
+  s_sk_prf = sk_prf;
+  s_optrand = optrand;
+  s_msg = msg;
+  s_msg_len = msg_len;
 
-  // buf, offset = _x_memcpy_u8u8<2 * SPX_N + MSG_LEN, SPX_N>(buf, offset, sk_prf);
-  // buf, offset = _x_memcpy_u8u8<2 * SPX_N + MSG_LEN, SPX_N>(buf, offset, optrand);
-  // buf, _      = _x_memcpy_u8u8<2 * SPX_N + MSG_LEN, MSG_LEN>(buf, offset, m);
+  shake_state_p = shake_state;
 
-  R = __shake256<SPX_N, 2 * SPX_N + MSG_LEN>(R, buf);
+  shake_state_p = __shake256_inc_init_(shake_state_p);
+
+  sk_prf = s_sk_prf;
+  shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, sk_prf);
+
+  optrand = s_optrand;
+  shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, optrand);
+
+  msg = s_msg; msg_len = s_msg_len;
+  shake_state_p = __shake256_inc_absorb(shake_state_p, msg, msg_len);
+
+  shake_state_p = __shake256_inc_finalize(shake_state_p);
+
+  R = s_R;
+  R, _ = __shake256_inc_squeeze_t<SPX_N>(R, shake_state_p);
 
   return R;
-}//<>
+}
 
 /**
  * Computes the message hash using R, the public key, and the message.
@@ -69,80 +84,75 @@ inline fn __gen_message_random<MSG_LEN>(
  * the tree index and the leaf index, for convenient copying to an address.
  * 
  */
-inline fn __hash_message<MSG_LEN>(
+inline fn __hash_message(
   reg ptr u8[SPX_FORS_MSG_BYTES] digest,
   reg u64 tree,
   reg u32 leaf_idx,
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_PK_BYTES] pk,
-  reg ptr u8[MSG_LEN] m
+  reg u64 msg msg_len
 ) -> reg ptr u8[SPX_FORS_MSG_BYTES], reg u64, reg u32
 {
   /*
    * buf_p = [ FORS MSG BYTES | TREE BYTES  | LEAF BYTES]
    * 
    */
+  
   stack u8[SPX_DGST_BYTES] buf;
-  reg ptr u8[SPX_DGST_BYTES] buf_p;
-  reg ptr u8[SPX_TREE_BYTES] buf_tree_p;
-  reg ptr u8[SPX_LEAF_BYTES] buf_leaf_p;
 
   stack u64[26] shake256_state;
   reg ptr u64[26] shake256_state_p; 
 
   stack ptr u8[SPX_FORS_MSG_BYTES] s_digest;
-  stack u64 s_tree;
+  stack u64 s_tree s_msg s_msg_len;
   stack u32 s_leaf_idx;
   stack ptr u8[SPX_N] s_R;
   stack ptr u8[SPX_PK_BYTES] s_pk;
-  stack ptr u8[MSG_LEN] s_m;
 
-  reg u64 t u;
-  reg u32 z;
+  reg u64 offset;
+  reg u64 t u z;
 
   shake256_state_p = shake256_state;
 
   shake256_state_p = __shake256_inc_init_(shake256_state_p);
 
-  s_digest = digest; s_tree = tree; s_leaf_idx = leaf_idx; s_pk = pk; s_m = m; // spill
-  shake256_state_p = __shake256_inc_absorb_<SPX_N>(shake256_state_p, R);
-  s_R = R;
+  // Spill
+  s_digest = digest; 
+  s_tree = tree; 
+  s_leaf_idx = leaf_idx; 
+  s_pk = pk; 
+  s_msg = msg;
+  s_msg_len = msg_len;
+
+  shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, R);
 
   pk = s_pk;
-  shake256_state_p = __shake256_inc_absorb_<SPX_PK_BYTES>(shake256_state_p, pk);
-  s_pk = pk;
+  shake256_state_p = __shake256_inc_absorb_t<SPX_PK_BYTES>(shake256_state_p, pk);
 
-  m = s_m;
-  shake256_state_p = __shake256_inc_absorb<MSG_LEN>(shake256_state_p, m);
-  s_m = m;
+  msg = s_msg;
+  msg_len = s_msg_len;
+  shake256_state_p = __shake256_inc_absorb(shake256_state_p, msg, msg_len);
 
   shake256_state_p = __shake256_inc_finalize(shake256_state_p);
 
-  buf_p = buf;
-  buf_p, _ = __shake256_inc_squeeze<SPX_DGST_BYTES>(buf_p, shake256_state_p);
-  shake256_state = shake256_state_p;
+  buf, _ = __shake256_inc_squeeze_t<SPX_DGST_BYTES>(buf, shake256_state_p);
 
-  t = 0; // offset
+  offset = 0;
   digest = s_digest;
-  digest, _ = __memcpy_u8u8<SPX_FORS_MSG_BYTES,SPX_DGST_BYTES>(digest, t, buf_p);
+  digest, _ = __memcpy_u8u8<SPX_FORS_MSG_BYTES, SPX_DGST_BYTES>(digest, offset, buf);
 
-  tree = s_tree;
-  leaf_idx = s_leaf_idx;
-
-  // Tree
-  buf_tree_p = buf[SPX_FORS_MSG_BYTES : SPX_TREE_BYTES];
-  tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, buf_tree_p);
-  t = 0; t = #NOT_64(t);
+  tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, buf[SPX_FORS_MSG_BYTES:SPX_TREE_BYTES]);
+  ?{}, t = #set0(); 
+  t = #NOT_64(t);
   u = 64;
   u -= SPX_TREE_BITS;
-  t >>= (u & 63);
+  t = #SHR(t, u);
   tree &= t;
-
-  // Leaf
-  buf_leaf_p = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES]; 
-  t = __bytes_to_ull<SPX_LEAF_BYTES>(t, buf_leaf_p);
+  
+  t = __bytes_to_ull<SPX_LEAF_BYTES>(t, buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES]);
   leaf_idx = (32u)t;
-  t = 0; t = #NOT_64(t);
+  t = 0; 
+  t = #NOT_64(t);
   u = 32;
   u -= SPX_LEAF_BITS;
   t >>= (u & 63);

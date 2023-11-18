@@ -19,46 +19,26 @@
 #define PARAM 128f
 #endif
 
-#ifndef MSG_LEN
-#define MSG_LEN 64
-#endif
-
 #ifndef TESTS
 #define TESTS 1000
 #endif
 
-// TODO: Refactor
-/*
- * Combines R and leaf_idx pk to bypass
- * register allocation: too many parameters according to the ABI (only 6 available on this
- * architecture)
- */
 typedef struct {
-    uint8_t *R;
-    uint8_t *pk;
-} r_pk;
-
-extern void shake256(uint8_t *output, size_t outlen, const uint8_t *input,
-                     size_t inlen);  // from fips202.c
+    uint8_t R[SPX_N];
+    uint8_t pk[SPX_PK_BYTES];
+} args;
 
 extern void prf_addr_jazz(uint8_t *out, const unsigned char *pub_seed, const unsigned char *sk_seed,
                           const uint32_t add[8]);
 
-#define gen_message_random_jazz NAMESPACE1(gen_msg_random_jazz, MSG_LEN)
 extern void gen_message_random_jazz(uint8_t *R, const uint8_t *sk_prf, const uint8_t *optrand,
-                                    const uint8_t *m);
+                                    const uint8_t *msg, size_t msg_len);
 
-#define hash_message_jazz NAMESPACE1(hash_message_jazz, MSG_LEN)
 extern uint32_t hash_message_jazz(uint8_t *digest, uint64_t *tree, const uint32_t *leaf_idx,
-                                  const r_pk *rpk, const uint8_t *m, const spx_ctx *ctx);
+                                  const args *_args, const uint8_t *msg, size_t msg_len);
 
 void test_prf_addr(void);
 void test_gen_message_random(void);
-
-void test_gen_message_c_jazz(void);
-void test_gen_message_ref_jazz(void);
-void test_gen_message_ref_c(void);
-
 void test_hash_message(void);
 
 static void random_addr(uint32_t addr[8]) {
@@ -86,132 +66,98 @@ void test_prf_addr(void) {
     }
 }
 
-static void gen_message_random_c(uint8_t *R, const uint8_t *sk_prf, const uint8_t *optrand,
-                                 const uint8_t *m) {
-    uint8_t buf[2 * SPX_N + MSG_LEN];
-    memcpy(buf, sk_prf, SPX_N);
-    memcpy(buf + SPX_N, optrand, SPX_N);
-    memcpy(buf + 2 * SPX_N, m, MSG_LEN);
-    shake256(R, SPX_N, buf, 2 * SPX_N + MSG_LEN);
-}
+void test_gen_message_random(void) {
+    // TODO: FIXME: Remove malloc & free
+    size_t lengths[] = {135, 136, 137, 271, 272, 273, 407, 408, 409};  // 9 values
+    size_t length_values = 9;  // sizeof(lengths / sizeof(size_t));
 
-void test_gen_message_ref_c(void) {
     spx_ctx ctx;
     uint8_t optrand[SPX_N], sk_prf[SPX_N];
-    uint8_t R0[SPX_N], R1[SPX_N];
-    uint8_t message[MSG_LEN];
+    uint8_t R_ref[SPX_N], R_jazz[SPX_N];
+    uint8_t *msg;
+    size_t msg_len;
 
-    for (int t = 0; t < TESTS; t++) {
-        randombytes(ctx.sk_seed, SPX_N);
-        randombytes(ctx.pub_seed, SPX_N);
-        randombytes(optrand, SPX_N);
-        randombytes(sk_prf, SPX_N);
-        randombytes(message, MSG_LEN);
+    for (int i = 0; i < TESTS; i++) {
+        for (size_t j = 0; j < length_values; j++) {
+            msg_len = lengths[j];
+            msg = malloc(sizeof(uint8_t) * msg_len);
+            randombytes(msg, sizeof(uint8_t) * msg_len);
 
-        memset(R0, 0, SPX_N);
-        memset(R1, 0, SPX_N);
+            randombytes(ctx.sk_seed, SPX_N);
+            randombytes(ctx.pub_seed, SPX_N);
+            randombytes(optrand, SPX_N);
+            randombytes(sk_prf, SPX_N);
 
-        // gen_message_random_jazz(R0, sk_prf, optrand, message);
-        gen_message_random_c(R0, sk_prf, optrand, message);
-        gen_message_random(R1, sk_prf, optrand, message, MSG_LEN, &ctx);
-        printf("--------MSG LEN = %d ---------------\n", MSG_LEN);
-        printf("Ref:\n");
-        print_u8(R1, SPX_N);
-        printf("\nC:\n");
-        print_u8(R0, SPX_N);
-        printf("-----------------------\n");
-        if (memcmp(R0, R1, SPX_N) != 0) {
-            printf("Falhou\n");
+            memset(R_ref, 0, SPX_N);
+            memset(R_jazz, 0, SPX_N);
+
+            gen_message_random(R_ref, sk_prf, optrand, msg, msg_len, &ctx);
+            gen_message_random_jazz(R_jazz, sk_prf, optrand, msg, msg_len);
+
+            free(msg);
+            assert(memcmp(R_ref, R_jazz, SPX_N) == 0);
         }
-        assert(memcmp(R0, R1, SPX_N) == 0);
-    }
-}
-
-void test_gen_message_c_jazz(void) {
-    spx_ctx ctx;
-    uint8_t optrand[SPX_N], sk_prf[SPX_N];
-    uint8_t optrand_copy[SPX_N], sk_prf_copy[SPX_N];
-    uint8_t R0[SPX_N], R1[SPX_N];
-    uint8_t message[MSG_LEN];
-    uint8_t message_copy[MSG_LEN];
-
-    for (int t = 0; t < TESTS; t++) {
-        randombytes(ctx.sk_seed, SPX_N);
-        randombytes(ctx.pub_seed, SPX_N);
-        randombytes(optrand, SPX_N);
-        randombytes(sk_prf, SPX_N);
-        randombytes(message, MSG_LEN);
-
-        memset(R0, 0, SPX_N);
-        memset(R1, 0, SPX_N);
-
-        memcpy(message_copy, message, MSG_LEN);
-        memcpy(optrand_copy, optrand, SPX_N);
-        memcpy(sk_prf_copy, sk_prf, SPX_N);
-
-        gen_message_random_c(R0, sk_prf, optrand, message);
-
-        assert(memcmp(message_copy, message, MSG_LEN) == 0);
-        assert(memcmp(optrand_copy, optrand, SPX_N) == 0);
-        assert(memcmp(sk_prf_copy, sk_prf, SPX_N) == 0);
-
-        gen_message_random_jazz(R1, sk_prf, optrand, message);
-
-        printf("--------MSG LEN = %d ---------------\n", MSG_LEN);
-        printf("Jasmin:\n");
-        print_u8(R1, SPX_N);
-        printf("\nC:\n");
-        print_u8(R0, SPX_N);
-        printf("-----------------------\n");
-        if (memcmp(R0, R1, SPX_N) != 0) {
-            printf("Falhou\n");
-        }
-        assert(memcmp(R0, R1, SPX_N) == 0);
     }
 }
 
 void test_hash_message(void) {
+    // TODO: FIXME: Remove malloc & free
 #define SPX_TREE_BITS (SPX_TREE_HEIGHT * (SPX_D - 1))
 #define SPX_TREE_BYTES ((SPX_TREE_BITS + 7) / 8)
 #define SPX_LEAF_BITS SPX_TREE_HEIGHT
 #define SPX_LEAF_BYTES ((SPX_LEAF_BITS + 7) / 8)
 #define SPX_DGST_BYTES (SPX_FORS_MSG_BYTES + SPX_TREE_BYTES + SPX_LEAF_BYTES)
+    uint8_t digest_ref[SPX_FORS_MSG_BYTES], digest_jazz[SPX_FORS_MSG_BYTES];
+    uint64_t tree_ref = 0;
+    uint64_t tree_jazz = 0;
+    uint32_t leaf_idx_ref = 0;
+    uint32_t leaf_idx_jazz = 0;
 
-    uint8_t digest0[SPX_DGST_BYTES], digest1[SPX_DGST_BYTES];
-    uint64_t tree0, tree1;
-    uint32_t leaf_idx0, leaf_idx1;
-
+    spx_ctx ctx;
+    args _args;
     uint8_t R[SPX_N];
     uint8_t pk[SPX_PK_BYTES];
-    r_pk Rpk;
 
-    uint8_t message[MSG_LEN];
-    spx_ctx ctx;
+    size_t lengths[] = {135, 136, 137, 271, 272, 273, 407, 408, 409};  // 9 values
+    size_t length_values = 9;  // sizeof(lengths / sizeof(size_t));
 
-    for (int t = 0; t < TESTS; t++) {
-        randombytes1(R, SPX_N);
-        randombytes(pk, SPX_PK_BYTES);
-        randombytes(message, MSG_LEN);
-        randombytes(ctx.sk_seed, SPX_N);
-        randombytes(ctx.pub_seed, SPX_N);
+    uint8_t *msg;
+    size_t msg_len;
 
-        Rpk.R = R;
-        Rpk.pk = pk;
+    for (int i = 0; i < TESTS; i++) {
+        for (size_t j = 0; j < length_values; j++) {
+            memset(digest_ref, 0, SPX_FORS_MSG_BYTES);
+            memset(digest_jazz, 0, SPX_FORS_MSG_BYTES);
 
-        memset(digest0, 0, SPX_DGST_BYTES);
-        memset(digest1, 0, SPX_DGST_BYTES);
-        tree0 = 0;
-        tree1 = 0;
-        leaf_idx0 = 0;
-        leaf_idx1 = 0;
+            msg_len = lengths[j];
+            msg = malloc(msg_len);
+            randombytes(R, SPX_N);
+            randombytes(pk, SPX_PK_BYTES);
+            randombytes(msg, msg_len);
+            randombytes(ctx.sk_seed, SPX_N);
+            randombytes(ctx.pub_seed, SPX_N);
 
-        leaf_idx0 = hash_message_jazz(digest0, &tree0, &leaf_idx0, &Rpk, message, &ctx);
+            memcpy(_args.R, R, SPX_N);
+            memcpy(_args.pk, pk, SPX_PK_BYTES);
 
-        hash_message(digest1, &tree1, &leaf_idx1, R, pk, message, MSG_LEN, &ctx);
+            hash_message(digest_ref, &tree_ref, &leaf_idx_ref, R, pk, msg, msg_len, &ctx);
+            hash_message_jazz(digest_jazz, &tree_jazz, &leaf_idx_jazz, &_args, msg, msg_len);
 
-        assert(tree0 == tree1);
-        assert(tree1 == tree1);
-        assert(memcmp(digest0, digest1, SPX_DGST_BYTES) == 0);
+            if (memcmp(digest_ref, digest_jazz, SPX_FORS_MSG_BYTES)) {
+                print_str_u8("ref", digest_ref, SPX_FORS_MSG_BYTES);
+                print_str_u8("jazz", digest_jazz, SPX_FORS_MSG_BYTES);
+            }
+
+            if (tree_jazz != tree_ref) {
+                printf("Tree: ref: %ld ; jazz: %ld\n", tree_ref, tree_jazz);
+            }
+
+            assert(memcmp(digest_ref, digest_jazz, SPX_FORS_MSG_BYTES) == 0);
+            assert(tree_ref == tree_jazz);
+            assert(leaf_idx_ref == leaf_idx_ref);
+
+            free(msg);
+        }
     }
 
 #undef SPX_TREE_BITS
@@ -222,14 +168,9 @@ void test_hash_message(void) {
 }
 
 int main(void) {
-    // test_prf_addr();
-
-    // test_gen_message_ref_c();   // Compares C vs ref
-    test_gen_message_c_jazz();  // Compares c [not ref] vs jazz impl
-
-    // test_hash_message();
-
-    printf("PASS: hash shake = { msg len : %d }\n", MSG_LEN);
-
+    test_prf_addr();
+    test_gen_message_random();
+    test_hash_message();
+    puts("PASS: hash shake");
     return 0;
 }
