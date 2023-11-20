@@ -143,15 +143,6 @@ void test_hash_message(void) {
             hash_message(digest_ref, &tree_ref, &leaf_idx_ref, R, pk, msg, msg_len, &ctx);
             hash_message_jazz(digest_jazz, &tree_jazz, &leaf_idx_jazz, &_args, msg, msg_len);
 
-            if (memcmp(digest_ref, digest_jazz, SPX_FORS_MSG_BYTES)) {
-                print_str_u8("ref", digest_ref, SPX_FORS_MSG_BYTES);
-                print_str_u8("jazz", digest_jazz, SPX_FORS_MSG_BYTES);
-            }
-
-            if (tree_jazz != tree_ref) {
-                printf("Tree: ref: %ld ; jazz: %ld\n", tree_ref, tree_jazz);
-            }
-
             assert(memcmp(digest_ref, digest_jazz, SPX_FORS_MSG_BYTES) == 0);
             assert(tree_ref == tree_jazz);
             assert(leaf_idx_ref == leaf_idx_ref);

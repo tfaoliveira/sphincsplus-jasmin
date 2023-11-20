@@ -159,4 +159,4 @@ inline fn __hash_message(
   leaf_idx &= (32u)t;
 
   return digest, tree, leaf_idx;
-}//<>
+}

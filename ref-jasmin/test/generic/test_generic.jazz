@@ -51,11 +51,17 @@ export fn cond_u64_a_dif_b_and_c_dif_d_jazz(
 }
 
 export fn cond_u32_a_eq_b_and_c_below_d_jazz(
-    reg u64 a b c d _res
+    reg u64 _a _b _c _d _res
 )
 {
+    reg u32 a b c d;
     reg u8 r;
     reg bool res;
+
+    a = (32u) _a;
+    b = (32u) _b;
+    c = (32u) _c;
+    d = (32u) _d;
 
     res = __cond_u32_a_eq_b_and_c_below_d(a, b, c, d);
 
