@@ -44,4 +44,4 @@ inline fn __cmp_gs_u64(reg u64 a b) -> reg bool { reg bool c; ?{ ">s" = c} = #CM
 inline fn __cmp_ges_u8(reg u8 a b) -> reg bool { reg bool c; ?{ ">=s" = c} = #CMP_8(a,b); return c; }
 inline fn __cmp_ges_u16(reg u16 a b) -> reg bool { reg bool c; ?{ ">=s" = c} = #CMP_16(a,b); return c; }
 inline fn __cmp_ges_u32(reg u32 a b) -> reg bool { reg bool c; ?{ ">=s" = c} = #CMP_32(a,b); return c; }
-inlinefn __cmp_ges_u64(reg u64 a b) -> reg bool { reg bool c; ?{ ">=s" = c} = #CMP_64(a,b); return c; }
+inline fn __cmp_ges_u64(reg u64 a b) -> reg bool { reg bool c; ?{ ">=s" = c} = #CMP_64(a,b); return c; }

@@ -74,3 +74,19 @@ inline fn __cond_u64_a_dif_b_and_c_dif_d(reg u64 a b c d) -> reg bool
 
   return cond3;
 }
+
+// a == b && c < d
+inline fn __cond_u32_a_eq_b_and_c_below_d(reg u64 a b c d) -> reg bool {
+  reg bool cond1 cond2 cond3;
+  reg u8 bc1 bc2;
+
+  ?{ "==" = cond1 } = #CMP_64(a, b); 
+  bc1 = #SETcc(cond1);
+
+  ?{ "<u" = cond2 } = #CMP_64(c, d); 
+  bc2 = #SETcc(cond2);
+
+  ?{ "!=" = cond3 } = #TEST_8(bc1, bc2);
+
+  return cond3;
+}
