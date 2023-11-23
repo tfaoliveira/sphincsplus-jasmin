@@ -49,7 +49,7 @@ export fn wots_gen_leafx1_jazz(
   dest = __load_u8_array<SPX_N>(dest, _dest);
   pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
   sk_seed = __load_u8_array<SPX_N>(sk_seed, _sk_seed);
-  leaf_idx = (u32)[_leaf_idx];
+  leaf_idx = (32u) _leaf_idx;
 
   wots_sig, wots_sign_leaf, steps, leaf_addr, pk_addr = __load_leaf_info_x1(wots_sig, wots_sign_leaf, steps, leaf_addr, pk_addr, _info);
 
