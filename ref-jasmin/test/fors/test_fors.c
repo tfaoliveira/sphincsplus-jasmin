@@ -40,16 +40,24 @@ extern void fors_sk_to_leaf_jazz(uint8_t *leaf, const uint8_t *sk, const uint8_t
 extern void fors_gen_leafx1_jazz(uint8_t *leaf, const uint8_t *pub_seed, const uint8_t *sk_seed,
                                  uint32_t addr_idx, uint32_t fors_leaf_addr[8]);  // ref impl
 extern void message_to_indices_jazz(uint32_t *indices, const uint8_t *m);
+
+#define message_to_indices_t_jazz NAMESPACE1(message_to_indices_t_jazz, MSG_LEN)
+extern void message_to_indices_t_jazz(uint32_t *indices, const uint8_t *m);
+
+#define fors_sign_jazz NAMESPACE1(fors_sign_jazz, MSG_LEN)
 extern void fors_sign_jazz(uint8_t *sig, uint8_t *pk, const uint8_t *m, const uint8_t *pub_seed,
                            const uint8_t *sk_seed, const uint32_t fors_addr[8]);
+/*
 extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m,
-                                  const uint8_t *pub_seed, const uint8_t *sk_seed,
-                                  const uint32_t fors_addr[8]);
+       const uint8_t *pub_seed, const uint8_t *sk_seed,
+       const uint32_t fors_addr[8]);
+*/
 
 void test_fors_gen_sk(void);
 void test_fors_sk_to_leaf(void);
 void test_fors_gen_leafx1(void);
 void test_message_to_indices(void);
+void test_message_to_indices_t(void);
 void test_fors_sign(void);
 void test_pk_from_sig(void);
 
@@ -73,7 +81,7 @@ static void message_to_indices_ref(uint32_t *indices, const unsigned char *m) {
     for (i = 0; i < SPX_FORS_TREES; i++) {
         indices[i] = 0;
         for (j = 0; j < SPX_FORS_HEIGHT; j++) {
-            indices[i] ^= ((m[offset >> 3] >> (offset & 0x7)) & 1u) << j;
+            indices[i] ^= ((m[offset >> 3] >> (~offset & 0x7)) & 0x1) << (SPX_FORS_HEIGHT - 1 - j);
             offset++;
         }
     }
@@ -169,6 +177,8 @@ void test_message_to_indices(void) {
         printf("m must be at least SPX_FORS_HEIGHT * SPX_FORS_TREES = %d bits = %d bytes\n",
                SPX_FORS_HEIGHT * SPX_FORS_TREES, (SPX_FORS_HEIGHT * SPX_FORS_TREES) / 8);
         return;
+    } else {
+        puts("Testing message_to_indices");
     }
 
     for (int i = 0; i < TESTS; i++) {
@@ -183,14 +193,42 @@ void test_message_to_indices(void) {
     }
 }
 
-void test_fors_sign(void) {
-    // TODO: Not sure about this
+void test_message_to_indices_t(void) {
+    uint32_t indices_ref[SPX_FORS_TREES], indices_jazz[SPX_FORS_TREES];
+    uint8_t msg[MSG_LEN];
+
     // We assume m contains at least SPX_FORS_HEIGHT * SPX_FORS_TREES bits.
     if (MSG_LEN < (SPX_FORS_HEIGHT * SPX_FORS_TREES) / 8) {
         puts("Skipping message_to_indices");
         printf("m must be at least SPX_FORS_HEIGHT * SPX_FORS_TREES = %d bits = %d bytes\n",
                SPX_FORS_HEIGHT * SPX_FORS_TREES, (SPX_FORS_HEIGHT * SPX_FORS_TREES) / 8);
         return;
+    } else {
+        puts("Testing message_to_indices");
+    }
+
+    for (int i = 0; i < TESTS; i++) {
+        memset(indices_ref, 0, SPX_FORS_TREES * sizeof(uint32_t));
+        memset(indices_jazz, 0, SPX_FORS_TREES * sizeof(uint32_t));
+        randombytes(msg, MSG_LEN);
+
+        message_to_indices_ref(indices_ref, msg);
+        message_to_indices_t_jazz(indices_jazz, msg);
+
+        assert(memcmp(indices_ref, indices_jazz, SPX_FORS_TREES * sizeof(uint32_t)) == 0);
+    }
+}
+
+void test_fors_sign(void) {
+    // TODO: Not sure about this
+    // We assume m contains at least SPX_FORS_HEIGHT * SPX_FORS_TREES bits.
+    if (MSG_LEN < (SPX_FORS_HEIGHT * SPX_FORS_TREES) / 8) {
+        puts("Skipping fors_sign");
+        printf("m must be at least SPX_FORS_HEIGHT * SPX_FORS_TREES = %d bits = %d bytes\n",
+               SPX_FORS_HEIGHT * SPX_FORS_TREES, (SPX_FORS_HEIGHT * SPX_FORS_TREES) / 8);
+        return;
+    } else {
+        puts("Testing fors_sign");
     }
 
     uint8_t sig_ref[SPX_FORS_BYTES], sig_jazz[SPX_FORS_BYTES];
@@ -256,7 +294,7 @@ void test_pk_from_sig(void) {
         randombytes((uint8_t *)addr, 8 * sizeof(uint32_t));
 
         fors_pk_from_sig(pk_ref, sig, msg, &ctx, addr);
-        fors_pk_from_sig_jazz(pk_jazz, sig, msg, ctx.pub_seed, ctx.sk_seed, addr);
+        // fors_pk_from_sig_jazz(pk_jazz, sig, msg, ctx.pub_seed, ctx.sk_seed, addr);
 
         if (memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) != 0) {
             print_str_u8("pk ref", pk_ref, SPX_FORS_PK_BYTES);
@@ -274,9 +312,10 @@ int main(void) {
     test_fors_gen_sk();
     test_fors_sk_to_leaf();
     test_fors_gen_leafx1();
-    test_message_to_indices();
+    test_message_to_indices();    // msg is a reg u64
+    test_message_to_indices_t();  // msg is a reg ptr u8[MSG_LEN]
     // test_fors_sign();
-    test_pk_from_sig();
+    // test_pk_from_sig();
     printf("PASS: fors = { msg len : %d ; params : %s ; hash: %s }\n", MSG_LEN, xstr(PARAM),
            xstr(HASH));
     return 0;

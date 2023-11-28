@@ -134,58 +134,62 @@ export fn message_to_indices_jazz(
   __store_u32_array<SPX_FORS_TREES>(indices_p, _indices);
 }
 
-export fn fors_sign_jazz(
-  reg u64 _sig _pk msg _pub_seed _sk_seed _fors_addr
+export fn message_to_indices_t_jazz<MSG_LEN>(
+  reg u64 _indices _msg
 )
 {
-  stack u8[SPX_FORS_BYTES] sig;
+  stack u32[SPX_FORS_TREES] indices;
+  reg ptr u32[SPX_FORS_TREES] indices_p;
+
+  stack u8[MSG_LEN] msg;
+  reg ptr u8[MSG_LEN] msg_p;
+
+  stack u64 s_indices;
+
+  indices_p = indices;
+  msg_p = msg;
+
+  msg_p = __load_u8_array<MSG_LEN>(msg_p, _msg);
+  
+  indices_p = __message_to_indices_t<MSG_LEN>(indices_p, msg_p);
+  __store_u32_array<SPX_FORS_TREES>(indices_p, _indices);
+}//<>
+
+export fn fors_sign_jazz<MSG_LEN>(reg u64 sig _pk _msg _pub_seed _sk_seed _fors_addr)
+{
+  // NOTE: MSG_LEN HAS ALWAYS THE SAME VALUE (SPX_FORS_MSG_BYTES => i.e. hash of the initial msg)
+ 
   stack u8[SPX_FORS_PK_BYTES] pk;
+  stack u8[MSG_LEN] msg;
   stack u8[SPX_N] pub_seed;
   stack u8[SPX_N] sk_seed;
-  stack u32[8] addr;
+  stack u32[8] fors_addr;
 
-  stack u64 s_sig s_pk;
-  /*
-  sig = __load_u8_array<SPX_FORS_BYTES>(sig, _sig);
   pk = __load_u8_array<SPX_FORS_PK_BYTES>(pk, _pk);
+  msg = __load_u8_array<MSG_LEN>(msg, _msg);
   pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
   sk_seed = __load_u8_array<SPX_N>(sk_seed, _sk_seed);
-  addr = __load_u32_array<8>(addr, _fors_addr);
+  fors_addr = __load_u32_array<8>(fors_addr, _fors_addr);
+  
+  __fors_sign<MSG_LEN>(sig, pk, msg, pub_seed, sk_seed, fors_addr); // we write to sig here
+}//<>
 
-  s_sig = _sig;
-  s_pk = _pk;
-
-  sig, pk = _fors_sign(sig, pk, msg, pub_seed, sk_seed, addr);
-
-  _sig = s_sig;
-  _pk = s_pk;
-
-  __store_u8_array<SPX_FORS_BYTES>(sig, _sig);
-  __store_u8_array<SPX_FORS_PK_BYTES>(pk, _pk);
-  */
-}
-
-export fn fors_pk_from_sig_jazz(
-  reg u64 _pk sig msg _pub_seed _sk_seed _fors_addr
+export fn fors_pk_from_sig_jazz<MSG_LEN>(
+  reg u64 _pk sig _msg _pub_seed _sk_seed _fors_addr
 )
 {
-  stack u8[SPX_FORS_PK_BYTES] pk;
+  stack u8[SPX_N] pk; // root
+  stack u8[MSG_LEN] msg;
   stack u8[SPX_N] pub_seed;
   stack u8[SPX_N] sk_seed;
-  stack u32[8] addr;
+  stack u32[8] fors_addr;
 
-  stack u64 s_pk;
-
-  pk = __load_u8_array<SPX_FORS_PK_BYTES>(pk, _pk);
+  pk = __load_u8_array<SPX_N>(pk, _pk);
+  msg = __load_u8_array<MSG_LEN>(msg, _msg);
   pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
   sk_seed = __load_u8_array<SPX_N>(sk_seed, _sk_seed);
-  addr = __load_u32_array<8>(addr, _fors_addr);
+  fors_addr = __load_u32_array<8>(fors_addr, _fors_addr);
+  
 
-  s_pk = _pk;
-
-  pk = _fors_pk_from_sig(pk, sig, msg, pub_seed, sk_seed, addr);
-
-  _pk = s_pk;
-
-  __store_u8_array<SPX_FORS_PK_BYTES>(pk, _pk);
-}
+  __fors_pk_from_sig<MSG_LEN>(pk, sig, msg, pub_seed, sk_seed, fors_addr); // we write to the sig ptr here
+}//<>

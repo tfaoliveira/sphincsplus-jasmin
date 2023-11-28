@@ -45,7 +45,7 @@ bin/test_fors_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --workers 8 --input_file $@ --output_file $@
+	$(PREPROCESSOR) --workers 8 --input_file $@ --output_file $@ --task "fn:message_to_indices_t_jazz p:MSG_LEN:$(GET_MSG_LEN)" "fn:fors_sign_jazz p:MSG_LEN:$(GET_MSG_LEN)" "fn:fors_pk_from_sig_jazz p:MSG_LEN:$(GET_MSG_LEN)"
 
 .PRECIOUS: bin/test_fors_%.s
 bin/test_fors_%.s: bin/test_fors_%.jpp
