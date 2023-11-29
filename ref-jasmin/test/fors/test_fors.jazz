@@ -193,3 +193,77 @@ export fn fors_pk_from_sig_jazz<MSG_LEN>(
 
   __fors_pk_from_sig<MSG_LEN>(pk, sig, msg, pub_seed, sk_seed, fors_addr); // we write to the sig ptr here
 }//<>
+
+
+
+//////////////////////////////////// Treehash
+inline fn __load_ctx(
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u64 addr
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+  pub_seed = __load_u8_array<SPX_N>(pub_seed, addr);
+  addr += SPX_N;
+  sk_seed = __load_u8_array<SPX_N>(sk_seed, addr);
+  return pub_seed, sk_seed;
+}
+
+
+inline fn __load_info(
+  reg ptr u32[8] tree_addr info, 
+  reg u64 addr
+) -> reg ptr u32[8], reg ptr u32[8]
+{
+  tree_addr = __load_u32_array<8>(tree_addr, addr);
+  addr += 32; // 32 = 4 * 8;
+  info = __load_u32_array<8>(info, addr);
+  return tree_addr, info;
+}
+
+inline fn __store_info(
+  reg ptr u32[8] tree_addr info, 
+  reg u64 _addr
+)
+{
+  reg u64 addr;
+  addr = _addr;
+
+  __store_u32_array<8>(tree_addr, addr);
+  addr += 32; // 32 = 4 * 8
+  __store_u32_array<8>(info, addr);
+}
+
+export fn treehash_fors_jazz(
+  reg u64 _root auth_path _ctx _leaf_idx _idx_offset _addrs
+)
+{
+  stack u8[SPX_N] root;
+  stack u8[SPX_N] pub_seed;
+  stack u8[SPX_N] sk_seed;
+  stack u32[8] tree_addr, info;
+
+  reg u32 leaf_idx idx_offset;
+
+  stack u64 s_addrs s_root;
+
+  root = __load_u8_array<SPX_N>(root, _root);
+  s_root = _root;
+  
+  pub_seed, sk_seed = __load_ctx(pub_seed, sk_seed, _ctx);
+
+  leaf_idx = (32u) _leaf_idx;
+  idx_offset = (32u) _idx_offset;
+
+  tree_addr, info = __load_info(tree_addr, info, _addrs);
+
+
+  root, tree_addr, info = treehash_fors(root, auth_path, pub_seed, sk_seed, leaf_idx, idx_offset, tree_addr, info);
+
+  _root = s_root;
+  __store_u8_array<SPX_N>(root, _root);
+
+  // FIXME: This causes a segmentation fault
+  // _addrs = s_addrs;
+  // __store_info(tree_addr, info, _addrs);
+}

@@ -53,6 +53,9 @@ extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t
        const uint32_t fors_addr[8]);
 */
 
+extern void treehash_fors_jazz(uint8_t *root, uint8_t *auth_path, const spx_ctx *ctx,
+                               uint32_t leaf_idx, uint32_t idx_offset, void *addr);
+
 void test_fors_gen_sk(void);
 void test_fors_sk_to_leaf(void);
 void test_fors_gen_leafx1(void);
@@ -60,6 +63,7 @@ void test_message_to_indices(void);
 void test_message_to_indices_t(void);
 void test_fors_sign(void);
 void test_pk_from_sig(void);
+void test_treehash_fors(void);
 
 static void random_addr(uint32_t addr[8]) { randombytes((uint8_t *)addr, 8 * sizeof(uint32_t)); }
 
@@ -275,6 +279,8 @@ void test_pk_from_sig(void) {
         printf("m must be at least SPX_FORS_HEIGHT * SPX_FORS_TREES = %d bits = %d bytes\n",
                SPX_FORS_HEIGHT * SPX_FORS_TREES, (SPX_FORS_HEIGHT * SPX_FORS_TREES) / 8);
         return;
+    } else {
+        puts("Testing pk_from_sig");
     }
 
     uint8_t pk_ref[SPX_FORS_PK_BYTES], pk_jazz[SPX_FORS_PK_BYTES];
@@ -305,17 +311,90 @@ void test_pk_from_sig(void) {
     }
 }
 
+static uint32_t random_idx_offset(uint32_t max_idx_offset, uint32_t min_idx_offset) {
+    uint32_t range = max_idx_offset - min_idx_offset;
+    uint32_t value;
+
+    size_t num_bytes = (size_t)(sizeof(uint32_t));
+    size_t bytes_needed = sizeof(uint32_t);
+
+    do {
+        uint8_t random_bytes[bytes_needed];
+        randombytes(random_bytes, bytes_needed);
+
+        value = 0;
+        for (size_t i = 0; i < num_bytes; ++i) {
+            value = (value << 8) | random_bytes[i];
+        }
+        value %= range;
+
+    } while (value >= range);
+
+    value += min_idx_offset;
+
+    assert(value >= min_idx_offset);
+    assert(value <= max_idx_offset);
+
+    return value;
+}
+
+void test_treehash_fors(void) {
+    uint32_t tree_height = SPX_FORS_HEIGHT;
+
+    uint32_t max_idx_offset = SPX_FORS_TREES * (1 << SPX_FORS_HEIGHT);
+    uint32_t min_idx_offset = 0 * (1 << SPX_FORS_HEIGHT);
+
+    uint8_t root_ref[SPX_N], root_jazz[SPX_N];
+    uint8_t sig_ref[MSG_LEN], sig_jazz[MSG_LEN];
+    spx_ctx ctx;
+    uint32_t leaf_idx;
+    uint32_t idx_offset;
+
+    uint32_t fors_tree_addr[8];
+    uint32_t fors_info[8];
+
+    for (int i = 0; i < TESTS; i++) {
+        memset(root_ref, 0, SPX_N);
+        memset(root_jazz, 0, SPX_N);
+
+        randombytes(sig_ref, MSG_LEN);
+        memcpy(sig_jazz, sig_ref, MSG_LEN);
+
+        randombytes(ctx.pub_seed, SPX_N);
+        randombytes(ctx.sk_seed, SPX_N);
+        randombytes((uint8_t *)&leaf_idx, sizeof(uint32_t));  // May cause a segfault ?????
+        idx_offset = random_idx_offset(max_idx_offset, min_idx_offset);
+        randombytes((uint8_t *)fors_tree_addr, 8 * sizeof(uint32_t));
+        randombytes((uint8_t *)fors_info, 8 * sizeof(uint32_t));
+
+        puts("Running treehash ref");
+
+        treehashx1(root_ref, sig_ref, &ctx, leaf_idx, idx_offset, tree_height, fors_gen_leafx1,
+                   fors_tree_addr, fors_info);
+
+        puts("Running treehash jazz");
+
+        treehash_fors_jazz(root_jazz, sig_jazz, &ctx, leaf_idx, idx_offset, fors_tree_addr);
+
+        assert(memcmp(root_ref, root_jazz, SPX_N) == 0);
+    }
+}
+
 #undef CRYPTO_PUBLICKEYBYTES
 #undef CRYPTO_BYTES
 
 int main(void) {
-    test_fors_gen_sk();
-    test_fors_sk_to_leaf();
-    test_fors_gen_leafx1();
-    test_message_to_indices();    // msg is a reg u64
-    test_message_to_indices_t();  // msg is a reg ptr u8[MSG_LEN]
+    // test_fors_gen_sk();
+    // test_fors_sk_to_leaf();
+    // test_fors_gen_leafx1();
+    // test_message_to_indices();    // msg is a reg u64
+    // test_message_to_indices_t();  // msg is a reg ptr u8[MSG_LEN]
+    
     // test_fors_sign();
     // test_pk_from_sig();
+    
+    puts("Testing treehash");
+    test_treehash_fors();
     printf("PASS: fors = { msg len : %d ; params : %s ; hash: %s }\n", MSG_LEN, xstr(PARAM),
            xstr(HASH));
     return 0;

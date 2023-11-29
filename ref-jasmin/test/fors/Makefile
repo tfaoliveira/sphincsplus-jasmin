@@ -7,9 +7,9 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
-JASMIN   ?= jasminc
-
-JPP      ?= ../scripts/jpp
+JASMIN       ?= jasminc
+JFLAGS       ?= -nowarning # -lazy-regalloc
+JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
@@ -49,7 +49,7 @@ bin/test_fors_%.jpp: | bin/
 
 .PRECIOUS: bin/test_fors_%.s
 bin/test_fors_%.s: bin/test_fors_%.jpp
-	$(JASMIN) -nowarning $< -o $@
+	$(JASMIN) $(JFLAGS) $< -o $@
 
 $(TESTS):
 bin/test_fors_%: bin/test_fors_%.s | bin/
