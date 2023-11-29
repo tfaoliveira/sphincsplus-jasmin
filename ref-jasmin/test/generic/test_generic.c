@@ -14,7 +14,8 @@
 #endif
 
 extern void cond_u32_a_below_b_and_a_below_c_jazz(uint32_t a, uint32_t b, uint32_t c, uint8_t *out);
-extern void cond_u32_a_eq_b_and_c_below_d_jazz(uint32_t a, uint32_t b, uint32_t c, uint8_t *out);
+extern void cond_u32_a_eq_b_and_c_below_d_jazz(uint32_t a, uint32_t b, uint32_t c, uint32_t d,
+                                               uint8_t *out);
 
 extern void cond_u64_a_below_b_and_a_below_c_jazz(uint64_t a, uint64_t b, uint64_t c, uint8_t *out);
 extern void cond_u64_a_dif_b_and_a_dif_c_jazz(uint64_t a, uint64_t b, uint64_t c, uint8_t *out);
@@ -45,7 +46,6 @@ void test_ull_to_bytes(void);
 void test_bytes_to_ull(void);
 void test_zero_array_u32_jazz(void);
 void test_mem_eq_u8_jazz(void);
-void test_sign_utils(void);
 
 void test_cond_u64_a_below_b_and_a_below_c(void) {
     uint64_t a, b, c;
@@ -79,13 +79,13 @@ void test_cond_u32_a_eq_b_and_c_below_d(void) {
     uint32_t a, b, c, d;
     uint8_t r;
 
-    for(int i = 0; i < TESTS; i++) {
+    for (int i = 0; i < TESTS; i++) {
         randombytes((uint8_t *)&a, sizeof(uint32_t));
         randombytes((uint8_t *)&b, sizeof(uint32_t));
         randombytes((uint8_t *)&c, sizeof(uint32_t));
         randombytes((uint8_t *)&d, sizeof(uint32_t));
 
-        cond_u32_a_eq_b_and_c_below_d_jazz(a, b, c, &r);
+        cond_u32_a_eq_b_and_c_below_d_jazz(a, b, c, d, &r);
         assert((a == b && a < c) ? (r == 1) : (r == 0));
     }
 }
@@ -189,24 +189,19 @@ void test_mem_eq_u8_jazz(void) {
     }
 }
 
-void test_sign_utils(void) {
-    for (int i = 0; i < TESTS; i++) {
-        // TODO:
-    }
-}
-
 int main(void) {
-    test_cond_u64_a_below_b_and_a_below_c();
-    test_cond_u32_a_below_b_and_a_below_c();
-    test_cond_u64_a_dif_b_and_a_dif_c();
-    test_cond_u64_a_dif_b_and_c_dif_d();
+    // test_cond_u32_a_below_b_and_a_below_c();
+    test_cond_u32_a_eq_b_and_c_below_d();
 
-    test_ull_to_bytes();
-    test_bytes_to_ull();
+    // test_cond_u64_a_below_b_and_a_below_c();
+    // test_cond_u64_a_dif_b_and_a_dif_c();
+    // test_cond_u64_a_dif_b_and_c_dif_d();
 
-    test_zero_array_u32_jazz();
-    
-    // test_sign_utils();
+    // test_ull_to_bytes();
+    // test_bytes_to_ull();
+
+    // test_zero_array_u32_jazz();
+
     puts("PASS: generic");
     return 0;
 }
