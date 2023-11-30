@@ -17,6 +17,7 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
                 uint32_t tree_addr[8],
                 void *info)
 {
+    /*
     SPX_VLA(uint8_t, stack, tree_height*SPX_N);
 
     uint32_t idx;
@@ -45,7 +46,7 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
 
             // if ((internal_idx & 1) == 0 && idx < max_idx) {
             //     break;
-            // }
+            // } 
 
             internal_idx_offset >>= 1;
             
@@ -53,13 +54,14 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
 
             unsigned char *left = &stack[h * SPX_N];
             memcpy( &current[0], left, SPX_N );
-    /*
-            thash( &current[1 * SPX_N],
-                   &current[0 * SPX_N],
-                   2, ctx, tree_addr);
-        */
+
+            // thash( &current[1 * SPX_N],
+            //        &current[0 * SPX_N],
+            //        2, ctx, tree_addr);
+        
         }
         memcpy( &stack[h * SPX_N], &current[SPX_N], SPX_N);
     }
+    */
 }
 

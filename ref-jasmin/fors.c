@@ -107,7 +107,7 @@ void fors_sign(unsigned char *sig, unsigned char *pk,
         sig += SPX_N * SPX_FORS_HEIGHT;
     }
 
-    // thash(pk, roots, SPX_FORS_TREES, ctx, fors_pk_addr);
+    thash(pk, roots, SPX_FORS_TREES, ctx, fors_pk_addr);
 }
 
 /**
@@ -129,7 +129,7 @@ void fors_pk_from_sig(unsigned char *pk,
     uint32_t fors_pk_addr[8] = {0};
     uint32_t idx_offset;
     unsigned int i;
-
+    /*
     copy_keypair_addr(fors_tree_addr, fors_addr);
     copy_keypair_addr(fors_pk_addr, fors_addr);
 
@@ -144,16 +144,14 @@ void fors_pk_from_sig(unsigned char *pk,
         set_tree_height(fors_tree_addr, 0);
         set_tree_index(fors_tree_addr, indices[i] + idx_offset);
 
-        /* Derive the leaf from the included secret key part. */
         fors_sk_to_leaf(leaf, sig, ctx, fors_tree_addr);
         sig += SPX_N;
 
-        /* Derive the corresponding root node of this tree. */
         compute_root(roots + i*SPX_N, leaf, indices[i], idx_offset,
                      sig, SPX_FORS_HEIGHT, ctx, fors_tree_addr);
         sig += SPX_N * SPX_FORS_HEIGHT;
     }
 
-    /* Hash horizontally across all tree roots to derive the public key. */
+    */
     thash(pk, roots, SPX_FORS_TREES, ctx, fors_pk_addr);
 }

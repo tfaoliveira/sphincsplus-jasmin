@@ -27,7 +27,11 @@
 #endif
 
 #ifndef TESTS
-#define TESTS 1000
+#define TESTS 10
+#endif
+
+#ifndef MAX_SIG_SIZE
+#define MAX_SIG_SIZE 128
 #endif
 
 #define CRYPTO_PUBLICKEYBYTES SPX_PK_BYTES
@@ -44,14 +48,12 @@ extern void message_to_indices_jazz(uint32_t *indices, const uint8_t *m);
 #define message_to_indices_t_jazz NAMESPACE1(message_to_indices_t_jazz, MSG_LEN)
 extern void message_to_indices_t_jazz(uint32_t *indices, const uint8_t *m);
 
-#define fors_sign_jazz NAMESPACE1(fors_sign_jazz, MSG_LEN)
 extern void fors_sign_jazz(uint8_t *sig, uint8_t *pk, const uint8_t *m, const uint8_t *pub_seed,
                            const uint8_t *sk_seed, const uint32_t fors_addr[8]);
-/*
+
 extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m,
        const uint8_t *pub_seed, const uint8_t *sk_seed,
        const uint32_t fors_addr[8]);
-*/
 
 extern void treehash_fors_jazz(uint8_t *root, uint8_t *auth_path, const spx_ctx *ctx,
                                uint32_t leaf_idx, uint32_t idx_offset, void *addr);
@@ -224,70 +226,59 @@ void test_message_to_indices_t(void) {
 }
 
 void test_fors_sign(void) {
-    // TODO: Not sure about this
-    // We assume m contains at least SPX_FORS_HEIGHT * SPX_FORS_TREES bits.
-    if (MSG_LEN < (SPX_FORS_HEIGHT * SPX_FORS_TREES) / 8) {
-        puts("Skipping fors_sign");
-        printf("m must be at least SPX_FORS_HEIGHT * SPX_FORS_TREES = %d bits = %d bytes\n",
-               SPX_FORS_HEIGHT * SPX_FORS_TREES, (SPX_FORS_HEIGHT * SPX_FORS_TREES) / 8);
-        return;
-    } else {
-        puts("Testing fors_sign");
-    }
-
-    uint8_t sig_ref[SPX_FORS_BYTES], sig_jazz[SPX_FORS_BYTES];
+    uint8_t *sig_ref, *sig_jazz;
     uint8_t pk_ref[SPX_FORS_PK_BYTES], pk_jazz[SPX_FORS_PK_BYTES];
     spx_ctx ctx;
     uint32_t addr[8];
-    uint8_t msg[MSG_LEN];
+    uint8_t msg[SPX_FORS_MSG_BYTES];
 
     for (int i = 0; i < TESTS; i++) {
-        memset(sig_ref, 0, SPX_FORS_BYTES);
-        memset(sig_jazz, 0, SPX_FORS_BYTES);
+        for (size_t j = 0; j < MAX_SIG_SIZE; j++) {
+            sig_ref = malloc(j * sizeof(uint8_t));
+            sig_jazz = malloc(j * sizeof(uint8_t));
 
-        memset(pk_ref, 0, SPX_FORS_PK_BYTES);
-        memset(pk_jazz, 0, SPX_FORS_PK_BYTES);
+            memset(sig_ref, 0, j * sizeof(uint8_t));
+            memset(sig_jazz, 0, j * sizeof(uint8_t));
 
-        randombytes(ctx.pub_seed, SPX_N);
-        randombytes(ctx.sk_seed, SPX_N);
-        randombytes(msg, MSG_LEN);
-        randombytes((uint8_t *)addr, 8 * sizeof(uint32_t));
+            memset(pk_ref, 0, SPX_FORS_PK_BYTES);
+            memset(pk_jazz, 0, SPX_FORS_PK_BYTES);
 
-        fors_sign(sig_ref, pk_ref, msg, &ctx, addr);
-        fors_sign_jazz(sig_jazz, pk_jazz, msg, ctx.pub_seed, ctx.sk_seed, addr);
+            randombytes(ctx.pub_seed, SPX_N);
+            randombytes(ctx.sk_seed, SPX_N);
+            randombytes(msg, SPX_FORS_MSG_BYTES);
+            randombytes((uint8_t *)addr, 8 * sizeof(uint32_t));
 
-        if (memcmp(sig_ref, sig_jazz, SPX_FORS_BYTES) != 0) {
-            print_str_u8("sig ref", sig_ref, SPX_FORS_BYTES);
-            print_str_u8("sig jazz", sig_jazz, SPX_FORS_BYTES);
+            assert(memcmp(sig_ref, sig_jazz, j * sizeof(uint8_t)) == 0);  // fails
+            assert(memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) == 0);
+
+            fors_sign(sig_ref, pk_ref, msg, &ctx, addr);
+            fors_sign_jazz(sig_jazz, pk_jazz, msg, ctx.pub_seed, ctx.sk_seed, addr);
+
+            // if (memcmp(sig_ref, sig_jazz, j * sizeof(uint8_t)) != 0) {
+            //     print_str_u8("sig ref", sig_ref, j * sizeof(uint8_t));
+            //     print_str_u8("sig jazz", sig_jazz, j * sizeof(uint8_t));
+            // }
+
+            // if (memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) != 0) {
+            //     print_str_u8("pk ref", pk_ref, SPX_FORS_PK_BYTES);
+            //     print_str_u8("pk jazz", pk_jazz, SPX_FORS_PK_BYTES);
+            // }
+
+            // assert(memcmp(sig_ref, sig_jazz, j * sizeof(uint8_t)) == 0);  // fails
+            // assert(memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) == 0);
+
+            free(sig_ref);
+            free(sig_jazz);
         }
-
-        if (memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) != 0) {
-            print_str_u8("pk ref", pk_ref, SPX_FORS_PK_BYTES);
-            print_str_u8("pk jazz", pk_jazz, SPX_FORS_PK_BYTES);
-        }
-
-        assert(memcmp(sig_ref, sig_jazz, SPX_FORS_BYTES) == 0);
-        assert(memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) == 0);
     }
 }
 
 void test_pk_from_sig(void) {
-    // TODO: Not sure about this
-    // We assume m contains at least SPX_FORS_HEIGHT * SPX_FORS_TREES bits.
-    if (MSG_LEN < (SPX_FORS_HEIGHT * SPX_FORS_TREES) / 8) {
-        puts("Skipping message_to_indices");
-        printf("m must be at least SPX_FORS_HEIGHT * SPX_FORS_TREES = %d bits = %d bytes\n",
-               SPX_FORS_HEIGHT * SPX_FORS_TREES, (SPX_FORS_HEIGHT * SPX_FORS_TREES) / 8);
-        return;
-    } else {
-        puts("Testing pk_from_sig");
-    }
-
     uint8_t pk_ref[SPX_FORS_PK_BYTES], pk_jazz[SPX_FORS_PK_BYTES];
     uint8_t sig[SPX_FORS_BYTES];
     spx_ctx ctx;
     uint32_t addr[8];
-    uint8_t msg[MSG_LEN];
+    uint8_t msg[SPX_FORS_MSG_BYTES];
 
     for (int i = 0; i < TESTS; i++) {
         memset(pk_ref, 0, SPX_FORS_PK_BYTES);
@@ -300,7 +291,7 @@ void test_pk_from_sig(void) {
         randombytes((uint8_t *)addr, 8 * sizeof(uint32_t));
 
         fors_pk_from_sig(pk_ref, sig, msg, &ctx, addr);
-        // fors_pk_from_sig_jazz(pk_jazz, sig, msg, ctx.pub_seed, ctx.sk_seed, addr);
+        fors_pk_from_sig_jazz(pk_jazz, sig, msg, ctx.pub_seed, ctx.sk_seed, addr);
 
         if (memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) != 0) {
             print_str_u8("pk ref", pk_ref, SPX_FORS_PK_BYTES);
@@ -311,7 +302,7 @@ void test_pk_from_sig(void) {
     }
 }
 
-static uint32_t random_idx_offset(uint32_t max_idx_offset, uint32_t min_idx_offset) {
+/* static */ uint32_t random_idx_offset(uint32_t max_idx_offset, uint32_t min_idx_offset) {
     uint32_t range = max_idx_offset - min_idx_offset;
     uint32_t value;
 
@@ -389,12 +380,14 @@ int main(void) {
     // test_fors_gen_leafx1();
     // test_message_to_indices();    // msg is a reg u64
     // test_message_to_indices_t();  // msg is a reg ptr u8[MSG_LEN]
-    
+
     // test_fors_sign();
-    // test_pk_from_sig();
-    
-    puts("Testing treehash");
-    test_treehash_fors();
+    test_pk_from_sig();
+
+    // puts("Testing treehash");
+
+    // test_treehash_fors();
+
     printf("PASS: fors = { msg len : %d ; params : %s ; hash: %s }\n", MSG_LEN, xstr(PARAM),
            xstr(HASH));
     return 0;

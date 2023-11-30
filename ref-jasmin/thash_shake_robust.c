@@ -5,6 +5,7 @@
 #include "address.h"
 #include "params.h"
 #include "utils.h"
+#include <stdio.h>
 
 #include "fips202.h"
 
@@ -14,6 +15,7 @@
 void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
            const spx_ctx *ctx, uint32_t addr[8])
 {
+    puts("Running thash robust");
     SPX_VLA(uint8_t, buf, SPX_N + SPX_ADDR_BYTES + inblocks*SPX_N);
     SPX_VLA(uint8_t, bitmask, inblocks * SPX_N);
     unsigned int i;
