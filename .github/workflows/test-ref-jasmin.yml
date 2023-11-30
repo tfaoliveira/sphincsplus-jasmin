@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - ref-jasmin
+      - fors
   pull_request:
 
 jobs:
