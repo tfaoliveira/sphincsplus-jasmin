@@ -80,13 +80,50 @@ void test_cond_u32_a_eq_b_and_c_below_d(void) {
     uint8_t r;
 
     for (int i = 0; i < TESTS; i++) {
+        // These tests will most likely have a != b
         randombytes((uint8_t *)&a, sizeof(uint32_t));
         randombytes((uint8_t *)&b, sizeof(uint32_t));
         randombytes((uint8_t *)&c, sizeof(uint32_t));
         randombytes((uint8_t *)&d, sizeof(uint32_t));
 
         cond_u32_a_eq_b_and_c_below_d_jazz(a, b, c, d, &r);
-        assert((a == b && a < c) ? (r == 1) : (r == 0));
+        assert((a == b && c < d) ? (r == 1) : (r == 0));
+
+    }
+
+    for (int i = 0; i < TESTS; i++) {
+        // these tests have a = b
+        randombytes((uint8_t *)&a, sizeof(uint32_t));
+        b = a;
+        randombytes((uint8_t *)&c, sizeof(uint32_t));
+        randombytes((uint8_t *)&d, sizeof(uint32_t));
+
+        cond_u32_a_eq_b_and_c_below_d_jazz(a, b, c, d, &r);
+        assert((a == b && c < d) ? (r == 1) : (r == 0));
+    }
+
+    for (int i = 0; i < TESTS; i++) {
+        // these tests have c < d
+        randombytes((uint8_t *)&a, sizeof(uint32_t));
+        randombytes((uint8_t *)&b, sizeof(uint32_t));
+        randombytes((uint8_t *)&d, sizeof(uint32_t));
+        c = d - 10;
+
+        cond_u32_a_eq_b_and_c_below_d_jazz(a, b, c, d, &r);
+        assert((a == b && c < d) ? (r == 1) : (r == 0));
+    }
+
+    puts("Third group of tests done");
+
+    for (int i = 0; i < TESTS; i++) {
+        // these tests have a == b && c < d
+        randombytes((uint8_t *)&a, sizeof(uint32_t));
+        b = a;
+        randombytes((uint8_t *)&d, sizeof(uint32_t));
+        c = d - 10;
+
+        cond_u32_a_eq_b_and_c_below_d_jazz(a, b, c, d, &r);
+        assert((a == b && c < d) ? (r == 1) : (r == 0));
     }
 }
 
