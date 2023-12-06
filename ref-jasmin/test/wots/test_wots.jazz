@@ -57,8 +57,8 @@ export fn gen_chain_jazz(
   in = __load_u8_array<SPX_N>(in, _in);
 
   _start = s_start;
-  start = (u32) [_start];
-  steps = (u32) [_steps];
+  start = (32u) _start;
+  steps = (32u) _steps;
 
   _pub_seed = s_pub_seed;
   pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
@@ -96,9 +96,7 @@ export fn base_w_jazz<MSG_LEN>(reg u64 _lengths _msg)
   __store_u32_array<SPX_WOTS_LEN>(lengths, _lengths);
 }//<>
 
-export fn wots_checksum_jazz(
-  reg u64 _csum_base_w _msg_base_w
-) 
+export fn wots_checksum_jazz(reg u64 _csum_base_w _msg_base_w) 
 {
   stack u32[SPX_WOTS_LEN2] csum_base_w;
   stack u32[SPX_WOTS_LEN] msg_base_w;
@@ -114,7 +112,7 @@ export fn wots_checksum_jazz(
   msg_base_w_p = msg_base_w;
   msg_base_w_p = __load_u32_array<SPX_WOTS_LEN>(msg_base_w_p, _msg_base_w);
 
-  s_csum_base_w = _csum_base_w; s_msg_base_w = _msg_base_w; // spill
+  s_csum_base_w = _csum_base_w;  // spill
 
   csum_base_w_p = __wots_checksum(csum_base_w_p, msg_base_w_p);
 
@@ -162,13 +160,13 @@ export fn wots_pk_from_sig_jazz<MSG_LEN>(reg u64 _pk _sig _msg _ctx _addr)
     __store_u32_array<8>(addr, _addr);
 }//<>
 
-export fn chain_lengths_jazz<MSG_LEN>(reg u64 _lengths _msg)
+export fn chain_lengths_jazz(reg u64 _lengths _msg)
 {
   stack u32[SPX_WOTS_LEN] lengths;
-  stack u8[MSG_LEN] msg;
+  stack u8[SPX_N] msg;
 
   reg ptr u32[SPX_WOTS_LEN] lengths_p;
-  reg ptr u8[MSG_LEN] msg_p;
+  reg ptr u8[SPX_N] msg_p;
 
   stack u64 s_lengths s_msg;
 
@@ -176,13 +174,13 @@ export fn chain_lengths_jazz<MSG_LEN>(reg u64 _lengths _msg)
   lengths_p = __load_u32_array<SPX_WOTS_LEN>(lengths_p, _lengths);
     
   msg_p = msg;
-  msg_p = __load_u8_array<MSG_LEN>(msg_p, _msg);
+  msg_p = __load_u8_array<SPX_N>(msg_p, _msg);
 
   s_lengths = _lengths; s_msg = _msg; // spill
 
-  lengths_p = __chain_lengths<MSG_LEN>(lengths_p, msg_p);
+  lengths_p = __chain_lengths(lengths_p, msg_p);
   msg =  msg_p;
 
   s_lengths = _lengths; // spill
   __store_u32_array<SPX_WOTS_LEN>(lengths_p, _lengths);
-}//<>
+}

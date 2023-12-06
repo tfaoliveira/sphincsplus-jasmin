@@ -45,7 +45,7 @@ bin/test_wots_%.jpp: | bin/
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
 	$(PREPROCESSOR) --workers 8 --input_file $@ --output_file $@ --task "fn:wots_pk_from_sig_jazz p:MSG_LEN:$(GET_MSG_LEN)" \
-	"fn:base_w_jazz p:MSG_LEN:$(GET_MSG_LEN)" "fn:chain_lengths_jazz p:MSG_LEN:$(GET_MSG_LEN)"
+	"fn:base_w_jazz p:MSG_LEN:$(GET_MSG_LEN)"
 
 .PRECIOUS: bin/test_wots_%.s
 bin/test_wots_%.s: bin/test_wots_%.jpp
