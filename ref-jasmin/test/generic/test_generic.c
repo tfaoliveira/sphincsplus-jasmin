@@ -113,8 +113,6 @@ void test_cond_u32_a_eq_b_and_c_below_d(void) {
         assert((a == b && c < d) ? (r == 1) : (r == 0));
     }
 
-    puts("Third group of tests done");
-
     for (int i = 0; i < TESTS; i++) {
         // these tests have a == b && c < d
         randombytes((uint8_t *)&a, sizeof(uint32_t));

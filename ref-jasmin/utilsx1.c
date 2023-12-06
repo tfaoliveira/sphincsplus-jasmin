@@ -11,8 +11,8 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
                 uint32_t leaf_idx, uint32_t idx_offset,
                 uint32_t tree_height,
                 void (*gen_leaf)(
-                   unsigned char* /* Where to write the leaves */,
-                   const spx_ctx* /* ctx */,
+                   unsigned char*,
+                   const spx_ctx*,
                    uint32_t idx, void *info),
                 uint32_t tree_addr[8],
                 void *info)
@@ -23,14 +23,14 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
     uint32_t idx;
     uint32_t max_idx = (uint32_t)((1 << tree_height) - 1);
     for (idx = 0;; idx++) {
-        unsigned char current[2*SPX_N];
+        unsigned char current[2*SPX_N]; 
         gen_leaf( &current[SPX_N], ctx, idx + idx_offset,
                     info );
 
         uint32_t internal_idx_offset = idx_offset;
         uint32_t internal_idx = idx;
         uint32_t internal_leaf = leaf_idx;
-        uint32_t h;     
+        uint32_t h;   
         for (h=0;; h++, internal_idx >>= 1, internal_leaf >>= 1) {
 
             if (h == tree_height) {
@@ -44,24 +44,22 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
                         SPX_N );
             }
 
-            // if ((internal_idx & 1) == 0 && idx < max_idx) {
-            //     break;
-            // } 
+            if ((internal_idx & 1) == 0 && idx < max_idx) {
+                break;
+            }
 
             internal_idx_offset >>= 1;
-            
+            set_tree_height(tree_addr, h + 1);
             set_tree_index(tree_addr, internal_idx/2 + internal_idx_offset );
 
             unsigned char *left = &stack[h * SPX_N];
             memcpy( &current[0], left, SPX_N );
-
-            // thash( &current[1 * SPX_N],
-            //        &current[0 * SPX_N],
-            //        2, ctx, tree_addr);
-        
+            thash( &current[1 * SPX_N],
+                   &current[0 * SPX_N],
+                   2, ctx, tree_addr);
         }
+
         memcpy( &stack[h * SPX_N], &current[SPX_N], SPX_N);
     }
     */
 }
-

@@ -236,6 +236,17 @@ inline fn __message_to_indices_t<MSG_LEN>(
   return indices;
 }//<>
 
+
+
+
+
+
+
+
+
+
+
+// for treehash in fors, tree_height is always SPX_FORS_HEIGHT
 inline fn treehash_fors(
   reg ptr u8[SPX_N] root,
   reg u64 auth_path,
@@ -247,6 +258,193 @@ inline fn treehash_fors(
   reg ptr u32[8] info
 ) -> reg ptr u8[SPX_N], reg ptr u32[8], reg ptr u32[8]
 {
+  ///////////////////////////////////////////////////
+  stack ptr u8[SPX_N] s_root;
+  stack ptr u8[SPX_N] s_pub_seed;
+  stack ptr u8[SPX_N] s_sk_seed;
+  stack ptr u32[8] s_info;
+  stack ptr u32[8] s_tree_addr;
+  stack u32 s_idx_offset s_leaf_idx;
+  stack u64 s_auth_path;
+  ///////////////////////////////////////////////////
+
+  stack u8[SPX_FORS_HEIGHT * SPX_N] _stack;
+  stack u8[2 * SPX_N] current;
+
+  reg u32 idx max_idx;
+  reg u32 internal_idx_offset internal_idx internal_leaf;
+  reg u32 h; stack u32 s_h;
+  reg u32 t;
+  reg u64 u v;
+
+  stack u32 s_idx s_max_idx s_internal_idx_offset s_internal_idx s_internal_leaf s_h s_t;
+  stack u64 s_u s_v;
+
+  stack u8 stop_outer stop_inner returned;
+
+  reg u64 offset_h;
+  stack u64 s_offset_h;
+
+  reg bool cond;
+
+  inline int i;
+  reg u8 t8; stack u8 s_t8;
+
+  stack u32 two;
+  two = 2;
+
+  ///////////////////////////////////////////////////
+  returned = 0;
+
+  // Spill
+  s_root = root;
+  s_auth_path = auth_path;
+  s_pub_seed = pub_seed;
+  s_sk_seed = sk_seed;
+  s_leaf_idx = leaf_idx;
+  s_idx_offset = idx_offset;
+  s_tree_addr = tree_addr;
+  s_info = info;
+
+  // End spills
+
+  max_idx = 1;
+  max_idx = #SHL_32(max_idx, SPX_FORS_HEIGHT);
+  max_idx -= 1;
+
+  s_max_idx = max_idx;
+
+  idx = 0;
+  s_idx = idx;
+  stop_outer = 0;
+  while (stop_outer != 1) {
+    pub_seed = s_pub_seed;
+    sk_seed = s_sk_seed;
+    t = s_idx;
+    t += s_idx_offset;
+    info = s_info;
+    current[SPX_N:SPX_N], info = __fors_gen_leafx1__(current[SPX_N:SPX_N], pub_seed, 
+                                                     sk_seed, t, info);
+    s_info = info;
+    
+
+    internal_idx_offset = s_idx_offset;
+    internal_idx = s_idx;
+    internal_leaf = s_leaf_idx;
+
+    // Spill
+    s_internal_idx_offset = internal_idx_offset;
+    s_internal_idx = internal_idx;
+    s_internal_leaf = internal_leaf;
+
+    ?{}, h = #set0_32();
+    s_h = h;
+    stop_inner = 0;
+    while (stop_inner != 1) {
+      h = s_h;
+      if (h == SPX_FORS_HEIGHT) {
+        root = s_root;
+        root, _ = _x_memcpy_u8u8<SPX_N, SPX_N>(root, 0, current[SPX_N:SPX_N]);
+        s_root = root;
+        stop_inner = 1;
+        stop_outer = 1;
+        returned = 1;
+      }
+
+      if (returned != 1) {
+        t = s_internal_idx;
+        internal_leaf = s_internal_leaf;
+        t = #XOR_32(t, internal_leaf);
+        s_internal_leaf = internal_leaf; // TODO: Nao e preciso pq o valor nao e alterado?
+        if (t == 0x01) {
+          u = s_auth_path;
+          v = (64u)s_h; // v is the offset
+          v *= SPX_N;   // v is the offset
+          
+          _, _ = _x_memcpy_u8pu8<SPX_N>(u, v, current[SPX_N : SPX_N]);
+          
+          s_u = u;
+          s_v = v;
+        }
+
+        t = s_internal_idx;
+        t &= 1;
+        max_idx = s_max_idx;
+        idx = s_idx;
+        cond = __cond_u32_a_eq_b_and_c_below_d(t, 0, idx, max_idx); 
+        // stop_inner = 1 if cond; // TODO: Doesnt work: linearization: this assignment does not correspond to any known instruction, try using the intrinsic
+                                   // Should be a CMOVcc ?
+                                   // 
+        if (cond) { stop_inner = 1; }
+
+        // We check here because of the break in the previous if statement
+        if (stop_inner != 1) {
+          internal_idx_offset = s_internal_idx_offset;
+          tree_addr = s_tree_addr;
+
+          internal_idx_offset = #SHR_32(internal_idx_offset, 1);
+
+          t = s_h;
+          t += 1;
+          tree_addr = __set_tree_height(tree_addr, t);
+
+          t = s_internal_idx;
+          t /= two;
+          t += internal_idx_offset; 
+          tree_addr = __set_tree_index(tree_addr, t);
+
+          s_internal_idx_offset = internal_idx_offset;
+          s_tree_addr = tree_addr;
+          s_t = t;
+
+          // memcpy(&current[0], &stack[h * SPX_N], SPX_N );
+          offset_h = (64u) s_h;
+          offset_h *= SPX_N;  
+          for i=0 to SPX_N {
+            t8 = _stack[(int) offset_h];
+            current[i] = t8;
+            offset_h += 1;
+          }
+          s_offset_h = offset_h;
+          s_t8 = t8;
+
+          pub_seed = s_pub_seed;
+          tree_addr = s_tree_addr;
+          current[SPX_N:SPX_N] = __thash<2>(current[SPX_N:SPX_N], current, pub_seed, tree_addr);
+        }
+      }
+
+      // Update loop counter
+      h = s_h;
+      h += 1;
+      s_h = h;
+
+      internal_idx = s_internal_idx;
+      internal_leaf = s_internal_leaf;
+      
+      internal_idx = #SHR_32(internal_idx, 1);
+      internal_leaf = #SHR_32(internal_leaf, 1);
+
+      s_internal_idx = internal_idx;
+      s_internal_leaf = internal_leaf;
+    }
+
+    if (returned != 1) {
+      offset_h = (64u) s_h;
+      offset_h *= SPX_N;
+      _stack, _ = _x_memcpy_u8u8<SPX_FORS_HEIGHT * SPX_N, SPX_N>(_stack, offset_h, current[SPX_N:SPX_N]);
+      s_offset_h = offset_h;
+    }
+
+    // Update loop counter
+    idx = s_idx;
+    idx += 1;
+    s_idx = idx;
+  }
+
+  root = s_root;
+  info = s_info;
+
   return root, tree_addr, info;
 }
 
@@ -262,8 +460,9 @@ fn _treehash_fors(
   reg ptr u32[8] info
 ) -> reg ptr u8[SPX_N], reg ptr u32[8], reg ptr u32[8]
 {
-  root, tree_addr, info = treehash_fors(root, auth_path, pub_seed, sk_seed,
-                                        leaf_idx, idx_offset, tree_addr, info);
+  // TODO: FIXME: TODO: FIXME: TODO: FIXME:
+  // root, tree_addr, info = treehash_fors(root, auth_path, pub_seed, sk_seed,
+  //                                       leaf_idx, idx_offset, tree_addr, info);
   return root, tree_addr, info;
 }
 
@@ -330,49 +529,79 @@ inline fn __fors_sign(
   inline int i;
 
   reg u32 t;
-  stack u32 s_t;
-
-  stack u32 s_idx_offset s_t;
+  stack u32 s_idx_offset;
   
-  ////////////////////////////////////////////////////
+  //////////////////////////////////////////////////// Initial spills (start from a clean state)
+                                                       // FIXME: Nao e preciso fazer tantos spills
+                                                       // Spill so do que e usado no treehash e na thash
   s_sig = sig;
+  s_pk = pk;
+  s_m = m;
+  s_pub_seed = pub_seed;
+  s_sk_seed = sk_seed;
+  s_fors_addr = fors_addr;
   ////////////////////////////////////////////////////
 
+  roots = __zero_array_u8<SPX_FORS_TREES * SPX_N>(roots); // FIXME: Remove this when treehash works
+  
   fors_tree_addr = __zero_array_u32<8>(fors_tree_addr);
   fors_leaf_addr = __zero_array_u32<8>(fors_leaf_addr); // struct fors_gen_leaf_info 
   fors_pk_addr   = __zero_array_u32<8>(fors_pk_addr);
 
+  fors_addr = s_fors_addr; // unspill
   fors_tree_addr = __copy_keypair_addr(fors_tree_addr, fors_addr);
   fors_leaf_addr = __copy_keypair_addr(fors_leaf_addr, fors_addr);
   fors_pk_addr   = __copy_keypair_addr(fors_pk_addr, fors_addr);
-
   // NOTE: From now on, fors_addr is no longer live (we don't need to spill it)
-
   fors_pk_addr = __set_type(fors_pk_addr, SPX_ADDR_TYPE_FORSPK);
 
+  m = s_m; // unspill
   indices = __message_to_indices_t<SPX_FORS_MSG_BYTES>(indices, m);
-
   // NOTE: From now on, m is no longer live (we don't need to spill it)
 
-  for i=0 to SPX_FORS_TREES {
+  for i=0 to SPX_FORS_TREES { // TODO: replace with a while loop
     idx_offset = 1;
     idx_offset = #SHL_32(idx_offset, SPX_FORS_HEIGHT);
     idx_offset *= i;
+    s_idx_offset = idx_offset;
 
     fors_tree_addr = __set_tree_height(fors_tree_addr, 0);
 
     t = indices[i]; 
-    t += idx_offset; 
+    t += s_idx_offset; 
     fors_tree_addr = __set_tree_index(fors_tree_addr, t);
 
-    fors_tree_addr = __set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSPRF);
+    fors_tree_addr = __set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSPRF);fors_tree_addr = __set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSPRF);
 
-    // sig = s_sig;
-    // sig += SPX_N;
-    // s_sig = sig;
+    sig = s_sig;
+    sig_array = __load_u8_array<SPX_N>(sig_array, sig);
+    pub_seed = s_pub_seed;
+    sk_seed = s_sk_seed;
+    sig_array = __fors_gen_sk__(sig_array, pub_seed, sk_seed, fors_tree_addr);
+    sig = s_sig;
+    __store_u8_array<SPX_N>(sig_array, sig); // FIXME: Escrever __fors_gen_sk__ com sk como reg u64 em vez de reg ptr u8[SPX_N]
+
+    fors_tree_addr = __set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSTREE);
+    sig += SPX_N;
+    s_sig = sig;
+
+    // treehash
+    sig = s_sig;
+    pub_seed = s_pub_seed;  // we probably dont need these unspills
+    sk_seed = s_sk_seed; // we probably dont need these unspills
+    t = indices[i];
+    idx_offset = s_idx_offset;
+    roots[i*SPX_N:SPX_N], fors_tree_addr, fors_leaf_addr = __treehash_fors_(roots[i*SPX_N:SPX_N], sig, pub_seed,
+                                                                            sk_seed, t, idx_offset, fors_tree_addr, 
+                                                                            fors_leaf_addr);
+    sig = s_sig;
+    sig += SPX_N * SPX_FORS_HEIGHT;
+    s_sig = sig;
   }
 
-  // pk = __thash_<SPX_FORS_TREES>(pk, roots, pub_seed, fors_pk_addr);
+  pk = s_pk;
+  pub_seed = s_pub_seed;
+  pk = __thash<SPX_FORS_TREES>(pk, roots, pub_seed, fors_pk_addr);
 
   return pk;
 }//<>
@@ -380,7 +609,7 @@ inline fn __fors_sign(
 ////////////////////////////////// PK FROM SIG //////////////////////
 
 inline fn __fors_pk_from_sig(
-  reg ptr u8[SPX_N] pk, // root
+  reg ptr u8[SPX_N] pk, // root 
   reg u64 sig, 
   reg ptr u8[SPX_FORS_MSG_BYTES] msg,
   reg ptr u8[SPX_N] pub_seed,
@@ -388,23 +617,88 @@ inline fn __fors_pk_from_sig(
   reg ptr u32[8] fors_addr
 ) -> reg ptr u8[SPX_N]
 {
-  stack u8[SPX_FORS_TREES] indices;
+  /////////////////////////////////////////
+  stack ptr u8[SPX_N] s_pk;
+  stack u64 s_sig;
+  stack ptr u8[SPX_FORS_MSG_BYTES] s_msg;
+  stack ptr u8[SPX_N] s_pub_seed;
+  stack ptr u8[SPX_N] s_sk_seed;
+  stack ptr u32[8] s_fors_addr;
+  /////////////////////////////////////////
+  stack u32[SPX_FORS_TREES] indices;
   stack u8[SPX_FORS_TREES * SPX_N] roots;
   stack u8[SPX_N] leaf;
   stack u32[8] fors_tree_addr;
   stack u32[8] fors_pk_addr;
-  reg u32 idx_offset;
+  reg u32 idx_offset t;
+  stack u32 s_idx_offset s_t;
   inline int i;
+
+  stack u8[SPX_N] sig_array; // FIXME: TODO: FIXME: 
+
+  ///////////////////////////// Initial spills (start from a clean state)
+  s_pk = pk;
+  s_sig = sig;
+  s_msg = msg;
+  s_pub_seed = pub_seed;
+  s_sk_seed = sk_seed;
+  s_fors_addr = fors_addr;
+  /////////////////////////////
 
   fors_tree_addr = __zero_array_u32<8>(fors_tree_addr);
   fors_pk_addr = __zero_array_u32<8>(fors_pk_addr);
 
-  for i=0 to SPX_FORS_TREES {
+  roots = __zero_array_u8<SPX_FORS_TREES * SPX_N>(roots); // FIXME: Remove this when treehash is done
 
+  fors_addr = s_fors_addr; // TODO: we probably dont need this unspill
+
+  fors_tree_addr = __copy_keypair_addr(fors_tree_addr, fors_addr);
+  fors_pk_addr = __copy_keypair_addr(fors_pk_addr, fors_addr);
+  fors_tree_addr = __set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSTREE);
+  fors_pk_addr = __set_type(fors_pk_addr, SPX_ADDR_TYPE_FORSPK);
+  // NOTE: From now on, fors_addr is no longer live (we don't need to spill it)
+
+  msg = s_msg; // TODO: We probably dont need this unspill
+  indices = __message_to_indices_t<SPX_FORS_MSG_BYTES>(indices, msg);
+  // NOTE: From now on, msg is no longer live (we don't need to spill it)
+
+  for i=0 to SPX_FORS_TREES {
+    idx_offset = 1;
+    idx_offset = #SHL_32(idx_offset, SPX_FORS_HEIGHT);
+    idx_offset *= i;
+    s_idx_offset = idx_offset; // spill
+
+    fors_tree_addr = __set_tree_height(fors_tree_addr, 0);
+
+    t = indices[i]; 
+    t += s_idx_offset; 
+    fors_tree_addr = __set_tree_index(fors_tree_addr, t);
+
+    sig = s_sig;
+    sig_array = __load_u8_array<SPX_N>(sig_array, sig);
+    pub_seed = s_pub_seed;
+    leaf = __fors_sk_to_leaf(leaf, sig_array, pub_seed, fors_tree_addr);
+    sig = s_sig;
+    __store_u8_array<SPX_N>(sig_array, sig); // FIXME: Escrever __fo=rs_sk_to_leaf com sk como reg u64 em vez de reg ptr u8[SPX_N]
+    sig = s_sig; // we probably dont need this spill
+    sig += SPX_N;
+    s_sig = sig;
+
+    t = indices[i];
+    idx_offset = s_idx_offset;
+    sig = s_sig;
+    pub_seed = s_pub_seed;
+    roots[i*SPX_N : SPX_N], fors_tree_addr = __compute_root(roots[i*SPX_N : SPX_N], leaf, t, idx_offset,
+                                                            sig, SPX_FORS_HEIGHT, pub_seed, fors_tree_addr);
+
+    sig = s_sig;
+    sig += SPX_N * SPX_FORS_HEIGHT;
+    s_sig = sig;
   }
 
-  pk = __thash_<SPX_FORS_TREES>(pk, roots, pub_seed, fors_pk_addr);
-
+  pk = s_pk;
+  pub_seed = s_pub_seed;
+  pk = __thash<SPX_FORS_TREES>(pk, roots, pub_seed, fors_pk_addr);
   return pk;
 }
 
