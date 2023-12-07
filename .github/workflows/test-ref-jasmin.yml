@@ -24,6 +24,8 @@ jobs:
           - memcmp
           - memcpy
           - thash
+          - utils
+          - wots
     steps:
       - uses: actions/checkout@v1
       - name: Compile tests

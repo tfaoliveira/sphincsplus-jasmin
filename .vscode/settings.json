@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "*.jtmpl": "jasmin",
-        "*.jpp": "jasmin",
-        "*.tcc": "c"
-    }
-}

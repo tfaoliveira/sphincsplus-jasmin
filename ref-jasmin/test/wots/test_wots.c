@@ -11,6 +11,7 @@
 #include "notrandombytes.c"
 #include "params.h"
 #include "print.c"
+#include "thash.h"
 #include "wots.h"
 
 #ifndef HASH
@@ -37,11 +38,10 @@ extern void base_w_jazz(uint32_t *output, const uint8_t *input);
 
 extern void wots_checksum_jazz(uint32_t *csum_base_w, const uint32_t *msg_base_w);
 
-#define wots_pk_from_signature_jazz NAMESPACE1(wots_pk_from_sig_jazz, MSG_LEN)
-extern void wots_pk_from_signature_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *msg,
-                                        const spx_ctx *ctx, uint32_t addr[8]);
+extern void wots_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *msg,
+                                  const spx_ctx *ctx, uint32_t addr[8]);
 
-extern void chain_lengths_jazz(uint8_t *lengths, const uint8_t *msg);
+extern void chain_lengths_jazz(uint32_t *lengths, const uint8_t *msg);
 
 static void random_addr(uint32_t addr[8]) { randombytes((uint8_t *)addr, 8 * sizeof(uint32_t)); }
 
@@ -57,7 +57,7 @@ void ull_to_bytes(unsigned char *out, unsigned int outlen, unsigned long long in
 
     /* Iterate over out in decreasing order, for big-endianness. */
     for (i = (signed int)outlen - 1; i >= 0; i--) {
-        out[i] = (unsigned char) (in & 0xff);
+        out[i] = (unsigned char)(in & 0xff);
         in = in >> 8;
     }
 }
@@ -105,10 +105,8 @@ static void wots_checksum(unsigned int *csum_base_w, const unsigned int *msg_bas
     }
 
     csum = csum << ((8 - ((SPX_WOTS_LEN2 * SPX_WOTS_LOGW) % 8)) % 8);
-    /*
     ull_to_bytes(csum_bytes, sizeof(csum_bytes), csum);
     base_w(csum_base_w, SPX_WOTS_LEN2, csum_bytes);
-    */
 }
 ////////////////////////////////////////////////////////////////////////
 
@@ -156,8 +154,8 @@ void test_base_w(void) {
                 }
 
                 randombytes((uint8_t *)in, inlen);
-                memset(out_jazz, 0, MSG_LEN);
-                memset(out_ref, 0, MSG_LEN);
+                memset(out_jazz, 0, MSG_LEN * sizeof(uint32_t));
+                memset(out_ref, 0, MSG_LEN * sizeof(uint32_t));
 
                 base_w(out_ref, MSG_LEN, in);
                 puts("ref finished");
@@ -180,62 +178,66 @@ void test_wots_checksum(void) {
     uint32_t msg_base_w[SPX_WOTS_LEN];
 
     for (int i = 0; i < TESTS; i++) {
-        memset((uint8_t *)csum_base_w_ref, 0, SPX_WOTS_LEN2);
-        memset((uint8_t *)csum_base_w_jazz, 0, SPX_WOTS_LEN2);
-        randombytes((uint8_t *)msg_base_w, SPX_WOTS_LEN);
+        memset((uint8_t *)csum_base_w_ref, 0, SPX_WOTS_LEN2 * sizeof(uint32_t));
+        memset((uint8_t *)csum_base_w_jazz, 0, SPX_WOTS_LEN2 * sizeof(uint32_t));
+        randombytes((uint8_t *)msg_base_w, SPX_WOTS_LEN * sizeof(uint32_t));
 
         wots_checksum(csum_base_w_ref, msg_base_w);
         wots_checksum_jazz(csum_base_w_jazz, msg_base_w);
-        
-        assert(memcmp(csum_base_w_ref, csum_base_w_jazz, SPX_WOTS_LEN2) == 0);
+
+        assert(memcmp(csum_base_w_ref, csum_base_w_jazz, SPX_WOTS_LEN2 * sizeof(uint32_t)) == 0);
+    }
+}
+
+void test_chain_lengths(void) {
+    unsigned int lengths_ref[SPX_WOTS_LEN];
+    uint32_t lengths_jazz[SPX_WOTS_LEN];
+    uint8_t msg[SPX_N];
+
+    for (int t = 0; t < TESTS; t++) {
+        memset(lengths_ref, 0, SPX_WOTS_LEN * sizeof(unsigned int));
+        memset(lengths_jazz, 0, SPX_WOTS_LEN * sizeof(uint32_t));
+        randombytes(msg, SPX_N);
+
+        chain_lengths(lengths_ref, msg);
+        chain_lengths_jazz(lengths_jazz, msg);
+
+        assert(memcmp(lengths_ref, lengths_jazz, SPX_WOTS_LEN * sizeof(uint32_t)) == 0);
     }
 }
 
 void test_wots_pk_from_sig(void) {
-    uint8_t pk0[SPX_WOTS_BYTES], pk1[SPX_WOTS_BYTES];
+    uint8_t pk_ref[SPX_WOTS_BYTES], pk_jazz[SPX_WOTS_BYTES];
     uint8_t sig[SPX_BYTES];
     uint8_t msg[MSG_LEN];
     spx_ctx ctx;
-    uint32_t addr[8];
+    uint32_t addr_ref[8], addr_jazz[8];
 
     for (int t = 0; t < TESTS; t++) {
-        memset(pk0, 0, SPX_WOTS_BYTES);
-        memset(pk1, 0, SPX_WOTS_BYTES);
+        memset(pk_ref, 0, SPX_WOTS_BYTES);
+        memset(pk_jazz, 0, SPX_WOTS_BYTES);
 
         randombytes(sig, SPX_BYTES);
         randombytes(msg, MSG_LEN);
         randombytes(ctx.pub_seed, SPX_N);
         randombytes(ctx.sk_seed, SPX_N);
-        random_addr(addr);
+        random_addr(addr_ref);
+        memcpy(addr_jazz, addr_ref, 8 * sizeof(uint32_t));
 
-        wots_pk_from_signature_jazz(pk0, sig, msg, &ctx, addr);
-        wots_pk_from_sig(pk1, sig, msg, &ctx, addr);
+        wots_pk_from_sig_jazz(pk_jazz, sig, msg, &ctx, addr_jazz);
+        wots_pk_from_sig(pk_ref, sig, msg, &ctx, addr_ref);
 
-        assert(memcmp(pk0, pk1, SPX_WOTS_BYTES) == 0);
-    }
-}
-
-void test_chain_lengths(void) {
-    unsigned int lengths0[SPX_WOTS_LEN];
-    uint8_t lengths1[SPX_WOTS_LEN];
-    uint8_t msg[MSG_LEN];
-
-    for (int t = 0; t < TESTS; t++) {
-        randombytes(msg, MSG_LEN);
-        chain_lengths(lengths0, msg);
-        chain_lengths_jazz(lengths1, msg);
-
-        assert(memcmp(lengths0, lengths1, SPX_WOTS_LEN) == 0);
+        assert(memcmp(pk_ref, pk_jazz, SPX_WOTS_BYTES) == 0);
+        assert(memcmp(addr_ref, addr_jazz, 8 * sizeof(uint32_t)) == 0);
     }
 }
 
 int main(void) {
-    test_gen_chain(); 
-    // test_base_w(); // FIXME: *** stack smashing detected ***: terminated in ref impl
+    // test_base_w(); // FIXME: *** stack smashing detected ***: terminated in ref impl (but works)
+    test_gen_chain();
     test_wots_checksum();
-    // test_wots_pk_from_sig();
-    // test_chain_lengths();
-
+    test_chain_lengths();
+    test_wots_pk_from_sig();
     printf("PASS: wots { msg len : %d }\n", MSG_LEN);
     return 0;
 }

@@ -182,7 +182,6 @@ inline fn __wots_checksum(
     csum += t;
   }
 
-  /* 
   k = (SPX_WOTS_LEN2 * SPX_WOTS_LOGW) % 8;
 
   u = 8;
@@ -192,10 +191,9 @@ inline fn __wots_checksum(
   u = u;
   csum = #SHL(csum, u);
 
-  csum_bytes = __ull_to_bytes<(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(csum_bytes, csum);
+  csum_bytes = __ull_to_bytes_t<(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(csum_bytes, csum);
 
   csum_base_w = __base_w<SPX_WOTS_LEN2, (SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(csum_base_w, csum_bytes);
-  */
   return csum_base_w;
 }
 
@@ -245,34 +243,97 @@ inline fn __chain_lengths__(
  */
 inline fn __wots_pk_from_sig<MSG_LEN>(
     reg ptr u8[SPX_WOTS_BYTES] pk,
-    reg ptr u8[SPX_BYTES] sig,
+    reg u64 sig,
     reg ptr u8[MSG_LEN] msg,
     reg ptr u8[SPX_N] pub_seed,
     reg ptr u32[8] addr
 ) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
 {
+  stack ptr u8[SPX_WOTS_BYTES] s_pk;
+  stack u64 s_sig;
+  stack ptr u8[MSG_LEN] s_msg;
+  stack ptr u8[SPX_N] s_pub_seed;
+  stack ptr u32[8] s_addr;
+
+  stack u32[SPX_WOTS_LEN] lengths;
+  stack u8[SPX_N] sig_array; // FIXME: TODO:
+  inline int i;
+
+  reg u32 start steps;
+  stack u32 s_start s_steps;
+
+  sig_array = __load_u8_array<SPX_N>(sig_array, sig); // FIXME: TODO:
+
+  // Spill (start from a clean state)
+  s_pk = pk;
+  s_sig = sig;
+  s_pub_seed = pub_seed;
+  s_addr = addr;
+
+  lengths = __chain_lengths(lengths, msg); // from now on, lengths is no longer live (we dont need to spill it)
+
+  for i=0 to SPX_WOTS_LEN {
+    sig = s_sig;
+    sig += i*SPX_N;
+    sig_array = __load_u8_array<SPX_N>(sig_array, sig); // FIXME: TODO:
+    s_sig = sig;
+
+    addr = s_addr;
+    addr = __set_chain_addr(addr, i);
+    s_addr = addr;
+
+    start = lengths[i];
+    steps = SPX_WOTS_W;
+    steps -= 1;
+    steps -= lengths[i];
+
+    pk = s_pk;
+    pub_seed = s_pub_seed;
+    addr = s_addr;
+    // pk[i*SPX_N : SPX_N], addr = _gen_chain(pk[i*SPX_N : SPX_N], sig_array, start, steps, pub_seed, addr);
+    s_pk = pk;
+    s_addr = addr;
+    s_start = start;
+    s_steps = steps;
+  }
+
+  pk = s_pk;
+  addr = s_addr;
+
   return pk, addr;
 }//<>
 
 #[returnaddress="stack"]
 fn _wots_pk_from_sig<MSG_LEN>(
     reg ptr u8[SPX_WOTS_BYTES] pk,
-    reg ptr u8[SPX_BYTES] sig,
+    reg u64 sig,
     reg ptr u8[MSG_LEN] msg,
     reg ptr u8[SPX_N] pub_seed,
     reg ptr u32[8] addr
 ) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
 {
+  pk, addr = __wots_pk_from_sig<MSG_LEN>(pk, sig, msg, pub_seed, addr);
   return pk, addr;
 }//<>
 
 inline fn __wots_pk_from_sig__<MSG_LEN>(
     reg ptr u8[SPX_WOTS_BYTES] pk,
-    reg ptr u8[SPX_BYTES] sig,
-    reg ptr u8[MSG_LEN] msg,
+    reg u64 sig,
+    reg ptr u8[MSG_LEN] msg, // root
     reg ptr u8[SPX_N] pub_seed,
     reg ptr u32[8] addr
 ) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
 {
+  pk = pk;
+  sig = sig;
+  msg = msg;
+  pub_seed = pub_seed;
+  addr = addr;
+
+  pk, addr = _wots_pk_from_sig<MSG_LEN>(pk, sig, msg, pub_seed, addr);
+
+  pk = pk;
+  addr = addr;
+
   return pk, addr;
 }//<>
