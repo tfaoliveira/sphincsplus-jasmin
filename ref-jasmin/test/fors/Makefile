@@ -15,9 +15,9 @@ PREPROCESSOR ?= ../scripts/preprocessor
 # ------------------------------------------------------------------------------
 
 HASH_LIST     := shake
-PARAMS_LIST   := 128f # 128s 192f 192s 256f 256s
-THASH_LIST    := simple # robust
-MSG_LEN_LIST  := $(shell seq 120 170) # $(shell seq 1 4) 64 65 66 67 68 69 70 71 72 84 90 128 100
+PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
+THASH_LIST    := simple robust
+MSG_LEN_LIST  := 1 # $(shell seq 120 170) # $(shell seq 1 4) 64 65 66 67 68 69 70 71 72 84 90 128 100
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach L,$(MSG_LEN_LIST),$(H)_$(P)_$(T)_$(L)))))
 

@@ -123,8 +123,9 @@ void fors_sign(unsigned char *sig, unsigned char *pk,
                const spx_ctx *ctx,
                const uint32_t fors_addr[8])
 {
-    uint8_t *sig_ptr_at_entry = sig;
-    uint8_t sig_jazz[SPX_BYTES]; //
+    uint8_t *sig_at_entry = sig;
+    uint8_t sig_at_entry_jazz[SPX_FORS_BYTES]; //
+    uint8_t *sig_jazz = sig_at_entry_jazz; //
     uint8_t ctx_jazz[2*SPX_N]; //
 
     uint32_t indices[SPX_FORS_TREES];
@@ -167,10 +168,11 @@ void fors_sign(unsigned char *sig, unsigned char *pk,
         fors_gen_sk(sig, ctx, fors_tree_addr);
         set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSTREE);
         sig += SPX_N;
+        sig_jazz += SPX_N; //
 
         // copy state
         memcpy(roots_jazz, roots, SPX_FORS_TREES * SPX_N);
-        memcpy(sig_jazz, sig_ptr_at_entry, sizeof(sig_jazz));
+        memcpy(sig_at_entry_jazz, sig_at_entry, sizeof(sig_at_entry_jazz));
         memcpy(ctx_jazz, ctx->pub_seed, SPX_N);
         memcpy(ctx_jazz+SPX_N, ctx->sk_seed, SPX_N);
         memcpy(fors_tree_addr_jazz, fors_tree_addr, sizeof(fors_tree_addr));
@@ -196,12 +198,14 @@ void fors_sign(unsigned char *sig, unsigned char *pk,
                    fors_tree_leaf_addr_jazz
                   );
 
-        // assert that states are equal
-        assert(memcmp(ctx_jazz, ctx->pub_seed, SPX_N) == 0);
-        assert(memcmp(ctx_jazz+SPX_N, ctx->sk_seed, SPX_N) == 0);
-        // TODO, write the remaining asserts
+        // assert that "outputs" are equal
+        assert(memcmp(roots_jazz, roots, SPX_FORS_TREES * SPX_N) == 0);
+        assert(memcmp(sig_at_entry_jazz, sig_at_entry, sizeof(sig_at_entry_jazz)) == 0);
+        assert(memcmp(fors_tree_addr_jazz, fors_tree_addr, sizeof(fors_tree_addr)) == 0);
+        assert(memcmp(fors_leaf_addr_jazz, fors_leaf_addr, sizeof(uint32_t)*8) == 0);
  
         sig += SPX_N * SPX_FORS_HEIGHT;
+        sig_jazz += SPX_N * SPX_FORS_HEIGHT;
     }
     thash(pk, roots, SPX_FORS_TREES, ctx, fors_pk_addr);
 }

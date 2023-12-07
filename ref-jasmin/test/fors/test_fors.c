@@ -17,12 +17,12 @@
 
 #include "api.h"
 
-#ifndef HASH
-#define HASH shake
+#ifndef PARAMS
+#define PARAMS sphincs-shake-128f
 #endif
 
-#ifndef PARAM
-#define PARAM 128f
+#ifndef THASH
+#define THASH simple
 #endif
 
 #ifndef MSG_LEN
@@ -106,7 +106,7 @@ static void fors_gen_leafx1_ref(unsigned char *leaf, const spx_ctx *ctx, uint32_
 }
 
 /////////////////////////////// TESTS /////////////////////////////////////////
-
+#if 0
 void test_fors_gen_sk(void) {
     uint8_t sk_jazz[SPX_N], sk_ref[SPX_N];
     uint32_t fors_addr[8];
@@ -318,6 +318,7 @@ void test_pk_from_sig(void) {
 
     return value;
 }
+#endif
 
 void test_treehash_fors(void)
 {
@@ -347,8 +348,6 @@ void test_treehash_fors(void)
 
 int main(void) {
 
-    test_treehash_fors();
-
 #if 0
     test_fors_gen_sk();
     test_fors_sk_to_leaf();
@@ -359,7 +358,8 @@ int main(void) {
     test_pk_from_sig();
 #endif
 
-    printf("PASS: fors = { msg len : %d ; params : %s ; hash: %s }\n", MSG_LEN, xstr(PARAM),
-           xstr(HASH));
+    test_treehash_fors();
+    printf("PASS: fors = { msg len : %d ; params : %s }\n", MSG_LEN, xstr(PARAMS));
+
     return 0;
 }

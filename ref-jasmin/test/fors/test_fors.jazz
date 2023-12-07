@@ -1,6 +1,7 @@
 from Sphincs require "fors/fors.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
 
+/*
 export fn fors_gen_sk_jazz(
   reg u64 _sk _pub_seed _sk_seed _fors_leaf_addr
 )
@@ -205,7 +206,7 @@ export fn fors_pk_from_sig_jazz(
   __store_u8_array<SPX_N>(pk, _pk);
 }
 
-
+*/
 
 //////////////////////////////////// Treehash
 inline fn __load_ctx(
@@ -274,7 +275,7 @@ export fn treehash_fors_jazz(
   tree_addr, info = __load_info(tree_addr, info, _addrs);
 
 
-  root, tree_addr, info = treehash_fors(root, auth_path, pub_seed, sk_seed, leaf_idx, idx_offset, tree_addr, info);
+  root, tree_addr, info = __treehash_fors_(root, auth_path, pub_seed, sk_seed, leaf_idx, idx_offset, tree_addr, info);
 
   _root = s_root;
   __store_u8_array<SPX_N>(root, _root);
