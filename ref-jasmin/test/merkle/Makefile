@@ -7,8 +7,9 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
-JASMIN   ?= jasminc
-JPP      ?= ../scripts/jpp
+JASMIN       ?= jasminc
+JFLAGS       ?= -nowarning
+JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
@@ -16,9 +17,8 @@ PREPROCESSOR ?= ../scripts/preprocessor
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
 THASH_LIST    := simple robust
-MSG_LEN_LIST  := $(shell seq 1 4) 64 100
 
-TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach L,$(MSG_LEN_LIST),$(H)_$(P)_$(T)_$(L)))))
+TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
 TESTS      := $(addprefix bin/test_merkle_, $(TLIST))
@@ -27,7 +27,6 @@ OUT        := $(addsuffix .out, $(TESTS))
 GET_HASH       = $(word 1, $(subst _, ,$*))
 GET_PARAM      = $(word 2, $(subst _, ,$*))
 GET_THASH      = $(word 3, $(subst _, ,$*))
-GET_MSG_LEN    = $(word 4, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
@@ -48,7 +47,7 @@ bin/test_merkle_%.jpp: | bin/
 
 .PRECIOUS: bin/test_merkle_%.s
 bin/test_merkle_%.s: bin/test_merkle_%.jpp
-	$(JASMIN) -nowarning $< -o $@
+	$(JASMIN) $(JFLAGS) $< -o $@
 
 $(TESTS):
 bin/test_merkle_%: bin/test_merkle_%.s | bin/

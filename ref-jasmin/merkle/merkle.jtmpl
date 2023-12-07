@@ -1,44 +1,70 @@
 from Sphincs require "address/address.jinc"
 from Sphincs require "generic/utils.jtmpl"
 from Sphincs require "wots/wots.jtmpl"
+from Sphincs require "wotsx1/wotsx1.jtmpl"
+
+inline fn treehash_wots()
+{
+}
+
+// struct leaf_info_x1 {
+//     unsigned char *wots_sig;
+//     uint32_t wots_sign_leaf; 
+//     uint32_t *wots_steps; => unsigned [SPX_WOTS_LEN]
+//     uint32_t leaf_addr[8];
+//     uint32_t pk_addr[8];
+// };
+// 
+// #define INITIALIZE_LEAF_INFO_X1(info, addr, step_buffer) { \
+//     info.wots_sig = 0;             \
+//     info.wots_sign_leaf = ~0u;      \
+//     info.wots_steps = step_buffer; \
+//     memcpy( &info.leaf_addr[0], addr, 32 ); \
+//     memcpy( &info.pk_addr[0], addr, 32 ); \
+// }
 
 inline fn __merkle_sign(
   reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] sig,
   reg ptr u8[SPX_N] root,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
-  reg mut ptr u32[8] wots_addr tree_addr,
+  reg ptr u32[8] wots_addr tree_addr,
   reg u32 idx_leaf
-) -> reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES], reg ptr u8[SPX_N]
+) -> reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES], 
+     reg ptr u8[SPX_N],
+     reg ptr u32[8]
 {
-  // stack u8[SPX_TREE_HEIGHT * SPX_N] auth_path;
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N] auth_path_p;
+  stack ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] s_sig;
+  stack ptr u8[SPX_N] s_root;
+  stack ptr u8[SPX_N] s_pub_seed;
+  stack ptr u8[SPX_N] s_sk_seed;
+  stack ptr u32[8] s_wots_addr s_tree_addr;
+  stack u32 s_idx_leaf;
+
+  stack u32[SPX_WOTS_LEN] steps;
 
   // struct leaf_info
   reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] wots_sig;
   reg u32 wots_sign_leaf;
-  stack u32[SPX_WOTS_LEN] steps;
-  // reg ptr u32[SPX_WOTS_LEN] steps_p;
   stack u32[8] leaf_addr pk_addr;
-  // reg ptr u32[8] leaf_addr_p pk_addr_p;
-
-
-  auth_path_p = sig[SPX_WOTS_BYTES : SPX_TREE_HEIGHT * SPX_N];
+  stack u32[SPX_WOTS_LEN] wots_steps;
+  // struct leaf info
 
   wots_sig = sig;
-  steps = __chain_lengths<SPX_N>(steps, root);
+  steps = __chain_lengths(steps, root);
+  wots_steps = steps;
 
   tree_addr = __set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
+  pk_addr = __set_type(pk_addr, SPX_ADDR_TYPE_WOTSPK);
+
   leaf_addr = __copy_subtree_addr(leaf_addr, wots_addr);
   pk_addr = __copy_subtree_addr(pk_addr, wots_addr);
-  
+
   wots_sign_leaf = idx_leaf;
 
-  // TODO: Call to thash and return
-  return sig, root;
+  return sig, root, tree_addr;
 }//<>
 
-/* Compute root node of the top-most subtree. */
 inline fn __merkle_gen_root(
   reg ptr u8[SPX_N] root,
   reg ptr u8[SPX_N] pub_seed,
@@ -46,25 +72,19 @@ inline fn __merkle_gen_root(
 ) -> reg ptr u8[SPX_N]
 {
   stack u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] auth_path;
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] auth_path_p;
-
   stack u32[8] top_tree_addr wots_addr;
-  reg ptr u32[8] top_tree_addr_p wots_addr_p;
 
   reg u32 t;
 
-  top_tree_addr_p = top_tree_addr;
-  top_tree_addr_p = __zero_array_u32<8>(top_tree_addr_p);
-
-  wots_addr_p = wots_addr;
-  wots_addr_p = __zero_array_u32<8>(wots_addr_p);
+  top_tree_addr = __zero_array_u32<8>(top_tree_addr);
+  wots_addr = __zero_array_u32<8>(wots_addr);
 
   top_tree_addr = __set_layer_addr(top_tree_addr, SPX_D - 1);
-  wots_addr_p = __set_layer_addr(top_tree_addr, SPX_D - 1);
+  wots_addr = __set_layer_addr(wots_addr, SPX_D - 1);
 
-  t = 0;
-  t = #NOT_32(t); // one's complement
-  auth_path, root = __merkle_sign(auth_path, root, pub_seed, sk_seed, wots_addr_p, top_tree_addr_p, t);
+  ?{}, t = #set0_32();
+  t = #NOT_32(t);
+  auth_path, root, _ = __merkle_sign(auth_path, root, pub_seed, sk_seed, wots_addr, top_tree_addr, t);
 
   return root;
 }

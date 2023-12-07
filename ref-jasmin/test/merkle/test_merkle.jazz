@@ -1,61 +1,6 @@
 from Sphincs require "merkle/merkle.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
 
-export fn merkle_sign_jazz(reg u64 args)
-{
-  // ARGS: _sig _root _pub_seed _sk_seed _wots_addr _tree_addr _idx_leaf
-  reg u64 addr;
-
-  stack u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] sig;
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] sig_p;
-
-  stack u8[SPX_N] root;
-  reg ptr u8[SPX_N] root_p;
-
-  stack ptr u8[SPX_N] pub_seed;
-  reg ptr u8[SPX_N] pub_seed_p;
-
-  stack ptr u8[SPX_N] sk_seed;
-  reg ptr u8[SPX_N] sk_seed_p;
-
-  stack u32[8] wots_addr tree_addr;
-  reg ptr u32[8] wots_addr_p tree_addr_p;
-  
-  reg u32 idx_leaf;
-
-  stack u64 _args;
-
-  addr = args; 
-  _args = args;
-  sig_p = sig;
-
-  // TODO: Load Sig
-
-  addr += 8; // addr = _root
-  root_p = root;
-  root_p = __load_u8_array<SPX_N>(root_p, addr);
-
-  addr += 8; // addr = _pub_seed
-  pub_seed_p = pub_seed;
-  pub_seed_p = __load_u8_array<SPX_N>(pub_seed_p, addr);
-
-  addr += 8; // addr = _sk_seed
-  sk_seed_p = sk_seed; 
-  sk_seed_p = __load_u8_array<SPX_N>(sk_seed_p, addr);
-
-  addr += 8; // addr = _wots_addr
-  wots_addr_p = wots_addr;
-  wots_addr_p = __load_u32_array<8>(wots_addr_p, addr);
-  
-  addr += 8; // addr = _tree_addr
-  tree_addr_p = tree_addr;
-  tree_addr_p = __load_u32_array<8>(tree_addr_p, addr);
-
-  addr += 8; // addr = _idx_leaf
-  idx_leaf = (u32)[addr];
-
-}//<>
-
 export fn merkle_gen_root_jazz(
   reg u64 _root _pub_seed _sk_seed
   )
@@ -80,7 +25,7 @@ export fn merkle_gen_root_jazz(
   sk_seed_p = sk_seed; 
   sk_seed_p = __load_u8_array<SPX_N>(sk_seed_p, _sk_seed);
 
-  s_root = _root; s_pub_seed = _pub_seed; s_sk_seed = _sk_seed; // spill
+  s_root = _root; // spill
 
   root_p = __merkle_gen_root(root_p, pub_seed_p, sk_seed_p);
 
