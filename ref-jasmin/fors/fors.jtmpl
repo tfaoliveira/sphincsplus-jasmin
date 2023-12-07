@@ -258,6 +258,7 @@ inline fn treehash_fors(
   reg ptr u32[8] info
 ) -> reg ptr u8[SPX_N], reg ptr u32[8], reg ptr u32[8]
 {
+
   ///////////////////////////////////////////////////
   stack ptr u8[SPX_N] s_root;
   stack ptr u8[SPX_N] s_pub_seed;
@@ -357,14 +358,11 @@ inline fn treehash_fors(
         t = #XOR_32(t, internal_leaf);
         s_internal_leaf = internal_leaf; // TODO: Nao e preciso pq o valor nao e alterado?
         if (t == 0x01) {
-          u = s_auth_path;
+          auth_path = s_auth_path;
           v = (64u)s_h; // v is the offset
           v *= SPX_N;   // v is the offset
           
-          _, _ = _x_memcpy_u8pu8<SPX_N>(u, v, current[SPX_N : SPX_N]);
-          
-          s_u = u;
-          s_v = v;
+          _, _ = _x_memcpy_u8pu8<SPX_N>(auth_path, v, current[SPX_N : SPX_N]);
         }
 
         t = s_internal_idx;
@@ -389,7 +387,7 @@ inline fn treehash_fors(
           tree_addr = __set_tree_height(tree_addr, t);
 
           t = s_internal_idx;
-          t /= two;
+          t >>= 1;
           t += internal_idx_offset; 
           tree_addr = __set_tree_index(tree_addr, t);
 

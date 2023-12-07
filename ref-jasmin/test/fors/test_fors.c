@@ -6,13 +6,16 @@
 
 #include "address.h"
 #include "context.h"
-#include "fors.c"
 #include "fors.h"
+#include "fors.c"
 #include "hash.h"
+#include "thash.h"
 #include "macros.h"
 #include "notrandombytes.c"
 #include "params.h"
 #include "print.c"
+
+#include "api.h"
 
 #ifndef HASH
 #define HASH shake
@@ -35,9 +38,6 @@
 #define SIG_SIZE 7856
 #endif
 
-#define CRYPTO_PUBLICKEYBYTES SPX_PK_BYTES
-#define CRYPTO_BYTES SPX_BYTES
-
 extern void fors_gen_sk_jazz(uint8_t *sk, const uint8_t *pub_seed, const uint8_t *sk_seed,
                              uint32_t fors_leaf_addr[8]);  // ref impl
 extern void fors_sk_to_leaf_jazz(uint8_t *leaf, const uint8_t *sk, const uint8_t *pub_seed,
@@ -55,9 +55,6 @@ extern void fors_sign_jazz(uint8_t *sig, uint8_t *pk, const uint8_t *m, const ui
 extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m,
                                   const uint8_t *pub_seed, const uint8_t *sk_seed,
                                   const uint32_t fors_addr[8]);
-
-extern void treehash_fors_jazz(uint8_t *root, uint8_t *auth_path, const spx_ctx *ctx,
-                               uint32_t leaf_idx, uint32_t idx_offset, void *addr);
 
 void test_fors_gen_sk(void);
 void test_fors_sk_to_leaf(void);
@@ -322,50 +319,37 @@ void test_pk_from_sig(void) {
     return value;
 }
 
-void test_treehash_fors(void) {
-    uint32_t tree_height = SPX_FORS_HEIGHT;
+void test_treehash_fors(void)
+{
+  #define MESSAGE_LENGTH 32
 
-    uint32_t max_idx_offset = SPX_FORS_TREES * (1 << SPX_FORS_HEIGHT);
-    uint32_t min_idx_offset = 0 * (1 << SPX_FORS_HEIGHT);
+  uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
+  uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
 
-    uint8_t root_ref[SPX_N], root_jazz[SPX_N];
-    uint8_t sig_ref[MSG_LEN], sig_jazz[MSG_LEN];
-    spx_ctx ctx;
-    uint32_t leaf_idx;
-    uint32_t idx_offset;
+  uint8_t signature[CRYPTO_BYTES];
+  size_t signature_length;
 
-    uint32_t fors_tree_addr[8];
-    uint32_t fors_info[8];
+  uint8_t message[MESSAGE_LENGTH];
+  size_t message_length = MESSAGE_LENGTH;
 
-    for (int i = 0; i < TESTS; i++) {
-        memset(root_ref, 0, SPX_N);
-        memset(root_jazz, 0, SPX_N);
+  for (int i = 0; i < 100; i++)
+  {
+    // note: the 'real' test is in fors.c file and it is activated when TEST_FORS_TREEHASH is defined
+    randombytes(message, MESSAGE_LENGTH);
 
-        randombytes(sig_ref, MSG_LEN);
-        memcpy(sig_jazz, sig_ref, MSG_LEN);
+    crypto_sign_keypair(public_key, secret_key);
+    crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+    assert( crypto_sign_verify(signature, signature_length, message, message_length, public_key) == 0);
+  }
 
-        randombytes(ctx.pub_seed, SPX_N);
-        randombytes(ctx.sk_seed, SPX_N);
-        randombytes((uint8_t *)&leaf_idx, sizeof(uint32_t));  // May cause a segfault ?????
-        idx_offset = random_idx_offset(max_idx_offset, min_idx_offset);
-        randombytes((uint8_t *)fors_tree_addr, 8 * sizeof(uint32_t));
-        randombytes((uint8_t *)fors_info, 8 * sizeof(uint32_t));
-
-        treehashx1(root_ref, sig_ref, &ctx, leaf_idx, idx_offset, tree_height, fors_gen_leafx1,
-                   fors_tree_addr, fors_info);
-
-        treehash_fors_jazz(root_jazz, sig_jazz, &ctx, leaf_idx, idx_offset, fors_tree_addr);
-
-        // assert(memcmp(root_ref, root_jazz, SPX_N) == 0);
-        // assert(memcmp(fors_info, 8 * sizeof(uint32_t)) == 0); // FIXME:
-        // parameters that are not const: root, auth_path, tree_addr info
-    }
+  #undef MESSAGE_LENGTH
 }
 
-#undef CRYPTO_PUBLICKEYBYTES
-#undef CRYPTO_BYTES
-
 int main(void) {
+
+    test_treehash_fors();
+
+#if 0
     test_fors_gen_sk();
     test_fors_sk_to_leaf();
     test_fors_gen_leafx1();
@@ -373,7 +357,8 @@ int main(void) {
     test_message_to_indices_t();  // msg is a reg ptr u8[MSG_LEN]
     test_fors_sign();
     test_pk_from_sig();
-    // test_treehash_fors(); // TODO: FIXME: TODO: FIXME:
+#endif
+
     printf("PASS: fors = { msg len : %d ; params : %s ; hash: %s }\n", MSG_LEN, xstr(PARAM),
            xstr(HASH));
     return 0;

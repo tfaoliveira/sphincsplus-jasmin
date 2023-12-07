@@ -225,23 +225,29 @@ inline fn __load_info(
   reg u64 addr
 ) -> reg ptr u32[8], reg ptr u32[8]
 {
-  tree_addr = __load_u32_array<8>(tree_addr, addr);
-  addr += 32; // 32 = 4 * 8;
-  info = __load_u32_array<8>(info, addr);
+  reg u64 addr1 addr2;
+
+  addr1 = [addr];
+  tree_addr = __load_u32_array<8>(tree_addr, addr1);
+
+  addr2 = [addr + 8];
+  info = __load_u32_array<8>(info, addr2);
+
   return tree_addr, info;
 }
 
 inline fn __store_info(
   reg ptr u32[8] tree_addr info, 
-  reg u64 _addr
+  reg u64 addr
 )
 {
-  reg u64 addr;
-  addr = _addr;
+  reg u64 addr1 addr2;
 
-  __store_u32_array<8>(tree_addr, addr);
-  addr += 32; // 32 = 4 * 8
-  __store_u32_array<8>(info, addr);
+  addr1 = [addr];
+  __store_u32_array<8>(tree_addr, addr1);
+
+  addr2 = [addr+8];
+  __store_u32_array<8>(info, addr2);
 }
 
 export fn treehash_fors_jazz(
@@ -257,11 +263,11 @@ export fn treehash_fors_jazz(
 
   stack u64 s_addrs s_root;
 
-  root = __load_u8_array<SPX_N>(root, _root);
   s_root = _root;
-  
-  pub_seed, sk_seed = __load_ctx(pub_seed, sk_seed, _ctx);
+  s_addrs = _addrs;
 
+  root = __load_u8_array<SPX_N>(root, _root);  
+  pub_seed, sk_seed = __load_ctx(pub_seed, sk_seed, _ctx);
   leaf_idx = (32u) _leaf_idx;
   idx_offset = (32u) _idx_offset;
 
@@ -273,7 +279,6 @@ export fn treehash_fors_jazz(
   _root = s_root;
   __store_u8_array<SPX_N>(root, _root);
 
-  // FIXME: This causes a segmentation fault
-  // _addrs = s_addrs;
-  // __store_info(tree_addr, info, _addrs);
+  _addrs = s_addrs;
+  __store_info(tree_addr, info, _addrs);
 }

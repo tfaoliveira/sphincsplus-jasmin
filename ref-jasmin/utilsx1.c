@@ -17,7 +17,6 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
                 uint32_t tree_addr[8],
                 void *info)
 {
-    /*
     SPX_VLA(uint8_t, stack, tree_height*SPX_N);
 
     uint32_t idx;
@@ -61,5 +60,4 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
 
         memcpy( &stack[h * SPX_N], &current[SPX_N], SPX_N);
     }
-    */
 }

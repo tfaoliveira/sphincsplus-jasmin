@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 
 #include "fors.h"
 #include "utils.h"
@@ -68,13 +69,15 @@ static void message_to_indices(uint32_t *indices, const unsigned char *m)
  * Signs a message m, deriving the secret key from sk_seed and the FTS address.
  * Assumes m contains at least SPX_FORS_HEIGHT * SPX_FORS_TREES bits.
  */
+
+#ifndef TEST_FORS_TREEHASH
 void fors_sign(unsigned char *sig, unsigned char *pk,
                const unsigned char *m,
                const spx_ctx *ctx,
                const uint32_t fors_addr[8])
 {
     uint32_t indices[SPX_FORS_TREES];
-    unsigned char roots[SPX_FORS_TREES * SPX_N] = {0}; // FIXME: Remove this when treehash is done
+    unsigned char roots[SPX_FORS_TREES * SPX_N];
     uint32_t fors_tree_addr[8] = {0};
     struct fors_gen_leaf_info fors_info = {0};
     uint32_t *fors_leaf_addr = fors_info.leaf_addrx;
@@ -100,17 +103,110 @@ void fors_sign(unsigned char *sig, unsigned char *pk,
         fors_gen_sk(sig, ctx, fors_tree_addr);
         set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSTREE);
         sig += SPX_N;
-    /*
 
         treehashx1(roots + i*SPX_N, sig, ctx,
                  indices[i], idx_offset, SPX_FORS_HEIGHT, fors_gen_leafx1,
                  fors_tree_addr, fors_leaf_addr);
-    */
 
         sig += SPX_N * SPX_FORS_HEIGHT;
     }
     thash(pk, roots, SPX_FORS_TREES, ctx, fors_pk_addr);
 }
+#else
+
+extern void treehash_fors_jazz(uint8_t *root, uint8_t *auth_path, uint8_t *ctx,
+                               uint32_t leaf_idx, uint32_t idx_offset, void *addr);
+
+
+void fors_sign(unsigned char *sig, unsigned char *pk,
+               const unsigned char *m,
+               const spx_ctx *ctx,
+               const uint32_t fors_addr[8])
+{
+    uint8_t *sig_ptr_at_entry = sig;
+    uint8_t sig_jazz[SPX_BYTES]; //
+    uint8_t ctx_jazz[2*SPX_N]; //
+
+    uint32_t indices[SPX_FORS_TREES];
+
+    unsigned char roots[SPX_FORS_TREES * SPX_N];
+    unsigned char roots_jazz[SPX_FORS_TREES * SPX_N]; //
+
+    uint32_t fors_tree_addr[8] = {0};
+    uint32_t fors_tree_addr_jazz[8] = {0}; //
+
+    struct fors_gen_leaf_info fors_info = {0};
+    uint32_t *fors_leaf_addr = fors_info.leaf_addrx;
+
+    struct fors_gen_leaf_info fors_info_jazz = {0}; //
+    uint32_t *fors_leaf_addr_jazz = fors_info_jazz.leaf_addrx; //
+
+    uint32_t *fors_tree_leaf_addr_jazz[2]; //
+    fors_tree_leaf_addr_jazz[0] = fors_tree_addr_jazz; //
+    fors_tree_leaf_addr_jazz[1] = fors_leaf_addr_jazz; //
+
+    uint32_t fors_pk_addr[8] = {0};
+    uint32_t idx_offset;
+    unsigned int i;
+
+    copy_keypair_addr(fors_tree_addr, fors_addr);
+    copy_keypair_addr(fors_leaf_addr, fors_addr);
+
+    copy_keypair_addr(fors_pk_addr, fors_addr);
+    set_type(fors_pk_addr, SPX_ADDR_TYPE_FORSPK);
+
+    message_to_indices(indices, m);
+
+    for (i = 0; i < SPX_FORS_TREES; i++) {
+        idx_offset = i * (1 << SPX_FORS_HEIGHT);
+
+        set_tree_height(fors_tree_addr, 0);
+        set_tree_index(fors_tree_addr, indices[i] + idx_offset);
+        set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSPRF);
+
+        fors_gen_sk(sig, ctx, fors_tree_addr);
+        set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSTREE);
+        sig += SPX_N;
+
+        // copy state
+        memcpy(roots_jazz, roots, SPX_FORS_TREES * SPX_N);
+        memcpy(sig_jazz, sig_ptr_at_entry, sizeof(sig_jazz));
+        memcpy(ctx_jazz, ctx->pub_seed, SPX_N);
+        memcpy(ctx_jazz+SPX_N, ctx->sk_seed, SPX_N);
+        memcpy(fors_tree_addr_jazz, fors_tree_addr, sizeof(fors_tree_addr));
+        memcpy(fors_leaf_addr_jazz, fors_leaf_addr, sizeof(uint32_t)*8); // note: depends on definition from line ~25.
+
+        treehashx1(roots + i*SPX_N, // ptr
+                   sig, // ptr
+                   ctx, // ptr
+                   indices[i], // u32
+                   idx_offset, // u32
+                   SPX_FORS_HEIGHT, 
+                   fors_gen_leafx1,
+                   fors_tree_addr, // ptr (merged)
+                   fors_leaf_addr // ptr (merged)
+                  );
+
+        treehash_fors_jazz(
+                   roots_jazz + i*SPX_N, // ptr
+                   sig_jazz, // ptr
+                   ctx_jazz, // ptr
+                   indices[i], // u32
+                   idx_offset, // u32
+                   fors_tree_leaf_addr_jazz
+                  );
+
+        // assert that states are equal
+        assert(memcmp(ctx_jazz, ctx->pub_seed, SPX_N) == 0);
+        assert(memcmp(ctx_jazz+SPX_N, ctx->sk_seed, SPX_N) == 0);
+        // TODO, write the remaining asserts
+ 
+        sig += SPX_N * SPX_FORS_HEIGHT;
+    }
+    thash(pk, roots, SPX_FORS_TREES, ctx, fors_pk_addr);
+}
+
+#endif
 
 /**
  * Derives the FORS public key from a signature.

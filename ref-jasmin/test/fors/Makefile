@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 AS       ?= as
 CC       ?= clang
-CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
+CFLAGS   ?= -O3 -g -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 	          -Wundef -Wshadow -Wcast-align -Wpointer-arith \
 	          -fstrict-aliasing -fno-common -pipe -g
 
@@ -53,9 +53,11 @@ bin/test_fors_%.s: bin/test_fors_%.jpp
 
 $(TESTS):
 bin/test_fors_%: bin/test_fors_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DMSG_LEN=$(GET_MSG_LEN) -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	$(CC) $(CFLAGS) -o $@ \
+-DMSG_LEN=$(GET_MSG_LEN) -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+-DTEST_FORS_TREEHASH=1 \
 -I../common -I../../ -I../../params \
-test_fors.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c
+test_fors.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c ../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c 
 
 bin/test_fors_%.out: bin/test_fors_%
 	@./$<

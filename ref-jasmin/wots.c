@@ -70,11 +70,14 @@ static void wots_checksum(unsigned int *csum_base_w,
     unsigned int csum = 0;
     unsigned char csum_bytes[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8];
     unsigned int i;
-    
+
+    /* Compute checksum. */
     for (i = 0; i < SPX_WOTS_LEN1; i++) {
         csum += SPX_WOTS_W - 1 - msg_base_w[i];
     }
 
+    /* Convert checksum to base_w. */
+    /* Make sure expected empty zero bits are the least significant bits. */
     csum = csum << ((8 - ((SPX_WOTS_LEN2 * SPX_WOTS_LOGW) % 8)) % 8);
     ull_to_bytes(csum_bytes, sizeof(csum_bytes), csum);
     base_w(csum_base_w, SPX_WOTS_LEN2, csum_bytes);
@@ -103,7 +106,7 @@ void wots_pk_from_sig(unsigned char *pk,
 
     for (i = 0; i < SPX_WOTS_LEN; i++) {
         set_chain_addr(addr, i);
-        // gen_chain(pk + i*SPX_N, sig + i*SPX_N,
-        //           lengths[i], SPX_WOTS_W - 1 - lengths[i], ctx, addr);
+        gen_chain(pk + i*SPX_N, sig + i*SPX_N,
+                  lengths[i], SPX_WOTS_W - 1 - lengths[i], ctx, addr);
     }
 }
