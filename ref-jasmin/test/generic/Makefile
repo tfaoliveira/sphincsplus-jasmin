@@ -8,7 +8,7 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN   ?= jasminc
-JFLAGS   ?= -lazy-regalloc -nowarning
+JFLAGS   ?= -lazy-regalloc
 JPP      ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 

@@ -68,6 +68,7 @@ export fn crypto_sign_keypair_jazz(reg u64 _pk _sk) -> reg u64
   sk_p = __load_u8_array<SPX_SK_BYTES>(sk_p, _sk);
 
   s_pk = _pk; s_sk = _sk; // spill
+
   pk_p, sk_p = __crypto_sign_keypair(pk_p, sk_p);
   _pk = s_pk; _sk = s_sk; // unspill
 
@@ -82,29 +83,47 @@ export fn crypto_sign_keypair_jazz(reg u64 _pk _sk) -> reg u64
  * Returns an array containing a detached signature.
  * // TODO:
  */
+ inline fn __load_ctx(
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u64 addr
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+  pub_seed = __load_u8_array<SPX_N>(pub_seed, addr);
+  addr += SPX_N;
+  sk_seed = __load_u8_array<SPX_N>(sk_seed, addr);
+  return pub_seed, sk_seed;
+}
+
 export fn crypto_sign_signature_jazz(
-  reg u64 _sig _siglen _m _mlen _sk
+  reg u64 _sig _siglen _m _mlen _sk _ctx
 ) -> reg u64
 {
   //////////////////////////////////////////////
   stack u64 s_sig;
   stack u64 s_siglen;
+  stack u64 s_m s_mlen;
   //////////////////////////////////////////////
   reg u64 res;
 
   // sk_prf = sk[SPX_N : SPX_N]
   // pk     = sk[2*SPX_N : SPX_N]
 
-
   stack u8[SPX_BYTES] sig;
   stack u8[SPX_SK_BYTES] sk;
+  stack u8[SPX_N] pub_seed sk_seed;
 
   sig = __load_u8_array<SPX_BYTES>(sig, _sig);
   sk = __load_u8_array<SPX_SK_BYTES>(sk, _sk);
 
+  pub_seed, sk_seed = __load_ctx(pub_seed, sk_seed, _ctx);
+
   s_sig = _sig; s_siglen = _siglen; // spill
 
-  sig = __crypto_sign_signature(sig, sk);
+  s_m = _m; s_mlen = _mlen;
+  _m = s_m; _mlen  = s_mlen;
+
+  sig = __crypto_sign_signature(sig, sk, _m, _mlen, pub_seed, sk_seed);
 
   _sig = s_sig; 
   _siglen = s_siglen;
@@ -118,94 +137,66 @@ export fn crypto_sign_signature_jazz(
 }
 
 ////////////////////
-export fn crypto_sign_jazz<MSG_LEN>(
-  reg u64 _sm _smlen _m _mlen _sk
-) -> reg u64
-{
-  reg u64 res siglen;
 
-  stack u8[MSG_LEN] m;
-  stack u8[SPX_BYTES + SPX_MLEN] sm;
-
-  ?{}, res = #set0();
-
-
-
-  return res;
-}//<>
-
-export fn crypto_sign_verify(
-  reg u64 _sig _siglen _m _mlen _pk
-) -> reg u64
-{
+export fn crypto_sign_jazz(reg u64 sm smlen m mlen sk) -> reg u64 {
   reg u64 res;
-  reg u8 stop;
+  reg u64 t i siglen;
 
-  /////////////////////////////////////////
-  stack u64 s_sig s_siglen s_m s_mlen s_pk;
-  /////////////////////////////////////////
+  // Call to crypto sign signature
 
-  stack u8[SPX_PK_BYTES] pk;
-  stack u8[45] msg;
-  stack u8[SPX_BYTES] sig;
-
-  if (_siglen != SPX_BYTES) { res = 1; }
-
-  if (res != 1) {
-    pk = __load_u8_array<SPX_PK_BYTES>(pk, _pk);
-    sig = __load_u8_array<SPX_BYTES>(sig, _sig);
-
-    // TODO: Load other valuex
-
-    // Spill
-    s_sig = _sig;
-    s_siglen = _siglen;
-    s_m = _m;
-    s_mlen = _mlen;
-    s_pk = _pk;
-
-    res = __crypto_sign_verify<45>(pk, sig, msg); // TODO: FIXME: Cant use arrays for the message
+  i=0;
+  while(i < mlen) {
+    [sm + SPX_BYTES] = m;
+    i += 1;
   }
 
+  t = siglen;
+  t += mlen;
+
+  [smlen] = t;
+
+  ?{}, res = #set0();
   return res;
 }
 
-/**
- * Verifies a given signature-message pair under a given public key.
- */
- // TODO:
-export fn crypto_sign_open_jazz(
-  reg u64 _m _mlen _sm _smlen _pk
-) -> reg u64
-{
+
+export fn crypto_sign_open_jazz(reg u64 m mlen sm smlen pk) -> reg u64 {
   reg u64 res;
-  reg u64 verify;
-  reg u64 t;
+  reg u64 i t;
+  reg u64 len v;
 
-  res = 0;
-
-  if (_smlen < SPX_BYTES) {
-    memset_u8(_m, _mlen, 0);
-    [_mlen] = 0;
-    res = 1;
-  }
-
-  if (res != 1) {
-    // *mlen = smlen - SPX_BYTES;
-    t = _smlen;
+  if (smlen < SPX_BYTES)
+  { 
+    i = 0;
+    while (i < smlen) {
+      [m + i] = 0;
+      i += 1;
+    }
+    [mlen] = 0;
+    res = -1;
+  } else {
+    t = smlen;
     t -= SPX_BYTES;
-    [_mlen] = t;
+    [mlen] = t;
 
-    // verify = __crypto_sign_verify<45>() // TODO: Call __crypto_sign_verify
-    if (verify != 0) {
-      // Verification failed
-      memset_u8(_m, _smlen, 0);
-      [_mlen] = 0;
-      res = 1;
-    } else {
-      // Verification was sucessful
-      t = [_mlen];
-      __memmove_u8(_m, _sm + SPX_BYTES, t);
+    // Call crypto sign verify
+    v = 0; // FIXME: V is the result of calling crypto sign verify
+    if (v != 1) {
+      i = 0;
+      while (i < smlen) {
+        [m + i] = 0;
+        i += 1;
+      }
+      [mlen] = 0;
+      res = -1;
+    }
+
+    len = [mlen];
+    i = 0;
+    while (i < len) {
+      t = [sm + SPX_BYTES];
+      [m + i] = t;
+      i+=1;
     }
   }
 

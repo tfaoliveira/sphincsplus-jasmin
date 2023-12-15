@@ -36,6 +36,8 @@ inline fn __prf_addr(
  * Computes the message-dependent randomness R, using a secret seed and an
  * optional randomization value as well as the message
  */
+
+ // TODO: DELETE THIS FUNCTION. IT IS NEVER USED
 inline fn __gen_message_random(
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_N] sk_prf,
@@ -78,6 +80,49 @@ inline fn __gen_message_random(
   return R;
 }
 
+inline fn __gen_message_random<OUTLEN>(
+  reg ptr u8[OUTLEN] R,
+  reg ptr u8[SPX_N] sk_prf,
+  reg ptr u8[SPX_N] optrand, // optional randomization value
+  reg u64 msg,
+  reg u64 msg_len
+) -> reg ptr u8[OUTLEN]
+{
+  stack u64[26] shake_state;
+  reg ptr u64[26] shake_state_p;
+
+  stack ptr u8[SPX_N] s_sk_prf, s_optrand;
+  stack ptr u8[OUTLEN] s_R;
+  stack u64 s_msg s_msg_len;
+
+  // Spill
+  s_R = R;
+  s_sk_prf = sk_prf;
+  s_optrand = optrand;
+  s_msg = msg;
+  s_msg_len = msg_len;
+
+  shake_state_p = shake_state;
+
+  shake_state_p = __shake256_inc_init_(shake_state_p);
+
+  sk_prf = s_sk_prf;
+  shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, sk_prf);
+
+  optrand = s_optrand;
+  shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, optrand);
+
+  msg = s_msg; msg_len = s_msg_len;
+  shake_state_p = __shake256_inc_absorb(shake_state_p, msg, msg_len);
+
+  shake_state_p = __shake256_inc_finalize(shake_state_p);
+
+  R = s_R;
+  R, _ = __shake256_inc_squeeze_t<OUTLEN>(R, shake_state_p);
+
+  return R;
+}//<>
+
 /**
  * Computes the message hash using R, the public key, and the message.
  * Outputs the message digest and the index of the leaf. The index is split in
@@ -89,7 +134,7 @@ inline fn __hash_message(
   reg u64 tree,
   reg u32 leaf_idx,
   reg ptr u8[SPX_N] R,
-  reg ptr u8[SPX_PK_BYTES] pk,
+  reg ptr u8[SPX_N] pk,
   reg u64 msg msg_len
 ) -> reg ptr u8[SPX_FORS_MSG_BYTES], reg u64, reg u32
 {
@@ -107,7 +152,7 @@ inline fn __hash_message(
   stack u64 s_tree s_msg s_msg_len;
   stack u32 s_leaf_idx;
   stack ptr u8[SPX_N] s_R;
-  stack ptr u8[SPX_PK_BYTES] s_pk;
+  stack ptr u8[SPX_N] s_pk;
 
   reg u64 offset;
   reg u64 t u z;
@@ -127,7 +172,7 @@ inline fn __hash_message(
   shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, R);
 
   pk = s_pk;
-  shake256_state_p = __shake256_inc_absorb_t<SPX_PK_BYTES>(shake256_state_p, pk);
+  shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, pk);
 
   msg = s_msg;
   msg_len = s_msg_len;
