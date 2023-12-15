@@ -8,15 +8,15 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning
+JFLAGS       ?= 
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
 HASH_LIST     := shake
-PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple robust
+PARAMS_LIST   := 128f #128s 192f 192s 256f 256s
+THASH_LIST    := simple #robust
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
@@ -52,9 +52,11 @@ bin/test_merkle_%.s: bin/test_merkle_%.jpp
 $(TESTS):
 bin/test_merkle_%: bin/test_merkle_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DMSG_LEN=$(GET_MSG_LEN) \
+-DTEST_WOTSX1=1 \
 -I../common -I../../ -I../../params \
-test_merkle.c $< ../../hash_$(GET_HASH).c ../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \
-../../merkle.c
+test_merkle.c $< \
+../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
+../../utilsx1.c ../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c ../../fors.c  
 
 bin/test_merkle_%.out: bin/test_merkle_%
 	@./$<

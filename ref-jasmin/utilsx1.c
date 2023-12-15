@@ -23,9 +23,7 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
     uint32_t max_idx = (uint32_t)((1 << tree_height) - 1);
     for (idx = 0;; idx++) {
         unsigned char current[2*SPX_N]; 
-        gen_leaf( &current[SPX_N], ctx, idx + idx_offset,
-                    info );
-
+        gen_leaf( &current[SPX_N], ctx, idx + idx_offset, info );
         uint32_t internal_idx_offset = idx_offset;
         uint32_t internal_idx = idx;
         uint32_t internal_leaf = leaf_idx;
@@ -57,7 +55,6 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
                    &current[0 * SPX_N],
                    2, ctx, tree_addr);
         }
-
         memcpy( &stack[h * SPX_N], &current[SPX_N], SPX_N);
     }
 }

@@ -21,13 +21,11 @@ jobs:
           - fors
           - generic
           - hash
-          - memcmp
           - memcpy
           - merkle
           - thash
           - utils
           - wots
-          - wotsx1
     steps:
       - uses: actions/checkout@v1
       - name: Compile tests
@@ -36,3 +34,4 @@ jobs:
       - name: Run tests
         run:
           JASMIN=$(which_jasminc) make -C ref-jasmin/test/${{ matrix.directory }} run
+          

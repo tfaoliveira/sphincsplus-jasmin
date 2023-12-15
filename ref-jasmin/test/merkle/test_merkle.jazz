@@ -1,6 +1,106 @@
 from Sphincs require "merkle/merkle.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
 
+inline fn __load_ctx(
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u64 addr
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+  pub_seed = __load_u8_array<SPX_N>(pub_seed, addr);
+  addr += SPX_N;
+  sk_seed = __load_u8_array<SPX_N>(sk_seed, addr);
+  return pub_seed, sk_seed;
+}
+
+inline fn __load_wots_info(
+  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] wots_sig, // struct info
+  reg u32 wots_sign_leaf, // struct info
+  reg ptr u32[SPX_WOTS_LEN] wots_steps, // struct info
+  reg ptr u32[8] leaf_addr, // struct info
+  reg ptr u32[8] pk_addr, // struct info
+  reg u64 addr
+) -> reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES], 
+     reg u32, 
+     reg ptr u32[SPX_WOTS_LEN], 
+     reg ptr u32[8], 
+     reg ptr u32[8]
+{
+  wots_sig = __load_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(wots_sig, addr);
+  addr += SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES;
+  
+  wots_sign_leaf = (32u) [addr];
+  addr += 4;
+
+  wots_steps = __load_u32_array<SPX_WOTS_LEN>(wots_steps, addr);
+  addr += 4 * SPX_WOTS_LEN;
+
+  leaf_addr = __load_u32_array<8>(leaf_addr, addr);
+  addr += 4 * 8; 
+
+  pk_addr = __load_u32_array<8>(pk_addr, addr);
+
+  return wots_sig, wots_sign_leaf, wots_steps, leaf_addr, pk_addr;
+}
+
+// treehashx1(root, auth_path, ctx, idx_leaf, 0, SPX_TREE_HEIGHT, wots_gen_leafx1, tree_addr, &info);
+// => 0 (idx_offset), TREEHEIGHT AND WOTS_GEN_LEAFX1 ARE NOT PASSED AS ARGUMENTS
+// 1 root
+// 2 auth_path
+// 3 ctx
+// 4 idx_leaf
+// 5 tree_addr
+// 6 info
+export fn treehash_wots_jazz(
+  reg u64 _root _auth_path _ctx _idx_leaf _tree_addr _info
+)
+{
+  /*
+  stack u64 s_root s_auth_path s_tree_addr;
+
+  stack u8[SPX_N] root;
+  stack u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] auth_path;
+  stack u8[SPX_N] pub_seed;
+  stack u8[SPX_N] sk_seed;
+  stack u32[8] tree_addr;
+
+  reg u32 idx_leaf;
+
+  stack u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] wots_sig; // struct info
+  reg u32 wots_sign_leaf; // struct info
+  stack u32[SPX_WOTS_LEN] wots_steps; // struct info
+  stack u32[8] leaf_addr; // struct info
+  stack u32[8] pk_addr; // struct info
+
+  root = __load_u8_array<SPX_N>(root, _root);
+  auth_path = __load_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(auth_path, _auth_path);
+  pub_seed, sk_seed = __load_ctx(pub_seed, sk_seed, _ctx);
+  idx_leaf = (32u) _idx_leaf;
+  tree_addr = __load_u32_array<8>(tree_addr, _tree_addr);
+
+  s_root = _root;
+  s_auth_path = _auth_path;
+  s_tree_addr = _tree_addr;
+
+  wots_sig, wots_sign_leaf, wots_steps, leaf_addr, pk_addr = __load_wots_info(wots_sig, wots_sign_leaf, wots_steps, leaf_addr, pk_addr, _info);
+
+  // FIXME: Calling __treehash_wots_ instead of __treehash_wots doesnt compile
+  root, auth_path, tree_addr, wots_sig, leaf_addr, pk_addr = 
+                          __treehash_wots(root, auth_path, pub_seed, 
+                                        sk_seed, idx_leaf, tree_addr, 
+                                        wots_sig, wots_sign_leaf, wots_steps, 
+                                        leaf_addr, pk_addr);
+
+  _root = s_root;
+  _auth_path = s_auth_path;
+  _tree_addr = s_tree_addr;
+
+  __store_u8_array<SPX_N>(root, _root);
+  __store_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(auth_path, _auth_path);
+  __store_u32_array<8>(tree_addr, _tree_addr);
+  */
+}
+
 export fn merkle_gen_root_jazz(
   reg u64 _root _pub_seed _sk_seed
   )
