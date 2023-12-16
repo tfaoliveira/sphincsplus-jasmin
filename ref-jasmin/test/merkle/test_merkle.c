@@ -7,10 +7,10 @@
 #include "api.h"
 #include "context.h"
 #include "macros.h"
+#include "merkle.h"
 #include "notrandombytes.c"
 #include "params.h"
 #include "print.c"
-#include "merkle.h"
 
 #ifndef HASH
 #define HASH shake
