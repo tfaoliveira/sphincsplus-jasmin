@@ -76,6 +76,7 @@ inline fn __cond_u64_a_dif_b_and_c_dif_d(reg u64 a b c d) -> reg bool
 }
 
 // a == b && c < d
+// used in treehash to compute (internal_idx & 1) == 0 && idx < max_idx
 inline fn __cond_u32_a_eq_b_and_c_below_d(reg u32 a b c d) -> reg bool {
   reg bool cond1 cond2 cond3;
   reg u8 bc1 bc2;

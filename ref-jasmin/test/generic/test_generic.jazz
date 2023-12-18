@@ -95,9 +95,20 @@ export fn ull_to_bytes_jazz(reg u64 _out in)
     stack u8[8] out;
     reg ptr u8[8] out_p;
     out_p = out;
+    out_p = __load_u8_array<8>(out_p, _out);
     out_p = __ull_to_bytes(out_p, in);
     __store_u8_array<8>(out_p, _out);
 }
+
+export fn ull_to_bytes_t_jazz<OUTLEN>(reg u64 _out in)
+{
+    stack u8[OUTLEN] out;
+    reg ptr u8[OUTLEN] out_p;
+    out_p = out;
+    out_p = __load_u8_array<OUTLEN>(out_p, _out);
+    out_p = __ull_to_bytes_t<OUTLEN>(out_p, in);
+    __store_u8_array<OUTLEN>(out_p, _out); 
+}//<>
 
 export fn bytes_to_ull_jazz(reg u64 _in) -> reg u64
 {

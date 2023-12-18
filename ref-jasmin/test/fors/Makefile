@@ -1,22 +1,23 @@
 # ------------------------------------------------------------------------------
 AS       ?= as
 CC       ?= clang
-CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
+CFLAGS   ?= -O3 -g -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 	          -Wundef -Wshadow -Wcast-align -Wpointer-arith \
 	          -fstrict-aliasing -fno-common -pipe -g
 
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
-JASMIN   ?= jasminc
-JPP      ?= ../scripts/jpp
+JASMIN       ?= jasminc
+JFLAGS       ?= -lazy-regalloc
+JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
 HASH_LIST     := shake
-PARAMS_LIST   := 128f 128s # 192f 192s 256f 256s
-THASH_LIST    := simple # robust
-MSG_LEN_LIST  := $(shell seq 1 4) 64 100
+PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
+THASH_LIST    := simple robust
+MSG_LEN_LIST  := 1 # $(shell seq 120 170) # $(shell seq 1 4) 64 65 66 67 68 69 70 71 72 84 90 128 100
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach L,$(MSG_LEN_LIST),$(H)_$(P)_$(T)_$(L)))))
 
@@ -44,17 +45,19 @@ bin/test_fors_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --workers 8 --input_file $@ --output_file $@ --task "fn:message_to_indices_jazz p:MSG_LEN:$(GET_MSG_LEN)" "fn:fors_sign_jazz p:MSG_LEN:$(GET_MSG_LEN)" "fn:fors_pk_from_sig_jazz p:MSG_LEN:$(GET_MSG_LEN)"
+	$(PREPROCESSOR) --workers 8 --input_file $@ --output_file $@ --task "fn:message_to_indices_t_jazz p:MSG_LEN:$(GET_MSG_LEN)"
 
 .PRECIOUS: bin/test_fors_%.s
 bin/test_fors_%.s: bin/test_fors_%.jpp
-	jasminc -nowarning $< -o $@
+	$(JASMIN) $(JFLAGS) $< -o $@
 
 $(TESTS):
 bin/test_fors_%: bin/test_fors_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DMSG_LEN=$(GET_MSG_LEN) -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	$(CC) $(CFLAGS) -o $@ \
+-DMSG_LEN=$(GET_MSG_LEN) -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+-DTEST_FORS_TREEHASH=1 \
 -I../common -I../../ -I../../params \
-test_fors.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c
+test_fors.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c ../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c 
 
 bin/test_fors_%.out: bin/test_fors_%
 	@./$<

@@ -161,33 +161,51 @@ inline fn __wots_checksum(
   reg ptr u32[SPX_WOTS_LEN] msg_base_w
 ) -> reg ptr u32[SPX_WOTS_LEN2]
 {
-  stack u32[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] csum_bytes;
+  stack u8[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] csum_bytes;
   inline int i;
-  reg u64 csum t;
+  reg u64 csum t u;
+  stack u64 s_t;
+
+  inline int k;
+  stack u64 eight; 
 
   csum = 0;
+  eight = 8;
 
-  /* Compute checksum. */
+
   for i = 0 to SPX_WOTS_LEN1 
   {
     t = SPX_WOTS_W;
     t -= 1;
-    t -= (64u) msg_base_w[i];
+    u = (64u) msg_base_w[i];
+    t -= u;
     csum += t;
   }
 
+  k = (SPX_WOTS_LEN2 * SPX_WOTS_LOGW) % 8;
+
+  u = 8;
+  u -= k;
+  u %= eight;
+
+  u = u;
+  csum = #SHL(csum, u);
+
+  csum_bytes = __ull_to_bytes_t<(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(csum_bytes, csum);
+
+  csum_base_w = __base_w<SPX_WOTS_LEN2, (SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(csum_base_w, csum_bytes);
   return csum_base_w;
 }
 
 /* Takes a message and derives the matching chain lengths. */
-inline fn __chain_lengths<MSG_LEN>(
+inline fn __chain_lengths(
   reg ptr u32[SPX_WOTS_LEN] lengths,
-  reg ptr u8[MSG_LEN] msg
+  reg ptr u8[SPX_N] msg
 ) -> reg ptr u32[SPX_WOTS_LEN]
 {
   reg ptr u32[SPX_WOTS_LEN2] t;
   
-  lengths = __base_w<SPX_WOTS_LEN,MSG_LEN>(lengths, msg);
+  lengths = __base_w<SPX_WOTS_LEN,SPX_N>(lengths, msg);
 
   t = lengths[SPX_WOTS_LEN1 : SPX_WOTS_LEN2];
   t = __wots_checksum(t, lengths);
@@ -195,26 +213,26 @@ inline fn __chain_lengths<MSG_LEN>(
   lengths[SPX_WOTS_LEN1 : SPX_WOTS_LEN2] = t;
 
   return lengths;
-}//<>
+}
 
 #[returnaddress="stack"]
-fn _chain_lengths<MSG_LEN>(
+fn _chain_lengths(
   reg ptr u32[SPX_WOTS_LEN] lengths,
-  reg ptr u8[MSG_LEN] msg
+  reg ptr u8[SPX_N] msg
 ) -> reg ptr u32[SPX_WOTS_LEN]
 {
-  lengths = __chain_lengths<MSG_LEN>(lengths, msg);
+  lengths = __chain_lengths(lengths, msg);
   return lengths;
 }//<>
 
-inline fn __chain_lengths__<MSG_LEN>(
+inline fn __chain_lengths__(
   reg ptr u32[SPX_WOTS_LEN] lengths,
-  reg ptr u8[MSG_LEN] msg
+  reg ptr u8[SPX_N] msg
 ) -> reg ptr u32[SPX_WOTS_LEN]
 {
   lengths = lengths; msg = msg;
-  lengths = _chain_lengths<MSG_LEN>(lengths, msg);
-  lengths = lengths; msg = msg;
+  lengths = _chain_lengths(lengths, msg);
+  lengths = lengths;
   return lengths;
 }//<>
 
@@ -225,31 +243,44 @@ inline fn __chain_lengths__<MSG_LEN>(
  */
 inline fn __wots_pk_from_sig<MSG_LEN>(
     reg ptr u8[SPX_WOTS_BYTES] pk,
-    reg ptr u8[SPX_BYTES] sig,
+    reg u64 sig,
     reg ptr u8[MSG_LEN] msg,
     reg ptr u8[SPX_N] pub_seed,
     reg ptr u32[8] addr
 ) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
 {
   stack ptr u8[SPX_WOTS_BYTES] s_pk;
-  stack ptr u8[SPX_BYTES] s_sig;
+  stack u64 s_sig;
   stack ptr u8[MSG_LEN] s_msg;
   stack ptr u8[SPX_N] s_pub_seed;
+  stack ptr u32[8] s_addr;
 
   stack u32[SPX_WOTS_LEN] lengths;
-  reg ptr u8[SPX_N] pk_spx_n sig_spx_n;
-  reg u32 start steps;
+  stack u8[SPX_N] sig_array; // FIXME: TODO:
   inline int i;
 
-  lengths = __chain_lengths<MSG_LEN>(lengths, msg);
+  reg u32 start steps;
+  stack u32 s_start s_steps;
 
+  sig_array = __load_u8_array<SPX_N>(sig_array, sig); // FIXME: TODO:
+
+  // Spill (start from a clean state)
   s_pk = pk;
   s_sig = sig;
   s_pub_seed = pub_seed;
+  s_addr = addr;
 
-  for i = 0 to SPX_WOTS_LEN
-  {
+  lengths = __chain_lengths(lengths, msg); // from now on, lengths is no longer live (we dont need to spill it)
+
+  for i=0 to SPX_WOTS_LEN {
+    sig = s_sig;
+    sig += i*SPX_N;
+    sig_array = __load_u8_array<SPX_N>(sig_array, sig); // FIXME: TODO:
+    s_sig = sig;
+
+    addr = s_addr;
     addr = __set_chain_addr(addr, i);
+    s_addr = addr;
 
     start = lengths[i];
     steps = SPX_WOTS_W;
@@ -257,24 +288,25 @@ inline fn __wots_pk_from_sig<MSG_LEN>(
     steps -= lengths[i];
 
     pk = s_pk;
-    pk_spx_n = pk[i*SPX_N : SPX_N];
-
-    sig = s_sig;
-    sig_spx_n = sig[i*SPX_N : SPX_N];
-
     pub_seed = s_pub_seed;
-
-    s_pk[i*SPX_N : SPX_N], addr = __gen_chain_(pk_spx_n, sig_spx_n, start, steps, pub_seed, addr);
+    addr = s_addr;
+    // pk[i*SPX_N : SPX_N], addr = _gen_chain(pk[i*SPX_N : SPX_N], sig_array, start, steps, pub_seed, addr);
+    s_pk = pk;
+    s_addr = addr;
+    s_start = start;
+    s_steps = steps;
   }
 
   pk = s_pk;
+  addr = s_addr;
+
   return pk, addr;
 }//<>
 
 #[returnaddress="stack"]
 fn _wots_pk_from_sig<MSG_LEN>(
     reg ptr u8[SPX_WOTS_BYTES] pk,
-    reg ptr u8[SPX_BYTES] sig,
+    reg u64 sig,
     reg ptr u8[MSG_LEN] msg,
     reg ptr u8[SPX_N] pub_seed,
     reg ptr u32[8] addr
@@ -286,23 +318,17 @@ fn _wots_pk_from_sig<MSG_LEN>(
 
 inline fn __wots_pk_from_sig__<MSG_LEN>(
     reg ptr u8[SPX_WOTS_BYTES] pk,
-    reg ptr u8[SPX_BYTES] sig,
-    reg ptr u8[MSG_LEN] msg,
+    reg u64 sig,
+    reg ptr u8[MSG_LEN] msg, // root
     reg ptr u8[SPX_N] pub_seed,
     reg ptr u32[8] addr
 ) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
 {
-
-  stack ptr u8[SPX_WOTS_BYTES] s_pk;
-  stack ptr u8[SPX_BYTES] s_sig;
-  stack ptr u8[MSG_LEN] s_msg;
-  stack ptr u8[SPX_N] s_pub_seed;
-  stack ptr u32[8] s_addr;
-  
-  // Spill everything (start from clean state)
-  s_pk = pk; s_sig = sig; s_msg = msg; s_pub_seed = pub_seed; s_addr = addr; // spill
-  
-  pk = s_pk; sig = s_sig; msg = s_msg; pub_seed = s_pub_seed; addr = s_addr; // unspill
+  pk = pk;
+  sig = sig;
+  msg = msg;
+  pub_seed = pub_seed;
+  addr = addr;
 
   pk, addr = _wots_pk_from_sig<MSG_LEN>(pk, sig, msg, pub_seed, addr);
 

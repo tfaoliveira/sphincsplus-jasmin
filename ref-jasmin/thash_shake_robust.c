@@ -5,6 +5,7 @@
 #include "address.h"
 #include "params.h"
 #include "utils.h"
+#include <stdio.h>
 
 #include "fips202.h"
 

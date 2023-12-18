@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include <context.h>
+
 /* Generate a Merkle signature (WOTS signature followed by the Merkle */
 /* authentication path) */
 #define merkle_sign SPX_NAMESPACE(merkle_sign)

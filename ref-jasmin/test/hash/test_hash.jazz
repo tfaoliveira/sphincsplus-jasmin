@@ -19,17 +19,9 @@ inline fn __load_ctx(
   reg u64 addr
 ) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N]
 {
-  inline int i;
-  reg u8 t;
-
-  for i = 0 to SPX_N {
-    t = [addr + i];
-    pub_seed[i] = t;
-
-    t = [addr + SPX_N + i];
-    sk_seed[i] = t;
-  }
-
+  pub_seed = __load_u8_array<SPX_N>(pub_seed, addr);
+  addr += SPX_N;
+  sk_seed = __load_u8_array<SPX_N>(sk_seed, addr);
   return pub_seed, sk_seed;
 }
 

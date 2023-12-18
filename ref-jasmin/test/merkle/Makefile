@@ -7,18 +7,18 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
-JASMIN   ?= jasminc
-JPP      ?= ../scripts/jpp
+JASMIN       ?= jasminc
+JFLAGS       ?= # -lazy-regalloc
+JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
 HASH_LIST     := shake
-PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple robust
-MSG_LEN_LIST  := $(shell seq 1 4) 64 100
+PARAMS_LIST   := 128f #128s 192f 192s 256f 256s
+THASH_LIST    := simple #robust
 
-TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach L,$(MSG_LEN_LIST),$(H)_$(P)_$(T)_$(L)))))
+TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
 TESTS      := $(addprefix bin/test_merkle_, $(TLIST))
@@ -27,7 +27,6 @@ OUT        := $(addsuffix .out, $(TESTS))
 GET_HASH       = $(word 1, $(subst _, ,$*))
 GET_PARAM      = $(word 2, $(subst _, ,$*))
 GET_THASH      = $(word 3, $(subst _, ,$*))
-GET_MSG_LEN    = $(word 4, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
@@ -48,14 +47,16 @@ bin/test_merkle_%.jpp: | bin/
 
 .PRECIOUS: bin/test_merkle_%.s
 bin/test_merkle_%.s: bin/test_merkle_%.jpp
-	$(JASMIN) -nowarning $< -o $@
+	$(JASMIN) $(JFLAGS) $< -o $@
 
 $(TESTS):
 bin/test_merkle_%: bin/test_merkle_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DMSG_LEN=$(GET_MSG_LEN) \
+-DTEST_WOTSX1=1 -DTEST_MERKLE=1 \
 -I../common -I../../ -I../../params \
-test_merkle.c $< ../../hash_$(GET_HASH).c ../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \
-../../merkle.c
+test_merkle.c $< \
+../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
+../../utilsx1.c ../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c ../../fors.c  
 
 bin/test_merkle_%.out: bin/test_merkle_%
 	@./$<

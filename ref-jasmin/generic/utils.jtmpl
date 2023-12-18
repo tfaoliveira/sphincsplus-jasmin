@@ -40,19 +40,32 @@ inline fn __ull_to_bytes(
   reg u64 in
 ) -> reg ptr u8[8]
 {
+  // for (i = (signed int)outlen - 1; i >= 0; i--) { out[i] = in & 0xff; in = in >> 8; }
+
   inline int i;
 
-  in = #BSWAP_64(in); // little endian
-
-  for i = 0 to 8 {
+  for i=7 downto -1 {
     out[i] = (8u) in;
-    if (i != 7) {
-      in >>= 8;
-    }
+    in >>= 8;
   }
 
   return out;
 }
+
+inline fn __ull_to_bytes_t<OUTLEN>(
+  reg ptr u8[OUTLEN] out,
+  reg u64 in
+) -> reg ptr u8[OUTLEN]
+{
+  inline int i;
+
+  for i=OUTLEN-1 downto -1 {
+    out[i] = (8u) in;
+    in >>= 8;
+  }
+
+  return out;
+}//<>
 
 inline fn __bytes_to_ull<INLEN>(reg u64 out, reg ptr u8[INLEN] in) -> reg u64 {
   inline int i;

@@ -28,10 +28,8 @@ inline fn __crypto_sign_seed_keypair(
 
   reg ptr u8[SPX_N] root;
 
-  /* Initialize SK_SEED, SK_PRF and PUB_SEED from seed. */
   offset = 0;
   sk, offset = _x_memcpy_u8u8<SPX_SK_BYTES, CRYPTO_SEEDBYTES>(sk, offset, seed);
-
   
   for i=0 to SPX_N { 
     t = sk[2*SPX_N + i]; 
@@ -50,7 +48,6 @@ inline fn __crypto_sign_seed_keypair(
   root = __merkle_gen_root(root, pub_seed, sk_seed);
   sk[3*SPX_N : SPX_N] = root;
 
-  // Write root to pk
   for i=0 to SPX_N { 
     t = sk[3*SPX_N + i]; 
     pk[SPX_N + i]=t; 
@@ -81,30 +78,52 @@ inline fn __crypto_sign_keypair(
 
 inline fn __crypto_sign_signature(
   reg ptr u8[SPX_BYTES] sig,
-  reg ptr u8[SPX_SK_BYTES] sk
+  reg ptr u8[SPX_SK_BYTES] sk,
+  reg u64 msg msglen,
+  reg ptr u8[SPX_N] pub_seed sk_seed
 ) -> reg ptr u8[SPX_BYTES]
 {
+  stack ptr u8[SPX_BYTES] s_sig;
+  stack ptr u8[SPX_SK_BYTES] s_sk;
+  stack u64 s_msg s_msglen;
+
   stack u8[SPX_N] optrand;
   stack u8[SPX_FORS_MSG_BYTES] mhash;
   stack u8[SPX_N] root;
   stack u32[8] wots_addr;
   stack u32[8] tree_addr;
 
-  stack u8[SPX_N] pub_seed sk_seed;
+  stack ptr u8[SPX_N] s_pub_seed s_sk_seed;
 
-  reg u32 i idx_leaf;
-  reg u64 tree;
+  reg u32 i idx_leaf; stack u32 s_i s_idx_leaf;
+  reg u64 tree; stack u64 s_tree;
 
   reg ptr u8[SPX_N] sk_prf;
-  reg ptr u8[SPX_N] pk;
+  reg ptr u8[SPX_N] pk pub_seed sk_seed;
 
-  reg u32 t;
+  stack ptr u8[SPX_N] s_sk_prf s_pk;
+
+  reg u32 t; stack u32 s_t;
+
+  ///////////// initial spills
+  s_sig = sig;
+  s_sk = sk;
+  s_msg = msg;
+  s_msglen = msglen;
+  s_pub_seed = pub_seed;
+  s_sk_seed = sk_seed;
+
+  /////////////
 
   inline int sig_offset;
   inline int i;
 
-  sk_prf = sk[SPX_N : SPX_N];
-  pk = sk[2*SPX_N : SPX_N];
+  sk_prf = sk[SPX_N : SPX_N]; // acho que nao e preciso memcpy (?)
+  pk = sk[2*SPX_N : SPX_N];   // acho que nao e preciso memcpy (?)
+  // Spill
+  s_sk_prf = sk_prf;
+  s_pk = pk;
+
 
   sig_offset = 0;
 
@@ -112,132 +131,69 @@ inline fn __crypto_sign_signature(
   tree_addr = __zero_array_u32<8>(tree_addr);
 
   wots_addr = __set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
-
-  optrand = #randombytes(optrand);
-
-
-  // sig = __gen_message_random<>(sig, sk_prf, optrand)
-
-  for i=0 to SPX_D {
-    sig_offset += SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N;
-    // Update the indices for the next layer
-    t =  1;
-    t <<= (SPX_TREE_HEIGHT & 63);
-    t -= 1;
-
-    idx_leaf = tree;
-    idx_leaf &= t;
-
-    tree >>= (SPX_TREE_HEIGHT & 63);
-  }
-
-
-  return sig;
-}
-
-inline fn __crypto_sign_verify<MSG_LEN>(
-  reg mut ptr u8[SPX_PK_BYTES] pk,
-  reg ptr u8[SPX_BYTES] sig,
-  reg ptr u8[MSG_LEN] m
-) -> reg u64
-{
-
-  //////////////////////////////////////////
-  stack ptr u8[SPX_PK_BYTES] s_pk;
-  stack ptr u8[SPX_BYTES] s_sig;
-  stack ptr u8[MSG_LEN] s_m;
-  //////////////////////////////////////////
-
-  stack u8[SPX_FORS_MSG_BYTES] mhash;
-  stack u8[SPX_WOTS_BYTES] wots_pk;
-  stack u8[SPX_N] leaf;
-  stack u8[SPX_N] pub_seed;
-  stack u8[SPX_N] sk_seed;
-  stack u8[SPX_N] root;
-  reg u64 tree;
-  reg u32 idx_leaf;
-  stack u32[8] wots_addr;
-  stack u32[8] tree_addr;
-  stack u32[8] wots_pk_addr;
-
-  inline int sig_offset;
-  inline int i;
-
-  reg ptr u8[SPX_N] pub_root; // not sure about the size
-
-  reg u32 t;
-
-  reg u64 res;
-  reg u64 offset;
-
-  /////////////////////////////////////////////
-  s_pk = pk;
-  s_sig = sig;
-  s_m = m;
-  ////////////////////////////////////////////
-
-  sig_offset = 0;
-  pub_root = pk[SPX_N : SPX_N];
-
-  wots_addr = __zero_array_u32<8>(wots_addr);
-
-  wots_addr = __set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
   tree_addr = __set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
-  wots_pk_addr = __set_type(wots_pk_addr, SPX_ADDR_TYPE_WOTSPK);
 
-  offset = 0;
-  pub_seed, _ = _x_memcpy_u8u8<SPX_N, SPX_PK_BYTES>(pub_seed, offset, pk);
+  optrand = #randombytes(optrand); // TODO: generate all of the random bytes at the beggining
 
-
-  // Derive the message digest and leaf index from R || PK || M. 
-  // The additional SPX_N is a result of the hash domain separator.
-  pk = s_pk;
   sig = s_sig;
-  mhash, tree, idx_leaf = __hash_message<MSG_LEN>(mhash, tree, idx_leaf,
-                                           sig[sig_offset : SPX_N], pk, m);
-  sig_offset += SPX_N; 
+  msg = s_msg;
+  msglen = s_msglen;
+  sk_prf = s_sk_prf;
+  sig = __gen_message_random<SPX_BYTES>(sig, sk_prf, optrand, msg, msglen);
+  s_sig = sig;
 
-  /* Layer correctly defaults to 0, so no need to set_layer_addr */
+  pk = s_pk;
+  tree = s_tree;
+  idx_leaf = s_idx_leaf;
+  msglen = s_msglen;
+  msg = s_msg;
+  mhash, tree, idx_leaf = __hash_message(mhash, tree, idx_leaf, sig[0:SPX_N], pk, msg, msglen);
+  s_tree = tree;
+  s_idx_leaf = s_idx_leaf;
+  
+  sig_offset += SPX_N;
+
+  tree = s_tree;
+  idx_leaf = s_idx_leaf;
   wots_addr = __set_tree_addr(wots_addr, tree);
   wots_addr = __set_keypair_addr(wots_addr, idx_leaf);
 
-  pk = s_pk; sig = s_sig;
-  // pk[0:SPX_N] = __fors_pk_from_sig<SPX_FORS_MSG_BYTES>(pk[0:SPX_N], sig[sig_offset:SPX_FORS_BYTES], mhash, pub_seed, sk_seed, wots_addr); // FIXME: Regalloc
-  s_pk = pk;
-  sig_offset += SPX_FORS_BYTES;
+  // FIXME:  __fors_sign => sig needs to be a reg ptr 
 
-  /* For each subtree.. */
+  sig_offset += SPX_FORS_BYTES;
+  
   for i=0 to SPX_D {
+    tree = s_tree;
     tree_addr = __set_layer_addr(tree_addr, i);
     tree_addr = __set_tree_addr(tree_addr, tree);
 
     wots_addr = __copy_subtree_addr(wots_addr, tree_addr);
     wots_addr = __set_keypair_addr(wots_addr, idx_leaf);
-    wots_pk_addr = __copy_keypair_addr(wots_pk_addr, wots_addr);
+    
+    // merkle sign
 
-    sig = s_sig;
-    // wots_pk, wots_addr = _wots_pk_from_sig<SPX_N>(wots_pk, sig, root, pub_seed, wots_addr); // FIXME: register allocation
-    sig_offset += SPX_WOTS_BYTES;
-
-    /* Compute the leaf node using the WOTS public key. */
-    leaf = __thash_<SPX_WOTS_LEN>(leaf, wots_pk, pub_seed, wots_pk_addr);
-  
-    /* Compute the root node of this subtree. */
-    // root, tree_addr = __compute_root(root, leaf, idx_leaf, 0, sig, SPX_TREE_HEIGHT, pub_seed, tree_addr); // FIXME: Sig should be a pointer
-    sig_offset += SPX_TREE_HEIGHT * SPX_N;
-
-    // Update the indices for the next layer
+    sig_offset += SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N;
+    
     t =  1;
     t <<= (SPX_TREE_HEIGHT & 63);
     t -= 1;
 
+    tree = s_tree;
     idx_leaf = tree;
     idx_leaf &= t;
 
     tree >>= (SPX_TREE_HEIGHT & 63);
+    s_tree = tree;
   }
 
-  res = __memcmp_u8<SPX_N>(root, pub_root); // 0 if the contents are equal, 1 otherwise
+  sig = s_sig;
 
-  return res;
-}//<>
+  return sig;
+}
+
+inline fn __crypto_sign_verify(
+
+)
+{
+  
+}
