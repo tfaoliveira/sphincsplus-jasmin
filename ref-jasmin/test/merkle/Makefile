@@ -8,7 +8,7 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= 
+JFLAGS       ?= # -lazy-regalloc
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
@@ -52,7 +52,7 @@ bin/test_merkle_%.s: bin/test_merkle_%.jpp
 $(TESTS):
 bin/test_merkle_%: bin/test_merkle_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DMSG_LEN=$(GET_MSG_LEN) \
--DTEST_WOTSX1=1 \
+-DTEST_WOTSX1=1 -DTEST_MERKLE=1 \
 -I../common -I../../ -I../../params \
 test_merkle.c $< \
 ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \

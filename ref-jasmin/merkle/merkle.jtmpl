@@ -310,7 +310,7 @@ inline fn __treehash_wots(
 // }
 
 inline fn __merkle_sign(
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] sig,
+  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] sig, // auth_path
   reg ptr u8[SPX_N] root,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
@@ -330,38 +330,71 @@ inline fn __merkle_sign(
   stack u32[SPX_WOTS_LEN] steps;
 
   // struct leaf_info
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] wots_sig;
-  reg u32 wots_sign_leaf;
+  stack u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] wots_sig;
+  reg u32 wots_sign_leaf; stack u32 s_wots_sign_leaf;
   stack u32[8] leaf_addr pk_addr;
   stack u32[SPX_WOTS_LEN] wots_steps;
   // struct leaf info
 
-  wots_sig = sig;
+  // Spill
+  s_sig = sig;
+  s_root = root;
+  s_pub_seed = pub_seed;
+  s_sk_seed = sk_seed;
+  s_wots_addr = wots_addr;
+  s_tree_addr = tree_addr;
+  s_idx_leaf = idx_leaf;
+
+  wots_sig, _ = _x_memcpy_u8u8<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(wots_sig, 0, sig);
+  
+  // NOTE: Nao deveria ser preciso um memcpy. EM C basta fazer wots_sig = sig. Mas em Jasmin isto provoca
+  // compilation error in function merkle_gen_root_jazz:
+  // stack allocation: the region associated to variable s_wots_sig
+
   steps = __chain_lengths(steps, root);
   wots_steps = steps;
 
+  tree_addr = s_tree_addr;
   tree_addr = __set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
+  s_tree_addr = tree_addr;
+
   pk_addr = __set_type(pk_addr, SPX_ADDR_TYPE_WOTSPK);
 
   leaf_addr = __copy_subtree_addr(leaf_addr, wots_addr);
   pk_addr = __copy_subtree_addr(pk_addr, wots_addr);
 
-  wots_sign_leaf = idx_leaf;
+  wots_sign_leaf = s_idx_leaf;
 
   
-//   root, sig, tree_addr, wots_sig, leaf_addr, pk_addr = 
-//     __treehash_wots(root, 
-//                     sig, 
-//                     pub_seed, sk_seed, 
-//                     idx_leaf, tree_addr, 
-//                     wots_sig, 
-//                     wots_sign_leaf, 
-//                     wots_steps, 
-//                     leaf_addr, 
-//                     pk_addr);
+  root, sig[SPX_WOTS_BYTES:SPX_TREE_HEIGHT * SPX_N], tree_addr, wots_sig, leaf_addr, pk_addr = 
+     __treehash_wots(root, 
+                     sig[SPX_WOTS_BYTES:SPX_TREE_HEIGHT * SPX_N], 
+                     pub_seed, sk_seed, 
+                     idx_leaf, tree_addr, 
+                     wots_sig, 
+                     wots_sign_leaf, 
+                     wots_steps, 
+                     leaf_addr, 
+                     pk_addr);
   
   return sig, root, tree_addr;
-}//<>
+}
+
+#[returnaddress="stack"]
+fn _merkle_sign(
+  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] sig, // auth_path
+  reg ptr u8[SPX_N] root,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] wots_addr tree_addr,
+  reg u32 idx_leaf
+) -> reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES], 
+     reg ptr u8[SPX_N],
+     reg ptr u32[8]
+{
+  sig, root, tree_addr = __merkle_sign(sig, root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
+  return sig, root, tree_addr;
+}
 
 inline fn __merkle_gen_root(
   reg ptr u8[SPX_N] root,
@@ -373,16 +406,33 @@ inline fn __merkle_gen_root(
   stack u32[8] top_tree_addr wots_addr;
 
   reg u32 t;
-
-  top_tree_addr = __zero_array_u32<8>(top_tree_addr);
-  wots_addr = __zero_array_u32<8>(wots_addr);
-
-  top_tree_addr = __set_layer_addr(top_tree_addr, SPX_D - 1);
-  wots_addr = __set_layer_addr(wots_addr, SPX_D - 1);
-
+  reg u32 addr;
+  inline int i;
+  
   ?{}, t = #set0_32();
-  t = #NOT_32(t);
-  auth_path, root, _ = __merkle_sign(auth_path, root, pub_seed, sk_seed, wots_addr, top_tree_addr, t);
 
+  for i=0 to 8 {
+    top_tree_addr[i] = t;
+    wots_addr[i] = t;
+  }
+
+  addr = SPX_D - 1;
+  top_tree_addr = __set_layer_addr(top_tree_addr, addr);
+  wots_addr = __set_layer_addr(wots_addr, addr);
+  
+  t = #NOT_32(t);
+  _, root, _ = _merkle_sign(auth_path, root, pub_seed, sk_seed, wots_addr, top_tree_addr, t);
+
+  return root;
+}
+
+#[returnaddress="stack"]
+fn _merkle_gen_root(
+  reg ptr u8[SPX_N] root,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed
+) -> reg ptr u8[SPX_N]
+{
+  root = __merkle_gen_root(root, pub_seed, sk_seed);
   return root;
 }

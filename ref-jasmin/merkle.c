@@ -64,7 +64,6 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
     uint32_t idx_leaf_jazz;
     uint32_t tree_addr_jazz[8];
     struct treehash_wots_info info_jazz = {0};
-    uint8_t sig_jazz[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES];
 
     unsigned char *auth_path = sig + SPX_WOTS_BYTES;
     struct leaf_info_x1 info = {0};
@@ -128,7 +127,7 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
     // assert(memcmp(info_jazz.wots_sig, info.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) ==
     // 0);
     // FIXME: ? ? É o teste que está mal (?)
-    // FIXME: A o merkle gen root usa esta funcao e passa nos testes
+    // FIXME: A o merkle sign e merkle gen root usam esta funcao e passam nos testes
     assert(info_jazz.sign_leaf == info.wots_sign_leaf);
     assert(memcmp(info_jazz.wots_steps, steps, SPX_WOTS_LEN) == 0);
     assert(memcmp(info_jazz.leaf_addr, info.leaf_addr, 8 * sizeof(uint32_t)) == 0);
@@ -136,6 +135,7 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
 }
 #endif
 
+#ifndef TEST_MERKLE
 void merkle_gen_root(unsigned char *root, const spx_ctx *ctx) {
     unsigned char auth_path[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES];
     uint32_t top_tree_addr[8] = {0};
@@ -144,6 +144,48 @@ void merkle_gen_root(unsigned char *root, const spx_ctx *ctx) {
     set_layer_addr(top_tree_addr, SPX_D - 1);
     set_layer_addr(wots_addr, SPX_D - 1);
 
-    (auth_path, root, ctx, wots_addr, top_tree_addr,
-     (uint32_t)~0 /* ~0 means "don't bother generating an auth path */);
+    merkle_sign(auth_path, root, ctx, wots_addr, top_tree_addr,
+                (uint32_t)~0 /* ~0 means "don't bother generating an auth path */);
 }
+
+#else
+
+extern void merkle_sign_jazz(uint8_t *sig, uint8_t *root, const spx_ctx *ctx, uint32_t wots_addr[8],
+                             uint32_t tree_addr[8], uint32_t idx_leaf);
+
+void merkle_gen_root(unsigned char *root, const spx_ctx *ctx) {
+    unsigned char auth_path[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES];
+    uint32_t top_tree_addr[8] = {0};
+    uint32_t wots_addr[8] = {0};
+
+    uint8_t root_jazz[SPX_N];
+    unsigned char auth_path_jazz[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES];
+    uint32_t top_tree_addr_jazz[8];
+    uint32_t wots_addr_jazz[8];
+
+    set_layer_addr(top_tree_addr, SPX_D - 1);
+    set_layer_addr(wots_addr, SPX_D - 1);
+
+    // copy state
+
+    memcpy(auth_path_jazz, auth_path, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
+    memcpy(root_jazz, root, SPX_N);
+    memcpy(wots_addr_jazz, wots_addr, 8 * sizeof(uint32_t));
+    memcpy(top_tree_addr_jazz, top_tree_addr, 8 * sizeof(uint32_t));
+
+    assert(memcmp(auth_path_jazz, auth_path, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0);
+    assert(memcmp(root_jazz, root, SPX_N) == 0);
+    assert(memcmp(wots_addr_jazz, wots_addr, 8 * sizeof(uint32_t)) == 0);
+    assert(memcmp(top_tree_addr_jazz, top_tree_addr, 8 * sizeof(uint32_t)) == 0);
+
+    merkle_sign(auth_path, root, ctx, wots_addr, top_tree_addr, (uint32_t)~0);
+
+    merkle_sign_jazz(auth_path_jazz, root_jazz, ctx, wots_addr_jazz, top_tree_addr_jazz, (uint32_t)~0);
+
+    assert(memcmp(auth_path_jazz, auth_path, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0);
+    assert(memcmp(root_jazz, root, SPX_N) == 0);
+    assert(memcmp(wots_addr_jazz, wots_addr, 8 * sizeof(uint32_t)) == 0);
+    assert(memcmp(top_tree_addr_jazz, top_tree_addr, 8 * sizeof(uint32_t)) == 0);
+}
+
+#endif
