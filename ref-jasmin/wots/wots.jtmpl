@@ -3,25 +3,17 @@ from Sphincs require "memcpy/memcpy.jtmpl"
 from Sphincs require "generic/conditions.jinc"
 from Sphincs require "generic/utils.jtmpl"
 
-// NOTE: The thash import is managed by the makefile
+param int SPX_WOTS_BYTES  = SPX_WOTS_LEN * SPX_N; // TODO: Set this in another file
 
-param int SPX_WOTS_BYTES  = SPX_WOTS_LEN * SPX_N;
-
-/**
- * Computes the chaining function.
- * out and in have to be n-byte arrays.
- *
- * Interprets in as start-th value of the chain.
- * addr has to contain the address of the chain.
- */
 inline fn __gen_chain(
   reg ptr u8[SPX_N] out,
-  reg ptr u8[SPX_N] in,
+  reg u64 in,
   reg u32 start,
   reg u32 steps,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u32[8] addr
-) -> reg ptr u8[SPX_N], reg ptr u32[8]
+) -> reg ptr u8[SPX_N], 
+     reg ptr u32[8]
 {
   stack ptr u8[SPX_N] s_pub_seed;
   stack ptr u32[8] s_addr;
@@ -30,17 +22,16 @@ inline fn __gen_chain(
   reg u32 i t;
   stack u32 s_i s_t;
 
-  out, _ = _x_memcpy_u8u8<SPX_N, SPX_N>(out, 0, in);
+  // memcpy(out, in, SPX_N);
+  out, _ = _x_memcpy_u8u8p<SPX_N>(out, 0, in, SPX_N);
 
   s_pub_seed = pub_seed;
   s_addr = addr;
 
   i = start;
   t = start;
-  t += steps;
-
-  // start & steps are no longer live
-
+  t += steps; // From now on, start & steps are no longer live
+  // for (i = start; i < (start+steps) && i < SPX_WOTS_W; i++)
   while {
     // i < (start+steps) && i < SPX_WOTS_W
     cond = __cond_u32_a_below_b_and_a_below_c(i, t, SPX_WOTS_W);
@@ -49,12 +40,14 @@ inline fn __gen_chain(
     s_i = i;
     s_t = t;
 
+    // set_hash_addr(addr, i);
     s_addr = addr;
     addr = __set_hash_addr(addr, i);
     s_addr = addr;
 
+    // thash(out, out, 1, ctx, addr);
     pub_seed = s_pub_seed;
-    out = __thash_inplace_(out, pub_seed, addr);
+    out = __thash_inplace(out, pub_seed, addr);
 
     i = s_i;
     t = s_t;
@@ -69,7 +62,7 @@ inline fn __gen_chain(
 #[returnaddress="stack"]
 fn _gen_chain(
   reg ptr u8[SPX_N] out,
-  reg ptr u8[SPX_N] in,
+  reg u64 in,
   reg u32 start,
   reg u32 steps,
   reg ptr u8[SPX_N] pub_seed,
@@ -82,7 +75,7 @@ fn _gen_chain(
 
 inline fn __gen_chain_(
   reg ptr u8[SPX_N] out,
-  reg ptr u8[SPX_N] in,
+  reg u64 in,
   reg u32 start,
   reg u32 steps,
   reg ptr u8[SPX_N] pub_seed,
@@ -90,7 +83,7 @@ inline fn __gen_chain_(
 ) -> reg ptr u8[SPX_N], reg ptr u32[8]
 {
   stack ptr u8[SPX_N] s_out;
-  stack ptr u8[SPX_N] s_in;
+  stack u64 s_in;
   stack u32 s_start;
   stack u32 s_steps;
   stack ptr u8[SPX_N] s_pub_seed;
@@ -106,17 +99,13 @@ inline fn __gen_chain_(
   return out, addr;
 }//<>
 
-/*
- * Interprets an array of bytes as integers in base w.
- * This only works when log_w is a divisor of 8.
-*/
 inline fn __base_w<OUTLEN,INLEN>(
   reg ptr u32[OUTLEN] output,
   reg ptr u8[INLEN] input
 ) -> reg ptr u32[OUTLEN]
 {
   reg u64 in out;
-  reg u8  total;
+  reg u8 total;
   reg u8 t u;
   reg u32 z;
   reg u64 bits consumed;
@@ -167,7 +156,7 @@ inline fn __wots_checksum(
   stack u64 s_t;
 
   inline int k;
-  stack u64 eight; 
+  stack u64 eight; // FIXME:
 
   csum = 0;
   eight = 8;
@@ -186,14 +175,15 @@ inline fn __wots_checksum(
 
   u = 8;
   u -= k;
-  u %= eight;
+  u %= eight; // FIXME: 
 
   u = u;
-  csum = #SHL(csum, u);
+  ?{}, csum = #SHL(csum, u);
 
   csum_bytes = __ull_to_bytes_t<(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(csum_bytes, csum);
 
   csum_base_w = __base_w<SPX_WOTS_LEN2, (SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(csum_base_w, csum_bytes);
+
   return csum_base_w;
 }
 
@@ -236,104 +226,81 @@ inline fn __chain_lengths__(
   return lengths;
 }//<>
 
-/**
- * Takes a WOTS signature and an n-byte message, computes a WOTS public key.
- *
- * Writes the computed public key to 'pk'.
- */
-inline fn __wots_pk_from_sig<MSG_LEN>(
+// NOTE: Removed the MSG_LEN parameter because the length of the message is always SPX_N
+inline fn __wots_pk_from_sig(
     reg ptr u8[SPX_WOTS_BYTES] pk,
     reg u64 sig,
-    reg ptr u8[MSG_LEN] msg,
+    reg ptr u8[SPX_N] msg,
     reg ptr u8[SPX_N] pub_seed,
     reg ptr u32[8] addr
-) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
+) -> reg ptr u8[SPX_WOTS_BYTES], 
+     reg ptr u32[8]
 {
+  //////
   stack ptr u8[SPX_WOTS_BYTES] s_pk;
   stack u64 s_sig;
-  stack ptr u8[MSG_LEN] s_msg;
   stack ptr u8[SPX_N] s_pub_seed;
   stack ptr u32[8] s_addr;
+  //////
 
   stack u32[SPX_WOTS_LEN] lengths;
-  stack u8[SPX_N] sig_array; // FIXME: TODO:
+  
+  reg ptr u8[SPX_N] out;
+  
   inline int i;
+  //
+  // NOTE: i tem de ser um inline int em vez de um reg u64 pq, se usar um reg u64 dá este erro
+  // stack allocation: cannot compile sub-array pk.5732 that has a non-constant start index
+  //
+  // ====> O ciclo tem de ser um for em vez de um while ?
 
   reg u32 start steps;
-  stack u32 s_start s_steps;
 
-  sig_array = __load_u8_array<SPX_N>(sig_array, sig); // FIXME: TODO:
-
-  // Spill (start from a clean state)
+  //// Spill everything to the stack at the beginning
   s_pk = pk;
   s_sig = sig;
   s_pub_seed = pub_seed;
   s_addr = addr;
 
-  lengths = __chain_lengths(lengths, msg); // from now on, lengths is no longer live (we dont need to spill it)
+  // chain_lengths(lengths, msg);
+  lengths = __chain_lengths(lengths, msg);
 
-  for i=0 to SPX_WOTS_LEN {
-    sig = s_sig;
-    sig += i*SPX_N;
-    sig_array = __load_u8_array<SPX_N>(sig_array, sig); // FIXME: TODO:
-    s_sig = sig;
-
+  for i=0 to SPX_WOTS_LEN
+  {
+    // set_chain_addr(addr, i);
     addr = s_addr;
     addr = __set_chain_addr(addr, i);
     s_addr = addr;
 
+    // gen_chain(pk + i*SPX_N, 
+    //           sig + i*SPX_N, 
+    //           lengths[i], == start
+    //           SPX_WOTS_W - 1 - lengths[i], == steps
+    //           ctx, == pub_seed
+    //           addr);
+
+    pk = s_pk;
+    out = pk[i * SPX_N : SPX_N];
+
+    sig = s_sig;
+    sig += i*SPX_N;
+    
     start = lengths[i];
+    
     steps = SPX_WOTS_W;
     steps -= 1;
     steps -= lengths[i];
 
-    pk = s_pk;
     pub_seed = s_pub_seed;
     addr = s_addr;
-    // pk[i*SPX_N : SPX_N], addr = _gen_chain(pk[i*SPX_N : SPX_N], sig_array, start, steps, pub_seed, addr);
-    s_pk = pk;
+
+    s_pk[i * SPX_N : SPX_N], addr = __gen_chain(out, sig, start, steps, pub_seed, addr);
+
     s_addr = addr;
-    s_start = start;
-    s_steps = steps;
   }
 
   pk = s_pk;
   addr = s_addr;
 
   return pk, addr;
-}//<>
-
-#[returnaddress="stack"]
-fn _wots_pk_from_sig<MSG_LEN>(
-    reg ptr u8[SPX_WOTS_BYTES] pk,
-    reg u64 sig,
-    reg ptr u8[MSG_LEN] msg,
-    reg ptr u8[SPX_N] pub_seed,
-    reg ptr u32[8] addr
-) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
-{
-  pk, addr = __wots_pk_from_sig<MSG_LEN>(pk, sig, msg, pub_seed, addr);
-  return pk, addr;
-}//<>
-
-inline fn __wots_pk_from_sig__<MSG_LEN>(
-    reg ptr u8[SPX_WOTS_BYTES] pk,
-    reg u64 sig,
-    reg ptr u8[MSG_LEN] msg, // root
-    reg ptr u8[SPX_N] pub_seed,
-    reg ptr u32[8] addr
-) -> reg ptr u8[SPX_WOTS_BYTES], reg ptr u32[8]
-{
-  pk = pk;
-  sig = sig;
-  msg = msg;
-  pub_seed = pub_seed;
-  addr = addr;
-
-  pk, addr = _wots_pk_from_sig<MSG_LEN>(pk, sig, msg, pub_seed, addr);
-
-  pk = pk;
-  addr = addr;
-
-  return pk, addr;
-}//<>
+}

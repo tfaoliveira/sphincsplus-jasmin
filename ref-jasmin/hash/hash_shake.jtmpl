@@ -129,12 +129,12 @@ inline fn __gen_message_random<OUTLEN>(
  * the tree index and the leaf index, for convenient copying to an address.
  * 
  */
-inline fn __hash_message(
+inline fn __hash_message<PKLEN>( // FIXME:
   reg ptr u8[SPX_FORS_MSG_BYTES] digest,
   reg u64 tree,
   reg u32 leaf_idx,
   reg ptr u8[SPX_N] R,
-  reg ptr u8[SPX_N] pk,
+  reg ptr u8[PKLEN] pk,
   reg u64 msg msg_len
 ) -> reg ptr u8[SPX_FORS_MSG_BYTES], reg u64, reg u32
 {
@@ -152,7 +152,7 @@ inline fn __hash_message(
   stack u64 s_tree s_msg s_msg_len;
   stack u32 s_leaf_idx;
   stack ptr u8[SPX_N] s_R;
-  stack ptr u8[SPX_N] s_pk;
+  stack ptr u8[PKLEN] s_pk;
 
   reg u64 offset;
   reg u64 t u z;
@@ -172,7 +172,7 @@ inline fn __hash_message(
   shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, R);
 
   pk = s_pk;
-  shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, pk);
+  shake256_state_p = __shake256_inc_absorb_t<PKLEN>(shake256_state_p, pk);
 
   msg = s_msg;
   msg_len = s_msg_len;
@@ -204,4 +204,4 @@ inline fn __hash_message(
   leaf_idx &= (32u)t;
 
   return digest, tree, leaf_idx;
-}
+}//<>

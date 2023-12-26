@@ -8,7 +8,7 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning # -lazy-regalloc
+JFLAGS       ?= # -lazy-regalloc
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
@@ -45,7 +45,7 @@ bin/test_wots_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --workers 8 --input_file $@ --output_file $@ --task "fn:base_w_jazz p:MSG_LEN:$(GET_MSG_LEN)"
+	$(PREPROCESSOR) --input_file $@ --output_file $@
 
 .PRECIOUS: bin/test_wots_%.s
 bin/test_wots_%.s: bin/test_wots_%.jpp

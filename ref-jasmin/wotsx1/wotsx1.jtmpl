@@ -173,3 +173,64 @@ inline fn __wots_gen_leafx1(
 
   return dest, wots_sig, leaf_addr, pk_addr;
 }
+
+#[returnaddress="stack"]
+fn _wots_gen_leafx1(
+  reg ptr u8[SPX_N] dest,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u32 leaf_idx,
+  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] wots_sig,
+  reg u32 wots_sign_leaf,
+  reg ptr u32[SPX_WOTS_LEN] wots_steps,
+  reg ptr u32[8] leaf_addr,
+  reg ptr u32[8] pk_addr
+) ->
+  reg ptr u8[SPX_N],
+  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES],
+  reg ptr u32[8], 
+  reg ptr u32[8]
+{
+  dest, wots_sig, leaf_addr, pk_addr = __wots_gen_leafx1(dest, pub_seed, sk_seed, leaf_idx,
+                                                         wots_sig, wots_sign_leaf, wots_steps,
+                                                         leaf_addr, pk_addr);
+  return dest, wots_sig, leaf_addr, pk_addr;                     
+}
+
+inline fn __wots_gen_leafx1_(
+reg ptr u8[SPX_N] dest,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u32 leaf_idx,
+  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] wots_sig,
+  reg u32 wots_sign_leaf,
+  reg ptr u32[SPX_WOTS_LEN] wots_steps,
+  reg ptr u32[8] leaf_addr,
+  reg ptr u32[8] pk_addr
+) ->
+  reg ptr u8[SPX_N],
+  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES],
+  reg ptr u32[8], 
+  reg ptr u32[8]
+{
+  dest = dest;
+  pub_seed = pub_seed;
+  sk_seed = sk_seed;
+  leaf_idx = leaf_idx;
+  wots_sig = wots_sig;
+  wots_sign_leaf = wots_sign_leaf;
+  wots_steps = wots_steps;
+  leaf_addr = leaf_addr;
+  pk_addr = pk_addr;
+
+  dest, wots_sig, leaf_addr, pk_addr = _wots_gen_leafx1(dest, pub_seed, sk_seed, leaf_idx,
+                                                        wots_sig, wots_sign_leaf, wots_steps,
+                                                        leaf_addr, pk_addr);
+
+  dest = dest;
+  wots_sig = wots_sig;
+  leaf_addr = leaf_addr;
+  pk_addr = pk_addr;
+ 
+  return dest, wots_sig, leaf_addr, pk_addr;
+}

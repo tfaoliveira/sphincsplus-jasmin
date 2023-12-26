@@ -29,12 +29,9 @@ inline fn __load_args(
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_PK_BYTES] pk,
   reg u64 addr
-) -> reg ptr u8[SPX_N], reg ptr u8[SPX_PK_BYTES]
+) -> reg ptr u8[SPX_N], 
+     reg ptr u8[SPX_PK_BYTES]
 {
-  // typedef struct {
-  //   uint8_t R[SPX_N];
-  //   uint8_t pk[SPX_PK_BYTES];
-  // } args;
   R = __load_u8_array<SPX_N>(R, addr);
   addr += SPX_N;
 
@@ -104,7 +101,6 @@ export fn gen_message_random_jazz(
   stack u64 s_R s_sk_prf s_optrand s_m;
 
   R_p = R; 
-  // R_p = __load_u8_array<SPX_N>(R_p, _R);
   
   sk_prf_p = sk_prf; 
   sk_prf_p = __load_u8_array<SPX_N>(sk_prf_p, _sk_prf);
@@ -145,7 +141,7 @@ export fn hash_message_jazz(
   s_tree = _tree;
   s_leaf_idx = _leaf_idx;
 
-  digest, tree, leaf_idx = __hash_message(digest, tree, leaf_idx, R, pk, msg, msg_len);
+  digest, tree, leaf_idx = __hash_message<SPX_PK_BYTES>(digest, tree, leaf_idx, R, pk, msg, msg_len);
 
   _digest = s_digest;
   _tree = s_tree;
