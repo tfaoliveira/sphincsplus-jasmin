@@ -21,6 +21,7 @@ jobs:
           - fors
           - generic
           - hash
+          - memcmp
           - memcpy
           - thash
           - utils
