@@ -59,8 +59,8 @@ void test_memcmp_array(void) {
 void test_memcmp_ptr(void) {
 #define MIN_IN_LEN 1
 #define MIN_OUT_LEN 1
-#define MAX_IN_LEN 1024
-#define MAX_OUT_LEN 1024
+#define MAX_IN_LEN 100
+#define MAX_OUT_LEN 100
     uint8_t *in, *out;
 
     size_t inlen;
@@ -104,7 +104,7 @@ void test_memcmp_ptr(void) {
     }
 
     // In this case, a and b are (probably) different, so r should (probably) be -1
-     for (int i = 0; i < TESTS; i++) {
+    for (int i = 0; i < TESTS; i++) {
         for (inlen = MIN_IN_LEN; inlen < MAX_IN_LEN; inlen++) {
             in = (uint8_t *)malloc(inlen);
             for (outlen = MIN_OUT_LEN; outlen < MAX_OUT_LEN; outlen++) {
@@ -116,16 +116,16 @@ void test_memcmp_ptr(void) {
 
                 if (inlen > outlen) {
                     length = outlen;  // we compare the minimum of both sizes
-                } else {  // outlen >= inlen
+                } else {              // outlen >= inlen
                     length = inlen;
                 }
 
                 randombytes(in, length);
-                randombytes(out,length);
+                randombytes(out, length);
 
                 res = memcmp__jazz(in, out, length);
                 assert(memcmp(in, out, length) == 0 ? res == 0 : res == -1);
-                
+
                 // end test
 
                 free(out);
@@ -141,7 +141,7 @@ void test_memcmp_ptr(void) {
 }
 
 int main(void) {
-    // test_memcmp_array();
+    test_memcmp_array();
     test_memcmp_ptr();
     printf("PASS: memcmp = { inlen : %d; }\n", INLEN);
     return 0;

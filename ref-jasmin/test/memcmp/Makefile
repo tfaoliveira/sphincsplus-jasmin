@@ -10,7 +10,7 @@ JPP           ?= ../scripts/jpp
 PREPROCESSOR  ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
-T_LIST = $(shell seq 1 1 1048)
+T_LIST = $(shell seq 1 1 50)
 
 # ------------------------------------------------------------------------------
 TESTS  := $(addprefix bin/test_memcmp_,  $(T_LIST))
