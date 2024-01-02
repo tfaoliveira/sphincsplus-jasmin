@@ -159,7 +159,7 @@ export fn fors_sign_jazz(reg u64 sig _pk _msg _pub_seed _sk_seed _fors_addr)
   
   s_pk = _pk;
 
-  pk = __fors_sign(sig, pk, msg, pub_seed, sk_seed, fors_addr); // we write to sig here
+  pk = _fors_sign(sig, pk, msg, pub_seed, sk_seed, fors_addr); // we write to sig here
 
   _pk = s_pk;
   __store_u8_array<SPX_FORS_PK_BYTES>(pk, _pk);

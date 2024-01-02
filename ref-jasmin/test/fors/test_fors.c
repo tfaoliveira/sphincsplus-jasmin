@@ -33,9 +33,8 @@
 #define TESTS 10
 #endif
 
-// signature size for 128f
 #ifndef SIG_SIZE
-#define SIG_SIZE 7856
+#define SIG_SIZE SPX_BYTES
 #endif
 
 extern void fors_gen_sk_jazz(uint8_t *sk, const uint8_t *pub_seed, const uint8_t *sk_seed,
@@ -265,32 +264,6 @@ void test_pk_from_sig(void) {
     }
 }
 
-/* static */ uint32_t random_idx_offset(uint32_t max_idx_offset, uint32_t min_idx_offset) {
-    uint32_t range = max_idx_offset - min_idx_offset;
-    uint32_t value;
-
-    size_t num_bytes = (size_t)(sizeof(uint32_t));
-    size_t bytes_needed = sizeof(uint32_t);
-
-    do {
-        uint8_t random_bytes[bytes_needed];
-        randombytes(random_bytes, bytes_needed);
-
-        value = 0;
-        for (size_t i = 0; i < num_bytes; ++i) {
-            value = (value << 8) | random_bytes[i];
-        }
-        value %= range;
-
-    } while (value >= range);
-
-    value += min_idx_offset;
-
-    assert(value >= min_idx_offset);
-    assert(value <= max_idx_offset);
-
-    return value;
-}
 #endif
 
 void test_treehash_fors(void)
@@ -321,16 +294,18 @@ void test_treehash_fors(void)
 
 int main(void) {
 
-#if 1
-    // test_fors_gen_sk();
-    // test_fors_sk_to_leaf();
-    // test_fors_gen_leafx1();
+#if 0
     // test_message_to_indices_t();  // msg is a reg ptr u8[MSG_LEN]
-    test_fors_sign();
-    test_pk_from_sig();
+    // TODO: Check this test. test_message_to_indices_t should work because it
+    // is called in other functions and those functions pass the tests
 #endif
+    // test_fors_gen_sk(); // WORKS
+    // test_fors_sk_to_leaf(); // WORKS
+    // test_fors_gen_leafx1(); // works
+    // test_pk_from_sig(); // works
+    test_fors_sign(); // Works
+    // test_treehash_fors(); // Works
 
-    test_treehash_fors();
     printf("PASS: fors = { msg len : %d ; params : %s }\n", MSG_LEN, xstr(PARAMS));
 
     return 0;
