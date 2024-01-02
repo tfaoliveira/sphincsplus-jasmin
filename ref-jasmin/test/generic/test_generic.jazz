@@ -1,6 +1,5 @@
 from Sphincs require "generic/conditions.jinc"
 from Sphincs require "generic/utils.jtmpl"
-from Sphincs require "generic/sign_utils.jinc"
 
 export fn cond_u64_a_below_b_and_a_below_c_jazz(reg u64 a b c _res) {
     reg u8 r;
@@ -112,38 +111,4 @@ export fn bytes_to_ull_jazz(reg u64 _in) -> reg u64
 
   in = in_p;
   return res;
-}
-
-// Returns 0 if both arrays are equal
-export fn mem_eq_u8_jazz<LEN>(reg u64 _a _b) -> reg u64
-{
-  reg u64 r;
-
-  stack u8[LEN] a b;
-  reg ptr u8[LEN] ap bp;
-
-  ap = a; bp = b;
-  ap = __load_u8_array<LEN>(ap, _a);
-  bp = __load_u8_array<LEN>(bp, _b);
-
-  r = __mem_eq_u8<LEN>(ap, bp);
-
-  return r;
-}//<>
-
-export fn get_sk_prf_from_sk_jazz(reg u64 _sk _prf) {
-    stack u8[SPX_SK_BYTES] sk;
-    reg ptr u8[SPX_SK_BYTES] sk_p;
-
-    stack u8[SPX_N] prf;
-    reg ptr u8[SPX_N] prf_p;
-
-    sk_p = sk; prf_p = prf;
-
-    sk_p = __load_u8_array<SPX_SK_BYTES>(sk_p, _sk);
-    prf_p = __load_u8_array<SPX_N>(prf_p, _prf);
-
-    prf_p = __get_sk_prf_from_sk(prf_p, sk_p);
-
-    __store_u8_array<SPX_N>(prf_p, _prf);
 }

@@ -299,12 +299,12 @@ int main(void) {
     // TODO: Check this test. test_message_to_indices_t should work because it
     // is called in other functions and those functions pass the tests
 #endif
-    // test_fors_gen_sk(); // WORKS
-    // test_fors_sk_to_leaf(); // WORKS
-    // test_fors_gen_leafx1(); // works
-    // test_pk_from_sig(); // works
-    test_fors_sign(); // Works
-    // test_treehash_fors(); // Works
+    test_fors_gen_sk(); // WORKS
+    test_fors_sk_to_leaf(); // WORKS
+    test_fors_gen_leafx1(); // works
+    test_pk_from_sig(); // works
+    test_fors_sign(); // Stoped working after refacotring
+    test_treehash_fors(); // Works
 
     printf("PASS: fors = { msg len : %d ; params : %s }\n", MSG_LEN, xstr(PARAMS));
 

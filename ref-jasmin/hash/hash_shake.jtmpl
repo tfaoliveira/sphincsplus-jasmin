@@ -29,8 +29,6 @@ inline fn __prf_addr(
   return out;
 }
 
-
-// TODO: DELETE THIS FUNCTION. IT IS NEVER USED => Fixz the test in tesT_hash.jazz later
 inline fn __gen_message_random(
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_N] sk_prf,
@@ -73,6 +71,7 @@ inline fn __gen_message_random(
   return R;
 }
 
+/// FIXME: DELETE THIS (ESTA FUNCAOI NAO E USADA: NAO E PRECISOU OUTLENPQ OUTLEN E SPEMRP SPX_N)
 inline fn __gen_message_random<OUTLEN>(
   reg ptr u8[OUTLEN] R,
   reg ptr u8[SPX_N] sk_prf,
@@ -203,5 +202,22 @@ inline fn __hash_message<PKLEN>( // FIXME:
   ?{}, t = #SHR(t, u);
   leaf_idx &= (32u) t;
 
+  return digest, tree, leaf_idx;
+}//<>
+
+#[returnaddress="stack"]
+fn _hash_message<PKLEN>( // FIXME:
+  reg ptr u8[SPX_FORS_MSG_BYTES] digest,
+  reg u64 tree,
+  reg u32 leaf_idx,
+  reg ptr u8[SPX_N] R,
+  reg ptr u8[PKLEN] pk,
+  reg u64 msg,
+  reg u64 msg_len
+) -> reg ptr u8[SPX_FORS_MSG_BYTES], 
+     reg u64, 
+     reg u32
+{
+  digest, tree, leaf_idx = __hash_message<PKLEN>(digest, tree, leaf_idx, R, pk, msg, msg_len);
   return digest, tree, leaf_idx;
 }//<>
