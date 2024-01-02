@@ -48,6 +48,8 @@ inline fn __keccak_inc_absorb(
   stack u64 s_inlen s_in s_i s_offset_in s_t s_u s_v s_z;
   stack ptr u64[26] s_state;
 
+  reg ptr u64[25] non_absorbed_byes;
+
   offset_in = 0;
 
   t = inlen;
@@ -68,7 +70,7 @@ inline fn __keccak_inc_absorb(
       t >>= (3 & 63); // index: s_inc[25] + i) >> 3
 
       u &= 0x07;
-      u *= 8; // TODO: replace by a shift
+      ?{}, u = #SHL(u, 3);
 
       z = in;
       z += offset_in;
@@ -107,7 +109,9 @@ inline fn __keccak_inc_absorb(
     s_v = v;
     s_z = z;
 
-    state[0:25] = _keccakf1600_ref1(state[0:25]);
+    non_absorbed_byes = state[0:25];
+    non_absorbed_byes = _keccakf1600_ref1(non_absorbed_byes);
+    state[0:25] = non_absorbed_byes;
 
     in = s_in;
     inlen = s_inlen;
@@ -134,7 +138,7 @@ inline fn __keccak_inc_absorb(
     u = state[25]; // TODO: replace with u = t
     u += i;        // TODO: replace with u = t
     u &= 0x07;
-    u *= 8; // TODO: replace by a shift
+    ?{}, u = #SHL(u, 3);
 
     z = in;
     z += offset_in;
@@ -158,9 +162,8 @@ inline fn __keccak_inc_absorb(
   return state;
 }
 
-// TODO fix naming convention local -> 1 underscore
 #[returnaddress="stack"]
-fn __shake256_inc_absorb(
+fn _shake256_inc_absorb(
   reg ptr u64[26] state,
   reg u64 in,
   reg u64 inlen
@@ -184,7 +187,7 @@ inline fn __shake256_inc_absorb_(
   in = in;
   inlen = inlen;
 
-  state = __shake256_inc_absorb(state, in, inlen);
+  state = _shake256_inc_absorb(state, in, inlen);
 
   state = state;
   in = in;
@@ -278,6 +281,8 @@ inline fn __keccak_inc_squeeze_(
   reg u64 limit offset index;
   stack u64 s_out s_outlen s_rate;
 
+  reg ptr u64[25] non_absorbed_byes;
+
   // first consume any bytes we still have sitting around
   limit = state[25];
   offset = rate;
@@ -295,7 +300,9 @@ inline fn __keccak_inc_squeeze_(
      s_out = out;
      s_outlen = outlen;
 
-    state[0:25] = _keccakf1600_ref1(state[0:25]);
+    non_absorbed_byes = state[0:25];
+    non_absorbed_byes = _keccakf1600_ref1(non_absorbed_byes);
+    state[0:25] = non_absorbed_byes;
 
     out = s_out;
     outlen = s_outlen;
@@ -344,6 +351,8 @@ inline fn __keccak_inc_absorb_t<INLEN>(
   stack ptr u64[26] s_state;
   stack ptr u8[INLEN] s_in;
 
+  reg ptr u64[25] non_absorbed_byes;
+
   offset_in = 0;
   inlen = INLEN;
 
@@ -365,7 +374,7 @@ inline fn __keccak_inc_absorb_t<INLEN>(
       t >>= (3 & 63); // index: s_inc[25] + i) >> 3
 
       u &= 0x07;
-      u *= 8; // TODO: replace by a shift
+      ?{}, u = #SHL(u, 3);
 
       // z = in;
       // z += offset_in;
@@ -406,7 +415,9 @@ inline fn __keccak_inc_absorb_t<INLEN>(
     s_v = v;
     s_z = z;
 
-    state[0:25] = _keccakf1600_ref1(state[0:25]);
+    non_absorbed_byes = state[0:25];
+    non_absorbed_byes = _keccakf1600_ref1(non_absorbed_byes);
+    state[0:25] = non_absorbed_byes;
 
     in = s_in;
     inlen = s_inlen;
@@ -433,7 +444,7 @@ inline fn __keccak_inc_absorb_t<INLEN>(
     u = state[25]; // TODO: replace with u = t
     u += i;        // TODO: replace with u = t
     u &= 0x07;
-    u *= 8; // TODO: replace by a shift
+    ?{}, u = #SHL(u, 3);
 
     // z = in;
     // z += offset_in;
@@ -536,6 +547,8 @@ inline fn __keccak_inc_squeeze_t<OUTLEN>(
   reg u64 offset_state offset_out;
   stack u64 s_outlen s_rate s_offset_out;
   stack ptr u8[OUTLEN] s_out;
+
+  reg ptr u64[25] non_absorbed_byes;
   
   outlen = OUTLEN;
   offset_out = 0;
@@ -545,7 +558,10 @@ inline fn __keccak_inc_squeeze_t<OUTLEN>(
   offset_state = rate;
   offset_state -= state[25];
 
-  index, out, outlen, offset_out = __keccak_inc_squeeze_copy_from_state_t<OUTLEN>(out, outlen, limit, state, offset_state, offset_out);
+  index, out, outlen, offset_out = __keccak_inc_squeeze_copy_from_state_t<OUTLEN>(out, outlen, 
+                                                                                  limit, state, 
+                                                                                  offset_state, 
+                                                                                  offset_out);
 
   state[25] = index;
 
@@ -558,7 +574,10 @@ inline fn __keccak_inc_squeeze_t<OUTLEN>(
     s_outlen = outlen;
     s_offset_out = offset_out;
 
-    state[0:25] = _keccakf1600_ref1(state[0:25]);
+
+    non_absorbed_byes = state[0:25];
+    non_absorbed_byes = _keccakf1600_ref1(non_absorbed_byes);
+    state[0:25] = non_absorbed_byes;
 
     out = s_out;
     outlen = s_outlen;
@@ -566,7 +585,10 @@ inline fn __keccak_inc_squeeze_t<OUTLEN>(
     offset_state = 0;
     offset_out = s_offset_out;
 
-    index, out, outlen, offset_out = __keccak_inc_squeeze_copy_from_state_t<OUTLEN>(out, outlen, limit, state, offset_state, offset_out);
+    index, out, outlen, offset_out = __keccak_inc_squeeze_copy_from_state_t<OUTLEN>(out, outlen, 
+                                                                                    limit, state, 
+                                                                                    offset_state, 
+                                                                                    offset_out);
 
     state[25] = index;
   }

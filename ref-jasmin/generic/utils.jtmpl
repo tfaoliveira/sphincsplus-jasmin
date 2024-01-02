@@ -191,28 +191,3 @@ inline fn __store_u64_array<INLEN>(
     i += 1;
   }
 }//<>
-
-inline fn __mem_eq_u8<LEN>(
-  reg ptr u8[LEN] a b
-) -> reg u64
-{
-  reg u8 acc;
-  reg u64 res;
-  reg u8 ta tb;
-
-  inline int i;
-  for i=0 to LEN {
-    ta = a[i];
-    tb = b[i];
-
-    if (ta != tb) { acc +=1; }
-  }
-
-  if (acc == 0) {
-    res=0;
-  } else {
-    res=1;
-  }
-
-  return res;
-}//<>

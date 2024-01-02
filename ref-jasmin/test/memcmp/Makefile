@@ -47,6 +47,4 @@ bin/:
 .PHONY: clean
 clean:
 	rm -fr bin/
-
-debug:
-	echo $(TESTS)
+	

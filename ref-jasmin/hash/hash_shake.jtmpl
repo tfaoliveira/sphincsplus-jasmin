@@ -17,7 +17,6 @@ inline fn __prf_addr(
   reg ptr u8[2*SPX_N + SPX_ADDR_BYTES] buf_p;
 
   reg u64 offset;
-  stack u64 s_offset;
 
   buf_p = buf;
   offset = 0;
@@ -26,18 +25,12 @@ inline fn __prf_addr(
   buf_p, offset = _x_memcpy_u8u32<2*SPX_N + SPX_ADDR_BYTES, 8>(buf_p, offset, addr);
   buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, sk_seed);
 
-  s_offset = offset;
-
   out = __shake256<SPX_N, 2*SPX_N + SPX_ADDR_BYTES>(out, buf_p);
   return out;
 }
 
-/*
- * Computes the message-dependent randomness R, using a secret seed and an
- * optional randomization value as well as the message
- */
 
- // TODO: DELETE THIS FUNCTION. IT IS NEVER USED
+// TODO: DELETE THIS FUNCTION. IT IS NEVER USED => Fixz the test in tesT_hash.jazz later
 inline fn __gen_message_random(
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_N] sk_prf,
@@ -70,7 +63,7 @@ inline fn __gen_message_random(
   shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, optrand);
 
   msg = s_msg; msg_len = s_msg_len;
-  shake_state_p = __shake256_inc_absorb(shake_state_p, msg, msg_len);
+  shake_state_p = _shake256_inc_absorb(shake_state_p, msg, msg_len);
 
   shake_state_p = __shake256_inc_finalize(shake_state_p);
 
@@ -113,7 +106,7 @@ inline fn __gen_message_random<OUTLEN>(
   shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, optrand);
 
   msg = s_msg; msg_len = s_msg_len;
-  shake_state_p = __shake256_inc_absorb(shake_state_p, msg, msg_len);
+  shake_state_p = _shake256_inc_absorb(shake_state_p, msg, msg_len);
 
   shake_state_p = __shake256_inc_finalize(shake_state_p);
 
@@ -144,6 +137,7 @@ inline fn __hash_message<PKLEN>( // FIXME:
    */
   
   stack u8[SPX_DGST_BYTES] buf;
+  reg ptr u8[SPX_DGST_BYTES] buf_p;
 
   stack u64[26] shake256_state;
   reg ptr u64[26] shake256_state_p; 
@@ -157,6 +151,9 @@ inline fn __hash_message<PKLEN>( // FIXME:
   reg u64 offset;
   reg u64 t u z;
 
+  reg ptr u8[SPX_TREE_BYTES] tree_bytes;
+  reg ptr u8[SPX_LEAF_BYTES] leaf_bytes;
+ 
   shake256_state_p = shake256_state;
 
   shake256_state_p = __shake256_inc_init_(shake256_state_p);
@@ -176,32 +173,35 @@ inline fn __hash_message<PKLEN>( // FIXME:
 
   msg = s_msg;
   msg_len = s_msg_len;
-  shake256_state_p = __shake256_inc_absorb(shake256_state_p, msg, msg_len);
+  shake256_state_p = _shake256_inc_absorb(shake256_state_p, msg, msg_len);
 
   shake256_state_p = __shake256_inc_finalize(shake256_state_p);
 
-  buf, _ = __shake256_inc_squeeze_t<SPX_DGST_BYTES>(buf, shake256_state_p);
+  buf_p = buf;
+  buf_p, _ = __shake256_inc_squeeze_t<SPX_DGST_BYTES>(buf_p, shake256_state_p);
 
   offset = 0;
   digest = s_digest;
-  digest, _ = __memcpy_u8u8<SPX_FORS_MSG_BYTES, SPX_DGST_BYTES>(digest, offset, buf);
+  digest, _ = __memcpy_u8u8<SPX_FORS_MSG_BYTES, SPX_DGST_BYTES>(digest, offset, buf_p);
 
-  tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, buf[SPX_FORS_MSG_BYTES:SPX_TREE_BYTES]);
+  tree_bytes = buf[SPX_FORS_MSG_BYTES:SPX_TREE_BYTES];
+  tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, tree_bytes);
   ?{}, t = #set0(); 
   t = #NOT_64(t);
   u = 64;
   u -= SPX_TREE_BITS;
-  t = #SHR(t, u);
+  ?{}, t = #SHR(t, u);
   tree &= t;
   
-  t = __bytes_to_ull<SPX_LEAF_BYTES>(t, buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES]);
-  leaf_idx = (32u)t;
+  leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES];
+  t = __bytes_to_ull<SPX_LEAF_BYTES>(t, leaf_bytes);
+  leaf_idx = (32u) t;
   t = 0; 
   t = #NOT_64(t);
   u = 32;
   u -= SPX_LEAF_BITS;
-  t >>= (u & 63);
-  leaf_idx &= (32u)t;
+  ?{}, t = #SHR(t, u);
+  leaf_idx &= (32u) t;
 
   return digest, tree, leaf_idx;
 }//<>

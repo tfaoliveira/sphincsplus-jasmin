@@ -151,56 +151,12 @@ inline fn __fors_gen_leafx1__(
   return leaf, fors_leaf_addr;
 }
 
-inline fn __message_to_indices(
-  reg ptr u32[SPX_FORS_TREES] indices,
-  reg u64 m // Assumes m contains at least SPX_FORS_HEIGHT * SPX_FORS_TREES bits.
-) -> reg ptr u32[SPX_FORS_TREES]
-{
-  // TODO: Replace with while loops
-  inline int i j;
-
-  reg u64 offset zero;
-  reg u64 t u z v;
-
-  ?{}, zero = #set0();
-  offset = 0;
-
-  for i = 0 to SPX_FORS_TREES {
-    indices[i] = zero;
-
-    for j = 0 to SPX_FORS_HEIGHT {
-      // indices[i] ^= ((m[offset >> 3] >> (~offset & 0x7)) & 0x1) << (SPX_FORS_HEIGHT-1-j);
-      t = offset;
-      t = #SHR(t, 3); // index to access m
-
-      u = offset;
-      u = #NOT(u);
-      u &= 0x7;
-
-      z = [m + t];
-      z = #SHR(z, u);
-
-      z &= 0x1;
-      v = SPX_FORS_HEIGHT;
-      v -= 1;
-      v -= j;
-      z = #SHL(z, v);
-
-      indices[i] ^= z;
-      offset += 1;
-    }
-  }
-  return indices;
-}
-
-// same as __message_to_indices but m is a reg ptr u8[MSG_LEN] instead of reg u64
 inline fn __message_to_indices_t<MSG_LEN>(
   reg ptr u32[SPX_FORS_TREES] indices,
   reg ptr u8[MSG_LEN] m // Assumes m contains at least SPX_FORS_HEIGHT * SPX_FORS_TREES bits.
 ) -> reg ptr u32[SPX_FORS_TREES]
 {
-  // TODO: Replace with while loops
-  inline int i j;
+  reg u64 i j;
 
   reg u64 offset zero;
   reg u64 t u z v;
@@ -208,30 +164,38 @@ inline fn __message_to_indices_t<MSG_LEN>(
   ?{}, zero = #set0();
   offset = 0;
 
-  for i = 0 to SPX_FORS_TREES {
-    indices[i] = zero;
+  ?{}, i = #set0();
+  while (i < SPX_FORS_TREES)
+  {
+    indices[(int) i] = zero;
 
-    for j = 0 to SPX_FORS_HEIGHT {
+    ?{}, j = #set0();
+    while (j < SPX_FORS_HEIGHT)
+    {
       // indices[i] ^= ((m[offset >> 3] >> (~offset & 0x7)) & 0x1) << (SPX_FORS_HEIGHT-1-j);
       t = offset;
-      t = #SHR(t, 3);
+      ?{}, t = #SHR(t, 3);
 
       u = offset;
       u = #NOT(u);
       u &= 0x7;
 
       z = (64u) m[(int) t]; // only this line is different
-      z = #SHR(z, u);
+      ?{}, z = #SHR(z, u);
 
       z &= 0x1;
       v = SPX_FORS_HEIGHT;
       v -= 1;
       v -= j;
-      z = #SHL(z, v);
+      ?{}, z = #SHL(z, v);
 
-      indices[i] ^= z;
+      indices[(int) i] ^= z;
       offset += 1;
+
+      j += 1;
     }
+
+    i += 1;
   }
   return indices;
 }//<>
