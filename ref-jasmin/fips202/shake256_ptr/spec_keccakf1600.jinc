@@ -1,5 +1,5 @@
 
-require "keccakf1600_globals.jinc"
+from Sphincs require "fips202/common/fips202_common.jinc" // KECCAK1600_RC
 
 inline fn __index_spec(inline int x y) -> inline int
 {

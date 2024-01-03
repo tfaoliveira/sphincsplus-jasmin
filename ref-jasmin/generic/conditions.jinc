@@ -42,7 +42,6 @@ inline fn __cond_u64_a_dif_b_and_a_dif_c(reg u64 a b c) -> reg bool
 {
   reg bool res cond1 cond2;
   reg u8 bc1 bc2;
-  reg u64 t u;
 
   res = __cond_u64_a_below_b_and_a_below_c(a, b, c); // ??
 

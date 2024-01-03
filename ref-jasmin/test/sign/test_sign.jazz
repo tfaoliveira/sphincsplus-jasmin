@@ -1,13 +1,6 @@
 from Sphincs require "sign/sign.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
-from Sphincs require "memset/memset.jinc"
-from Sphincs require "memcmp/memcmp.jtmpl"
 
-/*
- * Generates an SPX key pair given a seed of length
- * Format sk: [SK_SEED || SK_PRF || PUB_SEED || root]
- * Format pk: [PUB_SEED || root]
- */
 export fn crypto_sign_seed_keypair_jazz(
   reg u64 _pk _sk _seed
 ) -> reg u64
@@ -23,7 +16,7 @@ export fn crypto_sign_seed_keypair_jazz(
   stack u8[CRYPTO_SEEDBYTES] seed;
   reg ptr u8[CRYPTO_SEEDBYTES] seed_p;
 
-  stack u64 s_pk s_sk s_seed;
+  stack u64 s_pk s_sk;
 
   pk_p = pk;
   pk_p = __load_u8_array<SPX_PK_BYTES>(pk_p, _pk);
@@ -34,9 +27,13 @@ export fn crypto_sign_seed_keypair_jazz(
   seed_p = seed;
   seed_p = __load_u8_array<CRYPTO_SEEDBYTES>(seed_p, _seed);
 
-  s_pk = _pk; s_sk = _sk;
-  pk_p, sk_p = __crypto_sign_seed_keypair(pk_p, sk_p, seed_p);
-  _pk = s_pk; _sk = s_sk;
+  s_pk = _pk; // spill 
+  s_sk = _sk; // spill
+
+  pk_p, sk_p = _crypto_sign_seed_keypair(pk_p, sk_p, seed_p);    
+
+  _pk = s_pk; // unspill 
+  _sk = s_sk; // unspill
 
   __store_u8_array<SPX_PK_BYTES>(pk_p, _pk);
   __store_u8_array<SPX_SK_BYTES>(sk_p, _sk);
@@ -57,148 +54,55 @@ export fn crypto_sign_keypair_jazz(reg u64 _pk _sk) -> reg u64
 
   stack u64 s_pk s_sk;
 
-  s_pk = _pk; s_sk = _sk; // spill
-
-  _pk = s_pk; _sk = s_sk; // unspill
-
   pk_p = pk;
   pk_p = __load_u8_array<SPX_PK_BYTES>(pk_p, _pk);
 
   sk_p = sk;
   sk_p = __load_u8_array<SPX_SK_BYTES>(sk_p, _sk);
 
-  s_pk = _pk; s_sk = _sk; // spill
 
-  pk_p, sk_p = __crypto_sign_keypair(pk_p, sk_p);
-  _pk = s_pk; _sk = s_sk; // unspill
+  s_pk = _pk; // spill 
+  s_sk = _sk; // spill
+
+  pk_p, sk_p = _crypto_sign_keypair(pk_p, sk_p);    
+
+  _pk = s_pk; // unspill
+  _sk = s_sk; // unspill
 
   __store_u8_array<SPX_PK_BYTES>(pk_p, _pk);
   __store_u8_array<SPX_SK_BYTES>(sk_p, _sk);
 
   ?{}, r = #set0();
+
   return r;
 }
 
-/**
- * Returns an array containing a detached signature.
- * // TODO:
- */
- inline fn __load_ctx(
-  reg ptr u8[SPX_N] pub_seed,
-  reg ptr u8[SPX_N] sk_seed,
-  reg u64 addr
-) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N]
-{
-  pub_seed = __load_u8_array<SPX_N>(pub_seed, addr);
-  addr += SPX_N;
-  sk_seed = __load_u8_array<SPX_N>(sk_seed, addr);
-  return pub_seed, sk_seed;
-}
-
 export fn crypto_sign_signature_jazz(
-  reg u64 _sig _siglen _m _mlen _sk _ctx
+  reg u64 _sig _sig_len m mlen _sk
 ) -> reg u64
 {
-  //////////////////////////////////////////////
-  stack u64 s_sig;
-  stack u64 s_siglen;
-  stack u64 s_m s_mlen;
-  //////////////////////////////////////////////
-  reg u64 res;
-
-  // sk_prf = sk[SPX_N : SPX_N]
-  // pk     = sk[2*SPX_N : SPX_N]
-
-  stack u8[SPX_BYTES] sig;
-  stack u8[SPX_SK_BYTES] sk;
-  stack u8[SPX_N] pub_seed sk_seed;
-
-  sig = __load_u8_array<SPX_BYTES>(sig, _sig);
-  sk = __load_u8_array<SPX_SK_BYTES>(sk, _sk);
-
-  pub_seed, sk_seed = __load_ctx(pub_seed, sk_seed, _ctx);
-
-  s_sig = _sig; s_siglen = _siglen; // spill
-
-  s_m = _m; s_mlen = _mlen;
-  _m = s_m; _mlen  = s_mlen;
-
-  sig = __crypto_sign_signature(sig, sk, _m, _mlen, pub_seed, sk_seed);
-
-  _sig = s_sig; 
-  _siglen = s_siglen;
-
-  __store_u8_array<SPX_BYTES>(sig, _sig);
-
-  [_siglen] = SPX_BYTES;
-
-  ?{}, res = #set0();
-  return res;
+  reg u64 r;
+  r = ___crypto_sign_signature_(r, _sig, _sig_len, m, mlen, _sk);
+  return r;
 }
 
-////////////////////
-
-export fn crypto_sign_jazz(reg u64 sm smlen m mlen sk) -> reg u64 {
-  reg u64 res;
-  reg u64 t i siglen;
-
-  // Call to crypto sign signature
-
-  i=0;
-  while(i < mlen) {
-    [sm + SPX_BYTES] = m;
-    i += 1;
-  }
-
-  t = siglen;
-  t += mlen;
-
-  [smlen] = t;
-
-  ?{}, res = #set0();
-  return res;
+export fn crypto_sign_verify_jazz(reg u64 _sig _siglen _m _m_len _pk) -> reg u64
+{ 
+  reg u64 r;
+  r = __crypto_sign_verify_(_sig, _siglen, _m, _m_len, _pk, r);  
+  return r;
 }
 
+export fn crypto_sign_jazz(reg u64 sm _sm_len m mlen _sk) -> reg u64 
+{
+  reg u64 r;
+  r = __crypto_sign(r, sm, _sm_len, m, mlen, _sk);
+  return r;
+}
 
-export fn crypto_sign_open_jazz(reg u64 m mlen sm smlen pk) -> reg u64 {
-  reg u64 res;
-  reg u64 i t;
-  reg u64 len v;
-
-  if (smlen < SPX_BYTES)
-  { 
-    i = 0;
-    while (i < smlen) {
-      [m + i] = 0;
-      i += 1;
-    }
-    [mlen] = 0;
-    res = -1;
-  } else {
-    t = smlen;
-    t -= SPX_BYTES;
-    [mlen] = t;
-
-    // Call crypto sign verify
-    v = 0; // FIXME: V is the result of calling crypto sign verify
-    if (v != 1) {
-      i = 0;
-      while (i < smlen) {
-        [m + i] = 0;
-        i += 1;
-      }
-      [mlen] = 0;
-      res = -1;
-    }
-
-    len = [mlen];
-    i = 0;
-    while (i < len) {
-      t = [sm + SPX_BYTES];
-      [m + i] = t;
-      i+=1;
-    }
-  }
-
-  return res;
+export fn crypto_sign_open_jazz(reg u64 m mlen sm smlen _pk) -> reg u64 
+{
+  reg u64 r;
+  r = __crypto_sign_open(m, mlen, sm, smlen, _pk, r);
+  return r;
 }

@@ -135,7 +135,7 @@ export fn wots_pk_from_sig_jazz(reg u64 _pk sig _msg _ctx _addr)
     s_pk = _pk; 
     s_addr = _addr;
 
-    pk, addr = __wots_pk_from_sig(pk, sig, msg, pub_seed, addr);
+    pk, addr = _wots_pk_from_sig(pk, sig, msg, pub_seed, addr);
 
     _pk = s_pk;     // unspill
     _addr = s_addr; // unspill

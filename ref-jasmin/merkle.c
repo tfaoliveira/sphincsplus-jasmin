@@ -116,18 +116,9 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
     assert(memcmp(root_jazz, root, SPX_N) == 0);
     assert(memcmp(auth_path_jazz, auth_path, SPX_TREE_HEIGHT * SPX_N) == 0);
     assert(memcmp(tree_addr_jazz, tree_addr, 8 * sizeof(uint32_t)) == 0);
+    assert(memcmp(info_jazz.wots_sig, info.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) ==
+           0);  // TODO: FIXME: This one is problematic
 
-    // if (memcmp(info_jazz.wots_sig, info.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) != 0)
-    // {
-    //     puts("wots sig");
-    //     print_str_u8("ref", info.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
-    //     print_str_u8("jazz", info_jazz.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
-    // }
-
-    // assert(memcmp(info_jazz.wots_sig, info.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) ==
-    // 0);
-    // FIXME: ? ? É o teste que está mal (?)
-    // FIXME: A o merkle sign e merkle gen root usam esta funcao e passam nos testes
     assert(info_jazz.sign_leaf == info.wots_sign_leaf);
     assert(memcmp(info_jazz.wots_steps, steps, SPX_WOTS_LEN) == 0);
     assert(memcmp(info_jazz.leaf_addr, info.leaf_addr, 8 * sizeof(uint32_t)) == 0);
@@ -167,7 +158,6 @@ void merkle_gen_root(unsigned char *root, const spx_ctx *ctx) {
     set_layer_addr(wots_addr, SPX_D - 1);
 
     // copy state
-
     memcpy(auth_path_jazz, auth_path, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
     memcpy(root_jazz, root, SPX_N);
     memcpy(wots_addr_jazz, wots_addr, 8 * sizeof(uint32_t));
@@ -180,7 +170,8 @@ void merkle_gen_root(unsigned char *root, const spx_ctx *ctx) {
 
     merkle_sign(auth_path, root, ctx, wots_addr, top_tree_addr, (uint32_t)~0);
 
-    merkle_sign_jazz(auth_path_jazz, root_jazz, ctx, wots_addr_jazz, top_tree_addr_jazz, (uint32_t)~0);
+    merkle_sign_jazz(auth_path_jazz, root_jazz, ctx, wots_addr_jazz, top_tree_addr_jazz,
+                     (uint32_t)~0);
 
     assert(memcmp(auth_path_jazz, auth_path, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0);
     assert(memcmp(root_jazz, root, SPX_N) == 0);

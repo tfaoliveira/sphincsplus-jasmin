@@ -144,11 +144,10 @@ inline fn __hash_message<PKLEN>( // FIXME:
   stack ptr u8[SPX_FORS_MSG_BYTES] s_digest;
   stack u64 s_tree s_msg s_msg_len;
   stack u32 s_leaf_idx;
-  stack ptr u8[SPX_N] s_R;
   stack ptr u8[PKLEN] s_pk;
 
   reg u64 offset;
-  reg u64 t u z;
+  reg u64 t u;
 
   reg ptr u8[SPX_TREE_BYTES] tree_bytes;
   reg ptr u8[SPX_LEAF_BYTES] leaf_bytes;

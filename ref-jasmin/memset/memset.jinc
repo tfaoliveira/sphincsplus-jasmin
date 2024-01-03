@@ -1,0 +1,10 @@
+inline fn __memset(reg u64 addr, reg u8 val, reg u64 size)
+{
+  reg u64 i;
+
+  ?{}, i = #set0();
+  while (i < size) { 
+    (u8)[addr + i] = val;
+    i += 1;
+  }
+}

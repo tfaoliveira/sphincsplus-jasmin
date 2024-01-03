@@ -1,7 +1,4 @@
-param int KECCAK_ROUNDS = 24;
-
 require "keccakf1600.jinc"
-
 
 inline fn __keccak_init_ref1(reg ptr u64[25] state) -> reg ptr u64[25]
 {
@@ -89,7 +86,6 @@ inline fn __absorb_ref1(
 {
   stack u64 s_in s_inlen s_rate;
   reg u8 trail_byte;
-  reg u64 t;
 
   // intermediate blocks
   while ( inlen >= rate )

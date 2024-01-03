@@ -1,29 +1,26 @@
 # ------------------------------------------------------------------------------
 AS       ?= as
 CC       ?= clang
-CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
+CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 	          -Wundef -Wshadow -Wcast-align -Wpointer-arith \
 	          -fstrict-aliasing -fno-common -pipe -g
 
+# Supress all compilation warnings for now
+
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
-JASMIN   ?= jasminc
-JFLAGS   ?= -lazy-regalloc
-JPP      ?= ../scripts/jpp
+JASMIN       ?= jasminc
+JFLAGS       ?= -nowarning #-wunusedvar # -wduplicatevar #-lazy-regalloc
+JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
-
-# ------------------------------------------------------------------------------
-
-NUM_CORES := $(shell nproc)
 
 # ------------------------------------------------------------------------------
 
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple
-MSG_LEN_LIST  := $(shell seq 1 4) 64 100
+THASH_LIST    := simple robust
 
-TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach L,$(MSG_LEN_LIST),$(H)_$(P)_$(T)_$(L)))))
+TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
 TESTS      := $(addprefix bin/test_sign_, $(TLIST))
@@ -49,19 +46,21 @@ bin/test_sign_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --workers $(NUM_CORES) --input_file $@ --output_file $@ # --task "fn:crypto_sign_open_jazz p:MSG_LEN:$(GET_MSG_LEN) p:SIG_LEN:$(GET_MSG_LEN)"
+	$(PREPROCESSOR) --input_file $@ --output_file $@
 
 .PRECIOUS: bin/test_sign_%.s
 bin/test_sign_%.s: bin/test_sign_%.jpp
-	jasminc -nowarning $< -o $@
+	$(JASMIN) $(JFLAGS) $< -o $@
 
 $(TESTS):
 bin/test_sign_%: bin/test_sign_%.s | bin/
-	touch $@
-# 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DMSG_LEN=$(GET_MSG_LEN) \
+	$(CC) $(CFLAGS) -o $@ \
+	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) -DSTUPID_RANDOMBYTES=1 \
 -I../common -I../../ -I../../params \
-test_sign.c $< ../../hash_$(GET_HASH).c ../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \
-../../fors.c ../../sign.c
+test_sign.c $< ../../hash_$(GET_HASH).c ../../merkle.c \
+../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c \
+../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
+../../utilsx1.c ../../fors.c ../../sign.c
 
 bin/test_sign_%.out: bin/test_sign_%
 	@./$<

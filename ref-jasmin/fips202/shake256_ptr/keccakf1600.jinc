@@ -1,4 +1,4 @@
-require "keccakf1600_globals.jinc" // KECCAK1600_RC
+from Sphincs require "fips202/common/fips202_common.jinc" // KECCAK1600_RC
 require "spec_keccakf1600.jinc" // __rhotates_spec
 
 // C[x] = A[x,0] ^ A[x,1] ^ A[x,2] ^ A[x,3] ^ A[x,4]

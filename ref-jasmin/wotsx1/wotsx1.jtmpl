@@ -56,7 +56,7 @@ inline fn __wots_gen_leafx1(
 
   //
 
-  wots_k_mask = #set0_32();
+  ?{}, wots_k_mask = #set0_32();
 
   if (leaf_idx != wots_sign_leaf)
   {

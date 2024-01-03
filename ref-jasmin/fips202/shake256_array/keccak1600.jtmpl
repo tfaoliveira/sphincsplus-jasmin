@@ -1,3 +1,4 @@
+from Sphincs require "fips202/common/fips202_common.jinc"
 require "keccakf1600.jinc"
 
 inline fn __keccak_init(reg ptr u64[25] state) -> reg ptr u64[25]

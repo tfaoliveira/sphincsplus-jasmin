@@ -303,7 +303,7 @@ int main(void) {
     test_fors_sk_to_leaf(); // WORKS
     test_fors_gen_leafx1(); // works
     test_pk_from_sig(); // works
-    test_fors_sign(); // Stoped working after refacotring
+    test_fors_sign(); // Works
     test_treehash_fors(); // Works
 
     printf("PASS: fors = { msg len : %d ; params : %s }\n", MSG_LEN, xstr(PARAMS));
