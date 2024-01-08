@@ -25,7 +25,7 @@
 #endif
 
 #ifndef TESTS
-#define TESTS 50
+#define TESTS 1000
 #endif
 
 #ifndef MAX_MLEN
@@ -36,18 +36,10 @@ extern int crypto_sign_seed_keypair_jazz(uint8_t *pk, uint8_t *sk, const uint8_t
 extern int crypto_sign_keypair_jazz(uint8_t *pk, uint8_t *sk);
 extern int crypto_sign_signature_jazz(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen,
                                       const uint8_t *sk);
-extern int crypto_sign_verify_jazz(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen,
-                                   const uint8_t *pk);
-extern int crypto_sign_jazz(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen,
-                            const uint8_t *sk);
 
 void test_crypto_sign_seed_keypair(void);
 void test_crypto_sign_keypair(void);
 void test_crypto_sign_signature(void);
-void test_crypto_sign_verify(void);
-void test_crypto_sign(void);
-void test_crypto_sign_open(void);
-void test_api(void);
 
 void test_crypto_sign_seed_keypair(void) {
     uint8_t pk_jazz[SPX_PK_BYTES];
@@ -113,7 +105,7 @@ void test_crypto_sign_signature(void) {
     size_t signature_length_jazz;
 
     for (int i = 0; i < TESTS; i++) {
-        printf("%s: Running test %d\n", xstr(PARAMS), i);
+        printf("%s (%s): Running test %d\n", xstr(PARAMS), xstr(THASH), i);
         for (msg_len = 10; msg_len < MAX_MLEN; msg_len++) {
             m_jazz = (uint8_t *)malloc(msg_len);
             m_ref = (unsigned char *)malloc(msg_len);
@@ -137,91 +129,18 @@ void test_crypto_sign_signature(void) {
             assert(signature_length_jazz == signature_length_ref);
             assert(signature_length_jazz == CRYPTO_BYTES);
             assert(signature_length_ref == CRYPTO_BYTES);
-            // assert(memcmp(sig_ref, sig_jazz, signature_length_ref) == 0);
+            // assert(memcmp(sig_ref, sig_jazz, signature_length_ref) == 0); //FIXME: DOESNT WORK
 
             free(m_jazz);
             free(m_ref);
         }
-    }
-}
-
-void test_crypto_sign_verify(void) {
-    for (int i = 0; i < TESTS; i++) {
-    }
-}
-
-void test_crypto_sign(void) {
-    uint8_t pk_jazz[SPX_PK_BYTES];  // ignored
-    uint8_t sk_jazz[SPX_SK_BYTES];
-
-    uint8_t pk_ref[SPX_PK_BYTES];  // ignored
-    uint8_t sk_ref[SPX_SK_BYTES];
-
-    uint8_t *m_jazz;
-    uint8_t *m_ref;
-    size_t msg_len;
-
-    uint8_t sig_ref[CRYPTO_BYTES];
-    uint8_t sig_jazz[CRYPTO_BYTES];
-
-    size_t signature_length_ref;
-    size_t signature_length_jazz;
-
-    for (int i = 0; i < TESTS; i++) {
-        printf("%s: Running test %d\n", xstr(PARAMS), i);
-        for (msg_len = 10; msg_len < MAX_MLEN; msg_len++) {
-            m_jazz = (uint8_t *)malloc(msg_len);
-            m_ref = (unsigned char *)malloc(msg_len);
-
-            // generate a valid key pair
-            crypto_sign_keypair(pk_ref, sk_ref);
-            memcpy(sk_jazz, sk_ref, SPX_SK_BYTES);
-
-            randombytes(m_ref, msg_len);
-            memcpy(m_jazz, m_ref, msg_len);
-
-            assert(memcmp(m_ref, m_jazz, msg_len) == 0);
-            assert(memcmp(sk_ref, sk_jazz, SPX_SK_BYTES) == 0);
-
-            crypto_sign_signature(sig_ref, &signature_length_ref, m_ref, msg_len, sk_ref);
-            crypto_sign_signature_jazz(sig_jazz, &signature_length_jazz, m_jazz, msg_len, sk_jazz);
-
-            // asserts
-            assert(signature_length_jazz == signature_length_ref);
-            // assert(signature_length_jazz == (CRYPTO_BYTES + msg_len));
-            // assert(signature_length_ref == (CRYPTO_BYTES + msg_len));
-            // assert(memcmp(sig_ref, sig_jazz, signature_length_ref) == 0);
-
-            free(m_jazz);
-            free(m_ref);
-        }
-    }
-}
-
-void test_crypto_sign_open(void) {
-    for (int i = 0; i < TESTS; i++) {
-    }
-}
-
-void test_api(void) {
-    for (int i = 0; i < TESTS; i++) {
     }
 }
 
 int main(void) {
-    /*
-    test_crypto_sign_seed_keypair(); // works
-    test_crypto_sign_keypair(); // works
-    */
-
-    // test_crypto_sign_signature(); // doesnt work
-    // test_crypto_sign(); // doesnt work
-
-    test_crypto_sign_verify();
-    test_crypto_sign_open();
-
-    // test_api();
-    printf("Pass: sign { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
-    puts("------------------------------");
+    test_crypto_sign_seed_keypair();
+    test_crypto_sign_keypair();
+    test_crypto_sign_signature();
+    printf("Pass sign: { params: %s ; thash:c %s}\n", xstr(PARAMS), xstr(THASH));
     return 0;
 }

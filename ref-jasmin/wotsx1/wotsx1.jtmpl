@@ -25,10 +25,10 @@ inline fn __wots_gen_leafx1(
   stack ptr u32[8] s_leaf_addr s_pk_addr;
 
   //
-  reg u32 wots_k_mask;
   stack u32 s_wots_k_mask;
   inline int i;
   stack u8[SPX_WOTS_BYTES] pk_buffer;
+  reg ptr u8[SPX_WOTS_BYTES] pk_buffer_p;
   reg ptr u8[SPX_N] buffer;
   reg u32 wots_k;
   stack u32 s_wots_k;

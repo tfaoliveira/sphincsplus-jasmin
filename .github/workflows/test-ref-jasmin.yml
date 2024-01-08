@@ -25,9 +25,11 @@ jobs:
           - memcpy
           - memset
           - merkle
+          - sign
           - thash
           - utils
           - wots
+          - wotsx1
     steps:
       - uses: actions/checkout@v1
       - name: Compile tests

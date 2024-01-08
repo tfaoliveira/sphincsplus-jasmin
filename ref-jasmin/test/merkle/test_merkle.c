@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "api.h"
 #include "context.h"
@@ -34,33 +35,6 @@ extern void merkle_gen_root_jazz(uint8_t *root, const uint8_t *pub_seed, const u
 
 static void random_addr(uint32_t *addr) { randombytes((uint8_t *)addr, 8 * sizeof(uint32_t)); }
 
-void test_treehash(void) {
-#define MESSAGE_LENGTH 32
-
-    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
-    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
-
-    uint8_t signature[CRYPTO_BYTES];
-    size_t signature_length;
-
-    uint8_t message[MESSAGE_LENGTH];
-    size_t message_length = MESSAGE_LENGTH;
-
-    for (int i = 0; i < 100; i++) {
-        // note: the 'real' test is in merkle.c file and it is activated when DTEST_WOTSX1 is
-        // defined
-
-        // The test is in merkle.c because that is where the wots_gen_leaf function is called
-        randombytes(message, MESSAGE_LENGTH);
-
-        crypto_sign_keypair(public_key, secret_key);
-        crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-        crypto_sign_verify(signature, signature_length, message, message_length, public_key);
-    }
-
-#undef MESSAGE_LENGTH
-}
-
 void test_merkle_sign(void) {
     uint8_t sig_ref[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES],
         sig_jazz[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES];
@@ -69,6 +43,8 @@ void test_merkle_sign(void) {
     uint32_t wots_addr_ref[8], wots_addr_jazz[8];
     uint32_t tree_addr_ref[8], tree_addr_jazz[8];
     uint32_t idx_leaf;
+
+    bool debug = true;
 
     for (int i = 0; i < TESTS; i++) {
         memset(sig_ref, 0, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
@@ -97,6 +73,13 @@ void test_merkle_sign(void) {
         merkle_sign_jazz(sig_jazz, root_jazz, &ctx, wots_addr_jazz, tree_addr_jazz, idx_leaf);
 
         assert(memcmp(sig_ref, sig_jazz, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0);
+        
+        
+        if (debug && memcmp(root_ref, root_jazz, SPX_N) != 0) {
+            print_str_u8("Root Ref", root_ref, SPX_N);
+            print_str_u8("Root Jazz", root_jazz, SPX_N);
+        }
+
         assert(memcmp(root_ref, root_jazz, SPX_N) == 0);
         assert(memcmp(wots_addr_ref, wots_addr_jazz, 8 * sizeof(uint32_t)) == 0);  // FAILS (?)
         assert(memcmp(tree_addr_ref, tree_addr_jazz, 8 * sizeof(uint32_t)) == 0);
@@ -155,9 +138,7 @@ void test_merkle_gen_root_2(void) {
 }
 
 int main(void) {
-    test_treehash();
-    #undef TEST_WOTSX1
-    test_merkle_sign(); // This uses random bytes
+    test_merkle_sign();  // This uses random bytes
     test_merkle_gen_root_1();  // test in sign.c (also tests merkle sign)
     test_merkle_gen_root_2();  // test with randombytes
     printf("Pass merkle : { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
