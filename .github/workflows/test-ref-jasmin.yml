@@ -23,6 +23,8 @@ jobs:
           - hash
           - memcmp
           - memcpy
+          - memset
+          - merkle
           - thash
           - utils
           - wots

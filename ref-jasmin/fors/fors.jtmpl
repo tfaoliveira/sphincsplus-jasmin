@@ -102,14 +102,14 @@ inline fn __fors_gen_leafx1(
   stack u32 s_addr_idx;
   stack ptr u32[8] s_fors_leaf_addr;
 
-  reg u32 type addr;
+  reg u32 type;
 
   // set_tree_index(fors_leaf_addr, addr_idx);
   fors_leaf_addr = __set_tree_index(fors_leaf_addr, addr_idx);
 
   // set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSPRF);
-  addr = SPX_ADDR_TYPE_FORSPRF;
-  fors_leaf_addr = __set_type(fors_leaf_addr, addr);
+  type = SPX_ADDR_TYPE_FORSPRF;
+  fors_leaf_addr = __set_type(fors_leaf_addr, type);
 
   // fors_gen_sk(leaf, ctx, fors_leaf_addr);
   s_pub_seed = pub_seed;
@@ -121,8 +121,8 @@ inline fn __fors_gen_leafx1(
 
   // set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSTREE);
   fors_leaf_addr = s_fors_leaf_addr;
-  addr = SPX_ADDR_TYPE_FORSTREE;
-  fors_leaf_addr = __set_type(fors_leaf_addr, addr);
+  type = SPX_ADDR_TYPE_FORSTREE;
+  fors_leaf_addr = __set_type(fors_leaf_addr, type);
 
   // fors_sk_to_leaf(leaf, leaf, ctx, fors_leaf_addr); == thash(leaf, sk, 1, ctx, fors_leaf_addr);
   pub_seed = s_pub_seed;

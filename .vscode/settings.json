@@ -2,6 +2,7 @@
     "files.associations": {
         "*.jtmpl": "jasmin",
         "*.jpp": "jasmin",
-        "random": "c"
+        "random": "c",
+        "params.h": "c"
     }
 }

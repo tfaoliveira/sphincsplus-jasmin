@@ -404,6 +404,9 @@ def build_concrete_fn(
             replacement_dict,
         )
 
+    if generic_fn.annotation is None:
+        generic_fn.annotation = ""
+
     if generic_fn.annotation == "":
         res = f"fn {generic_fn.fn_name}_{tmp}({replace_parameters_in_string(generic_fn.args, replacement_dict)})"
     elif "#" in generic_fn.annotation:  # #[returnaddress="stack"] annotation

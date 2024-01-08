@@ -156,6 +156,7 @@ void test_merkle_gen_root_2(void) {
 
 int main(void) {
     test_treehash();
+    #undef TEST_WOTSX1
     test_merkle_sign(); // This uses random bytes
     test_merkle_gen_root_1();  // test in sign.c (also tests merkle sign)
     test_merkle_gen_root_2();  // test with randombytes

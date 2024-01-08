@@ -25,7 +25,7 @@ inline fn __memcmp<INLEN>(
     i += 1;
   }
 
-  (_, _, _, _, zf, _) = #AND_8(acc, acc);
+  ?{ zf } = #AND_8(acc, acc);
   r = are_equal if zf;
 
   return r;
@@ -63,7 +63,7 @@ inline fn __memcmp(reg u64 a b n r) -> reg u64
     i += 1;
   }
 
-  (_, _, _, _, zf, _) = #AND_8(acc, acc);
+  ?{ zf } = #AND_8(acc, acc);
   r = are_equal if zf;
     
   return r;

@@ -8,3 +8,8 @@ inline fn __memset(reg u64 addr, reg u8 val, reg u64 size)
     i += 1;
   }
 }
+
+fn _memset(reg u64 addr, reg u8 val, reg u64 size)
+{
+  __memset(addr, val, size);
+}

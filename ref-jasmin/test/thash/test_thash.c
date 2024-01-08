@@ -113,6 +113,5 @@ int main() {
     test_thash_inplace();
     printf("PASS: thash = { params: %s, thash: %s, inblocks : %d }\n", xstr(PARAMS), xstr(THASH),
            INBLOCKS);
-
     return 0;
 }

@@ -58,7 +58,9 @@ bin/test_fors_%: bin/test_fors_%.s | bin/
 -DMSG_LEN=$(GET_MSG_LEN) -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
 -DTEST_FORS_TREEHASH=1 \
 -I../common -I../../ -I../../params \
-test_fors.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c ../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c 
+test_fors.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \
+../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \
+../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c 
 
 bin/test_fors_%.out: bin/test_fors_%
 	@./$<

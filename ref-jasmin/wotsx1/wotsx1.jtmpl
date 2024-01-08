@@ -1,13 +1,6 @@
 from Sphincs require "address/address.jinc"
 from Sphincs require "hash/hash_shake.jtmpl"
 
-// NOTE: The thash import is managed in the makefile
-
-/*
- * This generates a WOTS public key
- * It also generates the WOTS signature if leaf_info indicates
- * that we're signing with this WOTS key
- */
 inline fn __wots_gen_leafx1(
   reg ptr u8[SPX_N] dest,
   reg ptr u8[SPX_N] pub_seed,
@@ -36,7 +29,6 @@ inline fn __wots_gen_leafx1(
   stack u32 s_wots_k_mask;
   inline int i;
   stack u8[SPX_WOTS_BYTES] pk_buffer;
-  reg ptr u8[SPX_WOTS_BYTES] pk_buffer_p;
   reg ptr u8[SPX_N] buffer;
   reg u32 wots_k;
   stack u32 s_wots_k;
@@ -53,123 +45,6 @@ inline fn __wots_gen_leafx1(
   s_wots_sig = wots_sig;
   s_wots_sign_leaf = wots_sign_leaf;
   s_wots_steps = wots_steps;
-
-  //
-
-  ?{}, wots_k_mask = #set0_32();
-
-  if (leaf_idx != wots_sign_leaf)
-  {
-    wots_k_mask = #NOT_32(wots_k_mask);
-  }
-
-  s_wots_k_mask = wots_k_mask;
-
-  leaf_addr = __set_keypair_addr(leaf_addr, leaf_idx);
-  pk_addr = __set_keypair_addr(pk_addr, leaf_idx);
-
-  s_pk_addr = pk_addr;
-
-  // for (i = 0, buffer = pk_buffer; i < SPX_WOTS_LEN; i++, buffer += SPX_N) {
-  for i = 0 to SPX_WOTS_LEN
-  {
-    wots_steps = s_wots_steps;
-    wots_k     = wots_steps[i];
-    wots_k    |= s_wots_k_mask;
-    s_wots_k   = wots_k;
-
-
-    // start with the secret seed
-    //  set_chain_addr(leaf_addr, i);
-    //  set_hash_addr(leaf_addr, 0);
-    //  set_type(leaf_addr, SPX_ADDR_TYPE_WOTSPRF);
-    chain = i;
-    leaf_addr = __set_chain_addr(leaf_addr, chain);
-
-    hash = 0;
-    leaf_addr = __set_hash_addr(leaf_addr, hash);
-
-    type = SPX_ADDR_TYPE_WOTSPRF;
-    leaf_addr = __set_type(leaf_addr, type);
-
-    s_leaf_addr = leaf_addr;
-
-
-    //  prf_addr(buffer, ctx, leaf_addr);
-    //  set_type(leaf_addr, SPX_ADDR_TYPE_WOTS);
-    buffer = pk_buffer[i*SPX_N : SPX_N];
-    pub_seed = s_pub_seed;
-    sk_seed = s_sk_seed;
-    buffer = __prf_addr(buffer, pub_seed, sk_seed, leaf_addr);
-
-    leaf_addr = s_leaf_addr;
-    type = SPX_ADDR_TYPE_WOTS;
-    leaf_addr = __set_type(leaf_addr, type);
-    s_leaf_addr = leaf_addr;
-
-
-    // iterate down the WOTS chain
-    // for (k=0;; k++)
-    k = 0;
-    stop = 0; // we introduce stop to handle the corresponding 'break' statement
-    while (stop != 1)
-    {
-      // check if this is the value that needs to be saved as a
-      // part of the WOTS signature
-      wots_k = s_wots_k;
-      if (k == wots_k)
-      {
-        // memcpy( info->wots_sig + i * SPX_N, buffer, SPX_N );
-        wots_sig = s_wots_sig;
-        wots_sig_spx_n = wots_sig[i*SPX_N : SPX_N];
-        offset = 0;
-        s_wots_sig[i*SPX_N : SPX_N], _ = _x_memcpy_u8u8<SPX_N, SPX_N>(wots_sig_spx_n, offset, buffer);
-      }
-      
-      // check if we hit the top of the chain (break)
-      if (k == SPX_WOTS_W - 1) { stop = 1; }
-
-      // iterate one step on the chain
-      if (stop != 1)
-      {
-        s_k = k;
-
-        // iterate one step on the chain
-        //  set_hash_addr(leaf_addr, k);
-        //  thash(buffer, buffer, 1, ctx, leaf_addr);
-
-        leaf_addr = s_leaf_addr;
-        hash = k;
-        leaf_addr = __set_hash_addr(leaf_addr, hash);
-        s_leaf_addr = leaf_addr;
-
-        pub_seed = s_pub_seed;
-        buffer = __thash_inplace_(buffer, pub_seed, leaf_addr);
-
-        k = s_k;
-        stop = 0;
-      }
-
-      k += 1;
-    }
-
-    pk_buffer[i*SPX_N : SPX_N] = buffer;
-    leaf_addr = s_leaf_addr;
-  } // end of for i = 0 to SPX_WOTS_LEN
-
-  // Do the final thash to generate the public keys
-  //  thash(dest, pk_buffer, SPX_WOTS_LEN, ctx, pk_addr);
-
-  dest = s_dest;
-  pk_buffer_p = pk_buffer;
-  pub_seed = s_pub_seed;
-  pk_addr = s_pk_addr;
-
-  dest = __thash_<SPX_WOTS_LEN>(dest, pk_buffer_p, pub_seed, pk_addr);
-
-  wots_sig = s_wots_sig;
-  leaf_addr = s_leaf_addr;
-  pk_addr = s_pk_addr;
 
   return dest, wots_sig, leaf_addr, pk_addr;
 }

@@ -715,7 +715,7 @@ inline fn __crypto_sign_open(
   stack u8[SPX_PK_BYTES] pk;
   reg ptr u8[SPX_PK_BYTES] pk_p;
 
-  reg u64 offset len l;
+  reg u64 len l;
   reg u8 val;
   reg u64 i;
 

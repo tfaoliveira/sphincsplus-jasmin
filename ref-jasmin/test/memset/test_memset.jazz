@@ -1,0 +1,6 @@
+from Sphincs require "memset/memset.jinc"
+
+export fn memset_jazz(reg u64 a val size)
+{
+  _memset(a, val, size);
+}
