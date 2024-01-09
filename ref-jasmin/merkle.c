@@ -145,7 +145,8 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
         print_str_u8("wots_sig ref", info.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
         print_str_u8("wots_sig jazz", info_jazz.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
     }
-    // assert(memcmp(info_jazz.wots_sig, info.wots_sig, SPX_WOTS_BYTES) == 0);
+    
+    assert(memcmp(info_jazz.wots_sig, info.wots_sig, SPX_WOTS_BYTES) == 0);
     assert(info_jazz.sign_leaf == info.wots_sign_leaf);
     assert(memcmp(info_jazz.wots_steps, steps, SPX_WOTS_LEN) == 0);
     assert(memcmp(info_jazz.leaf_addr, info.leaf_addr, 8 * sizeof(uint32_t)) == 0);
@@ -172,7 +173,7 @@ extern void merkle_sign_jazz(uint8_t *sig, uint8_t *root, const spx_ctx *ctx, ui
                              uint32_t tree_addr[8], uint32_t idx_leaf);
 
 void merkle_gen_root(unsigned char *root, const spx_ctx *ctx) {
-    bool debug = false;
+    bool debug = true;
 
     if (debug) {  puts("Testing merkle sign"); }
 
