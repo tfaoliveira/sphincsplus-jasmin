@@ -6,11 +6,12 @@ from Sphincs require "merkle/merkle.jtmpl"
 
 //////////////////////// SIGN SEED KEYPAIR
 
+#[returnaddress="stack"]
 fn _crypto_sign_seed_keypair(
   reg ptr u8[SPX_PK_BYTES] pk,
   reg ptr u8[SPX_SK_BYTES] sk,
   reg ptr u8[CRYPTO_SEEDBYTES] seed
-) -> reg ptr u8[SPX_PK_BYTES], 
+) -> reg ptr u8[SPX_PK_BYTES],
      reg ptr u8[SPX_SK_BYTES]
 {
   ////
@@ -24,7 +25,6 @@ fn _crypto_sign_seed_keypair(
 
   reg ptr u8[SPX_N] pub_seed_p;
   reg ptr u8[SPX_N] sk_seed_p;
-
 
   reg ptr u8[SPX_N] root;
   reg ptr u8[SPX_N] buf;
@@ -48,27 +48,35 @@ fn _crypto_sign_seed_keypair(
   offset = 0;
   buf = pk[0 : SPX_N];
   pub_seed_p, _ = _x_memcpy_u8u8<SPX_N, SPX_N>(pub_seed_p, offset, buf);
+  pub_seed = pub_seed_p;
 
   // memcpy(ctx.sk_seed, sk, SPX_N);
   sk_seed_p = sk_seed;
   offset = 0;
   buf = sk[0 : SPX_N];
   sk_seed_p, _ = _x_memcpy_u8u8<SPX_N, SPX_N>(sk_seed_p, offset, buf);
+  sk_seed = sk_seed_p;
 
   // Compute root node of the top-most subtree.
   // merkle_gen_root(sk + 3 * SPX_N, &ctx);
   s_pk = pk;
   s_sk = sk;
 
-  root = sk[3*SPX_N : SPX_N];
-  root = __merkle_gen_root(root, pub_seed_p, sk_seed_p);
-  sk[3*SPX_N : SPX_N] = root;
+  s_sk = sk;
+  root = s_sk[3*SPX_N : SPX_N];
+  pub_seed_p = pub_seed;
+  sk_seed_p = sk_seed;
+  root = _merkle_gen_root(root, pub_seed_p, sk_seed_p);
+  s_sk[3*SPX_N : SPX_N] = root;
 
   // memcpy(pk + SPX_N, sk + 3 * SPX_N, SPX_N);  
-  offset = SPX_N;
-  buf = sk[3*SPX_N : SPX_N];
+  // offset = SPX_N;
+  // buf = sk[3*SPX_N : SPX_N];
+  // pk = s_pk;
+  // pk, _ = _x_memcpy_u8u8<SPX_PK_BYTES, SPX_N>(pk, offset, buf);
+
   pk = s_pk;
-  pk, _ = _x_memcpy_u8u8<SPX_PK_BYTES, SPX_N>(pk, offset, buf);
+  sk = s_sk;
 
   return pk, sk;
 }
@@ -116,8 +124,8 @@ inline fn __crypto_sign_seed_keypair(reg u64 _pk _sk _seed) -> reg u64
   _pk = s_pk; // unspill 
   _sk = s_sk; // unspill
 
-  __store_u8_array<SPX_PK_BYTES>(pk_p, _pk);
-  __store_u8_array<SPX_SK_BYTES>(sk_p, _sk);
+  // __store_u8_array<SPX_PK_BYTES>(pk_p, _pk);
+  // __store_u8_array<SPX_SK_BYTES>(sk_p, _sk);
 
   ?{}, r = #set0();
   return r;

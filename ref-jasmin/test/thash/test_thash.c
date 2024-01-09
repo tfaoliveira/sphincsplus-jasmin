@@ -10,7 +10,7 @@
 #include "print.c"
 
 #ifndef PARAMS
-#define PARAMS sphincs-shake-128f
+#define PARAMS sphincs - shake - 128f
 #endif
 
 #ifndef THASH
@@ -28,6 +28,7 @@
 #include "params.h"
 
 #define thash_jazz NAMESPACE1(thash, INBLOCKS)
+#define thash_in_u64_jazz NAMESPACE1(thash_in_u64_jazz, INBLOCKS)
 
 /*
 target function:
@@ -40,6 +41,8 @@ target function:
     reg ptr u8[SPX_N]
 */
 extern void thash_jazz(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
+extern void thash_in_u64_jazz(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed,
+                               uint32_t addr[8]);
 extern void thash_inplace_jazz(uint8_t *out, const uint8_t *pub_seed, uint32_t addr[8]);
 
 // implementation from, for instance, ../../thash_shake_robust.c / ../../thash_shake_simple.c
@@ -47,6 +50,7 @@ extern void thash(unsigned char *out, const unsigned char *in, unsigned int inbl
                   const spx_ctx *ctx, uint32_t addr[8]);
 
 void test_thash(void);
+void test_thash_in_u64(void);
 void test_thash_inplace(void);
 
 static spx_ctx init_ctx(void) {
@@ -56,11 +60,7 @@ static spx_ctx init_ctx(void) {
     return ctx;
 }
 
-static void random_addr(uint32_t addr[8]) {
-    for (size_t i = 0; i < 8; i++) {
-        addr[i] = (uint32_t)rand();
-    }
-}
+static void random_addr(uint32_t addr[8]) { randombytes((uint8_t *)addr, 8 * sizeof(uint32_t)); }
 
 void test_thash(void) {
     uint8_t out0[SPX_N], out1[SPX_N];
@@ -78,6 +78,28 @@ void test_thash(void) {
         memcpy(in1, in0, SPX_N * INBLOCKS);
 
         thash_jazz(out0, in0, ctx.pub_seed, addr);
+        thash(out1, in1, INBLOCKS, &ctx, addr);
+
+        assert(memcmp(out0, out1, SPX_N) == 0);
+    }
+}
+
+void test_thash_in_u64(void) {
+    uint8_t out0[SPX_N], out1[SPX_N];
+    uint8_t in0[SPX_N * INBLOCKS], in1[SPX_N * INBLOCKS];
+    uint32_t addr[8];
+    spx_ctx ctx;  // pub_seed is here
+
+    int t;
+
+    for (t = 0; t < TESTS; t++) {
+        ctx = init_ctx();
+        random_addr(addr);
+
+        randombytes(in0, SPX_N * INBLOCKS);
+        memcpy(in1, in0, SPX_N * INBLOCKS);
+
+        thash_in_u64_jazz(out0, in0, ctx.pub_seed, addr);
         thash(out1, in1, INBLOCKS, &ctx, addr);
 
         assert(memcmp(out0, out1, SPX_N) == 0);
@@ -108,8 +130,8 @@ void test_thash_inplace(void) {
 }
 
 int main() {
-    srand(42);
     test_thash();
+    test_thash_in_u64();
     test_thash_inplace();
     printf("PASS: thash = { params: %s, thash: %s, inblocks : %d }\n", xstr(PARAMS), xstr(THASH),
            INBLOCKS);

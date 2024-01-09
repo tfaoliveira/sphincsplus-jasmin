@@ -1,4 +1,5 @@
 from Sphincs require "hash/hash_shake.jtmpl"
+from Sphincs require "generic/utils.jtmpl"
 
 inline fn __load_addr(reg ptr u32[8] addr, reg u64 p) -> reg ptr u32[8]
 {
@@ -84,6 +85,20 @@ export fn prf_addr_jazz(reg u64 _out _pub_seed _sk_seed _addr) {
     t = out[i];
     (u8)[_out + i] = t;
   }
+}
+
+export fn prf_addr_out_u64_jazz(reg u64 out _pub_seed _sk_seed _addr)
+{
+  stack u8[32] addr;
+  stack u8[SPX_N] pub_seed;
+  stack u8[SPX_N] sk_seed;
+
+  stack u64 s_out s_pub_seed s_sk_seed s_addr;
+
+  addr = __load_u32_array<8>(addr, _addr);
+  pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
+  sk_seed = __load_u8_array<SPX_N>(sk_seed, _sk_seed);
+  __prf_addr_out_u64(out, pub_seed, sk_seed, addr);
 }
 
 export fn gen_message_random_jazz(

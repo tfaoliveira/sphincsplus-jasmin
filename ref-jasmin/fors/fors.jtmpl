@@ -50,6 +50,33 @@ inline fn __fors_gen_sk__(
   return sk;
 }
 
+///// GEN SK BUT SK IS A REG U64 INSTEAD OF REG PTR U8[SPX_N]
+
+fn _fors_gen_sk_out_u64(
+  reg u64 sk, // reg ptr u8[SPX_N] sk
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] fors_leaf_addr
+)
+{
+  __prf_addr_out_u64(sk, pub_seed, sk_seed, fors_leaf_addr);
+}
+
+inline fn __fors_gen_sk_out_u64(
+  reg u64 sk, // reg ptr u8[SPX_N] sk
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] fors_leaf_addr
+)
+{
+  sk = sk;
+  pub_seed = pub_seed;
+  sk_seed = sk_seed;
+  fors_leaf_addr = fors_leaf_addr;
+
+  _fors_gen_sk_out_u64(sk, pub_seed, sk_seed, fors_leaf_addr);
+}
+
 ////////////////// SK TO LEAF /////////////////////////////////////////////////
 
 inline fn __fors_sk_to_leaf(
@@ -85,6 +112,44 @@ inline fn __fors_sk_to_leaf__(
   leaf = leaf; leaf = leaf; sk = sk; pub_seed = pub_seed; fors_leaf_addr = fors_leaf_addr;
   leaf = _fors_sk_to_leaf(leaf, sk, pub_seed, fors_leaf_addr);
   leaf = leaf; leaf = leaf; sk = sk; pub_seed = pub_seed; fors_leaf_addr = fors_leaf_addr;
+  return leaf;
+}
+
+////////////////// SK TO LEAF BUT LEAF IS A REG U64 INSTEAD OF A REG PTR U8[SPX_N]
+
+inline fn __fors_sk_to_leaf_in_u64(
+  reg ptr u8[SPX_N] leaf,
+  reg u64 sk, // reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  leaf = __thash_in_u64_<1>(leaf, sk, pub_seed, fors_leaf_addr);
+  return leaf;
+}
+
+#[returnaddress="stack"]
+fn _fors_sk_to_leaf_in_u64(
+  reg ptr u8[SPX_N] leaf,
+  reg u64 sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  leaf = __fors_sk_to_leaf_in_u64(leaf, sk, pub_seed, fors_leaf_addr);
+  return leaf;
+}
+
+inline fn __fors_sk_to_leaf_in_u64_(
+  reg ptr u8[SPX_N] leaf,
+  reg u64 sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  leaf = leaf; leaf = leaf; sk = sk; pub_seed = pub_seed; fors_leaf_addr = fors_leaf_addr;
+  leaf = _fors_sk_to_leaf_in_u64(leaf, sk, pub_seed, fors_leaf_addr);
+  leaf = leaf;
   return leaf;
 }
 
@@ -519,9 +584,6 @@ inline fn __fors_sign(
   stack u32[8] fors_pk_addr;
   reg ptr u32[8] fors_pk_addr_p;
 
-  stack u8[SPX_N] sig_array;
-  reg ptr u8[SPX_N] sig_array_p;
-
   reg u32 idx_offset;
   stack u32 s_idx_offset;
   inline int i;
@@ -601,14 +663,9 @@ inline fn __fors_sign(
 
     // fors_gen_sk(sig, ctx, fors_tree_addr);
     sig = s_sig;
-    sig_array_p = sig_array;
-    sig_array_p = __load_u8_array<SPX_N>(sig_array_p, sig);
     pub_seed = s_pub_seed;
     sk_seed = s_sk_seed;
-    sig_array_p = __fors_gen_sk__(sig_array_p, pub_seed, sk_seed, fors_tree_addr_p);
-    sig = s_sig;
-    __store_u8_array<SPX_N>(sig_array_p, sig); // FIXME: Escrever __fors_gen_sk__ com sk como reg u64 em vez de reg ptr u8[SPX_N]
-    sig_array = sig_array_p;
+    __fors_gen_sk_out_u64(sig, pub_seed, sk_seed, fors_tree_addr_p);
     fors_tree_addr = fors_tree_addr_p;
 
     // set_type(fors_tree_addr, SPX_ADDR_TYPE_FORSTREE);
@@ -713,9 +770,6 @@ inline fn __fors_pk_from_sig(
 
   reg u32 addr type height;
 
-  stack u8[SPX_N] sig_array; // FIXME: TODO: FIXME:
-  reg ptr u8[SPX_N] sig_array_p;
-
   ///////////////////////////// Initial spills (start from a clean state)
   s_pk = pk;
   s_sig = sig;
@@ -732,10 +786,6 @@ inline fn __fors_pk_from_sig(
   fors_pk_addr_p = fors_pk_addr;
   fors_pk_addr_p = __zero_array_u32<8>(fors_pk_addr_p);
   fors_pk_addr = fors_pk_addr_p;
-
-  roots_p = roots;
-  roots_p = __zero_array_u8<SPX_FORS_TREES * SPX_N>(roots_p); // FIXME: Remove this when treehash is done
-  roots = roots_p;
 
   fors_addr = s_fors_addr; 
 
@@ -787,16 +837,12 @@ inline fn __fors_pk_from_sig(
 
     // fors_sk_to_leaf(leaf, sig, ctx, fors_tree_addr);
       sig = s_sig;
-      sig_array_p = sig_array;
-      sig_array_p = __load_u8_array<SPX_N>(sig_array_p, sig);
       pub_seed = s_pub_seed;
       leaf_p = leaf;
       fors_tree_addr_p = fors_tree_addr;
-    leaf_p = __fors_sk_to_leaf(leaf_p, sig_array_p, pub_seed, fors_tree_addr_p);
+    leaf_p = __fors_sk_to_leaf_in_u64_(leaf_p, sig, pub_seed, fors_tree_addr_p);
       leaf = leaf_p;
       sig = s_sig;
-      __store_u8_array<SPX_N>(sig_array_p, sig); // FIXME: Escrever __fo=rs_sk_to_leaf com sk como reg u64 em vez de reg ptr u8[SPX_N]
-      sig_array = sig_array_p;
     
     // sig += SPX_N;
     s_sig += SPX_N;

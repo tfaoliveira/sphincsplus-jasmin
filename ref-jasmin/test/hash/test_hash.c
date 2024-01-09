@@ -31,6 +31,9 @@ typedef struct {
 extern void prf_addr_jazz(uint8_t *out, const unsigned char *pub_seed, const unsigned char *sk_seed,
                           const uint32_t add[8]);
 
+extern void prf_addr_out_u64_jazz(uint8_t *out, const unsigned char *pub_seed,
+                                  const unsigned char *sk_seed, const uint32_t add[8]);
+
 extern void gen_message_random_jazz(uint8_t *R, const uint8_t *sk_prf, const uint8_t *optrand,
                                     const uint8_t *msg, size_t msg_len);
 
@@ -38,6 +41,7 @@ extern uint32_t hash_message_jazz(uint8_t *digest, uint64_t *tree, const uint32_
                                   const args *_args, const uint8_t *msg, size_t msg_len);
 
 void test_prf_addr(void);
+void test_prf_addr_out_u64(void);
 void test_gen_message_random(void);
 void test_hash_message(void);
 
@@ -60,6 +64,25 @@ void test_prf_addr(void) {
         random_addr(addr);
 
         prf_addr_jazz(out0, ctx.pub_seed, ctx.sk_seed, addr);
+        prf_addr(out1, &ctx, addr);
+
+        assert(memcmp(out0, out1, SPX_N) == 0);
+    }
+}
+
+void test_prf_addr_out_u64(void) {
+    spx_ctx ctx;
+    uint8_t out0[SPX_N], out1[SPX_N];
+    uint32_t addr[8];
+
+    for (int t = 0; t < TESTS; t++) {
+        randombytes(ctx.pub_seed, SPX_N);
+        randombytes(ctx.sk_seed, SPX_N);
+        randombytes(out0, SPX_N);
+        memcpy(out1, out0, SPX_N);
+        random_addr(addr);
+
+        prf_addr_out_u64_jazz(out0, ctx.pub_seed, ctx.sk_seed, addr);
         prf_addr(out1, &ctx, addr);
 
         assert(memcmp(out0, out1, SPX_N) == 0);
@@ -160,6 +183,7 @@ void test_hash_message(void) {
 
 int main(void) {
     test_prf_addr();
+    test_prf_addr_out_u64();
     test_gen_message_random();
     test_hash_message();
     puts("PASS: hash shake");

@@ -1,5 +1,6 @@
 from Sphincs require "fips202/shake256_array/shake256.jtmpl"
 from Sphincs require "fips202/shake256_inc/shake256_inc.jinc" // FIXME: extension should be jtmpl
+from Sphincs require "fips202/shake256_out_u64/shake256_out_u64.jtmpl"
 from Sphincs require "memcpy/memcpy.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
 
@@ -28,6 +29,35 @@ inline fn __prf_addr(
   out = __shake256<SPX_N, 2*SPX_N + SPX_ADDR_BYTES>(out, buf_p);
   return out;
 }
+
+
+//// PRF [out is a reg u64 instead of reg ptr u8]
+inline fn __prf_addr_out_u64(
+  reg u64 out,// reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] addr
+)
+{
+  stack u8[2*SPX_N + SPX_ADDR_BYTES] buf;
+  reg ptr u8[2*SPX_N + SPX_ADDR_BYTES] buf_p;
+
+  reg u64 offset;
+  inline u64 outlen;
+
+  outlen = SPX_N;
+
+  buf_p = buf;
+  offset = 0;
+
+  buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, pub_seed);
+  buf_p, offset = _x_memcpy_u8u32<2*SPX_N + SPX_ADDR_BYTES, 8>(buf_p, offset, addr);
+  buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, sk_seed);
+
+  __shake256_out_u64<2*SPX_N + SPX_ADDR_BYTES>(out, outlen, buf_p);
+}
+
+////
 
 inline fn __gen_message_random(
   reg ptr u8[SPX_N] R,

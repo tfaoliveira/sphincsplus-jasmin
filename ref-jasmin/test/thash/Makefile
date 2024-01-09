@@ -46,7 +46,8 @@ bin/test_thash_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --input_file $@ --output_file $@ --task "fn:thash p:INBLOCKS:$(GET_INBLOCKS)"
+	$(PREPROCESSOR) --input_file $@ --output_file $@ \
+	--task "fn:thash p:INBLOCKS:$(GET_INBLOCKS)" "fn:thash_in_u64_jazz p:INBLOCKS:$(GET_INBLOCKS)"
 
 .PRECIOUS: bin/test_thash_%.s
 bin/test_thash_%.s: bin/test_thash_%.jpp

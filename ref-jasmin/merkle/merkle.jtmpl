@@ -79,6 +79,32 @@ inline fn __treehash_wots(
   {
     current = __zero_array_u8<2*SPX_N>(current); // FIXME: Remove this later
 
+    // gen_leaf( &current[SPX_N], ctx, idx + idx_offset, info );
+    buf = current[SPX_N : SPX_N];
+    pub_seed = s_pub_seed;
+    sk_seed = s_sk_seed;
+    temp = s_idx; // idx offset = 0 so idx + idx_offset = idx
+    wots_sig = s_wots_sig;
+    wots_sign_leaf = s_wots_sign_leaf;
+    wots_steps = s_wots_steps;
+    leaf_addr = s_leaf_addr;
+    pk_addr = s_pk_addr;
+
+    buf, wots_sig, leaf_addr, pk_addr = __wots_gen_leafx1_(buf, 
+                                                         pub_seed, 
+                                                         sk_seed,
+                                                         temp, // leaf_idx
+                                                         wots_sig,
+                                                         wots_sign_leaf,
+                                                         wots_steps,
+                                                         leaf_addr,
+                                                         pk_addr);
+
+    current[SPX_N:SPX_N] = buf;
+    s_wots_sig = wots_sig;
+    s_leaf_addr = leaf_addr;
+    s_pk_addr = pk_addr;
+
     // uint32_t internal_idx = idx;
     temp = s_idx; 
     s_internal_idx = temp;
@@ -128,10 +154,7 @@ inline fn __treehash_wots(
         if(cond)
         {
           s_exit_inner_loop = 1;
-        }
-
-        if (!cond) // TODO: Replace with an "else"
-        {
+        } else {
           // set_tree_height(tree_addr, h + 1);
           tree_addr = s_tree_addr;
           temp = s_h; temp += 1;

@@ -175,7 +175,7 @@ extern void merkle_sign_jazz(uint8_t *sig, uint8_t *root, const spx_ctx *ctx, ui
 void merkle_gen_root(unsigned char *root, const spx_ctx *ctx) {
     bool debug = true;
 
-    if (debug) {  puts("Testing merkle sign"); }
+    if (debug && false) {  puts("Testing merkle sign"); }
 
     unsigned char auth_path[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES];
     uint32_t top_tree_addr[8] = {0};

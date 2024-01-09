@@ -38,14 +38,6 @@ inline fn __wots_gen_leafx1(
   reg ptr u8[SPX_N] wots_sig_spx_n;
   stack u32 s_k;
 
-  // move 'everything' into the stack
-  s_dest = dest;
-  s_pub_seed = pub_seed;
-  s_sk_seed = sk_seed;
-  s_wots_sig = wots_sig;
-  s_wots_sign_leaf = wots_sign_leaf;
-  s_wots_steps = wots_steps;
-
   return dest, wots_sig, leaf_addr, pk_addr;
 }
 

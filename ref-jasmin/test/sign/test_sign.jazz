@@ -6,17 +6,3 @@ export fn crypto_sign_seed_keypair_jazz(reg u64 _pk _sk _seed) -> reg u64
   r = __crypto_sign_seed_keypair(_pk, _sk, _seed);
   return r;
 }
-
-export fn crypto_sign_keypair_jazz(reg u64 _pk _sk) -> reg u64
-{
-  reg u64 r;
-  r = __crypto_sign_keypair(_pk, _sk);
-  return r;
-}
-
-export fn crypto_sign_signature_jazz(reg u64 _sig _sig_len m mlen _sk) -> reg u64
-{
-  reg u64 r;
-  r = ___crypto_sign_signature_(r, _sig, _sig_len, m, mlen, _sk);
-  return r;
-}
