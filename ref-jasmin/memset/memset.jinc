@@ -1,27 +1,15 @@
-inline fn memset_u8(
-    reg u64 a inlen value
-)
+inline fn __memset(reg u64 addr, reg u8 val, reg u64 size)
 {
   reg u64 i;
-  
-  i = 0;
-  while (i < inlen)
-  {
-    [a + i] = value;
+
+  ?{}, i = #set0();
+  while (i < size) { 
+    (u8)[addr + i] = val;
     i += 1;
   }
 }
 
-// copies INLEN bytes from memory area src to memory area dest.
-inline fn __memmove_u8(
-  reg u64 dest src size
-) 
+fn _memset(reg u64 addr, reg u8 val, reg u64 size)
 {
-  reg u64 i;
-  reg u8 t;
-
-  i = 0;
-  while (i < size) {
-    t = [src + i];
-  }
+  __memset(addr, val, size);
 }

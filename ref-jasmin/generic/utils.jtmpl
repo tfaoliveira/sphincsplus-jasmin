@@ -1,7 +1,4 @@
-// used to initialize addresses
-inline fn __zero_array_u32<INLEN>(
-  reg ptr u32[INLEN] a
-) -> reg ptr u32[INLEN]
+inline fn __zero_array_u32<INLEN>(reg ptr u32[INLEN] a) -> reg ptr u32[INLEN]
 {
   reg u32 t;
   reg u64 i;
@@ -9,16 +6,14 @@ inline fn __zero_array_u32<INLEN>(
   t = 0;
   i = 0;
   while (i < INLEN) {
-    a[(int )i] = t;
+    a[(int) i] = t;
     i += 1;
   }
 
   return a;
 }//<>
 
-inline fn __zero_array_u8<INLEN>(
-  reg ptr u8[INLEN] a
-) -> reg ptr u8[INLEN]
+inline fn _zero_array_u8<INLEN>(reg ptr u8[INLEN] a) -> reg ptr u8[INLEN]
 {
   reg u8 t;
   reg u64 i;
@@ -26,13 +21,20 @@ inline fn __zero_array_u8<INLEN>(
   t = 0;
   i = 0;
   while (i < INLEN) {
-    a[(int )i] = t;
+    a[(int) i] = t;
     i += 1;
   }
 
   return a;
 }//<>
 
+inline fn __zero_array_u8<INLEN>(reg ptr u8[INLEN] a) -> reg ptr u8[INLEN]
+{
+  a = a;
+  a = _zero_array_u8<INLEN>(a);
+  a = a;
+  return a;
+}//<>
 
 // Used in wots
 inline fn __ull_to_bytes(
@@ -190,29 +192,4 @@ inline fn __store_u64_array<INLEN>(
     [addr + 8 * i] = t;
     i += 1;
   }
-}//<>
-
-inline fn __mem_eq_u8<LEN>(
-  reg ptr u8[LEN] a b
-) -> reg u64
-{
-  reg u8 acc;
-  reg u64 res;
-  reg u8 ta tb;
-
-  inline int i;
-  for i=0 to LEN {
-    ta = a[i];
-    tb = b[i];
-
-    if (ta != tb) { acc +=1; }
-  }
-
-  if (acc == 0) {
-    res=0;
-  } else {
-    res=1;
-  }
-
-  return res;
 }//<>

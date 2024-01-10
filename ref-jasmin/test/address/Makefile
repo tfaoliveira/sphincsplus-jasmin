@@ -15,7 +15,7 @@ PREPROCESSOR ?= ../scripts/preprocessor
 
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple
+THASH_LIST    := simple robust
 
 # note on THASH
 # - address.c requires code from utils.c which requires code from thash_*.c

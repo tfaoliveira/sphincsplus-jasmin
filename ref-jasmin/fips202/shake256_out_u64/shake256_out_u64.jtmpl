@@ -1,0 +1,135 @@
+from Sphincs require "fips202/common/fips202_common.jinc"
+from Sphincs require "fips202/shake256_array/keccak1600.jtmpl" //  absorb 
+from Sphincs require "fips202/shake256_ptr/keccakf1600.jinc" // permutacao
+
+// From libjade
+
+inline fn __xtr_full_block_out_u64(
+  stack u64[25] state,
+  reg u64 out outlen,
+  reg u64 rate
+) -> reg u64, reg u64
+{
+  reg u64 i t rate64;
+
+  rate64 = rate;
+  rate64 >>= 3;
+  i = 0;
+  while ( i < rate64 )
+  {
+    t = state[(int)i];
+    [out + 8*i] = t;
+    i += 1;
+  }
+
+  out += rate;
+  outlen -= rate;
+
+  return out, outlen;
+}
+
+inline fn __xtr_bytes_out_u64(
+  stack u64[25] state,
+  reg u64 out outlen
+) -> reg u64
+{
+  reg u64 i t outlen8;
+  reg u8 c;
+
+  outlen8 = outlen;
+  outlen8 >>= 3;
+  i = 0;
+  while ( i < outlen8 )
+  {
+    t = state[(int)i];
+    [out + 8*i] = t;
+    i += 1;
+  }
+  i <<= 3;
+
+  while ( i < outlen )
+  {
+    c = state[u8 (int)i];
+    (u8)[out + i] = c;
+    i += 1;
+  }
+
+  out += outlen;
+  return out;
+}
+
+inline fn __squeeze_out_u64(
+  stack u64[25] state,
+  stack u64 s_out,
+  reg   u64 outlen,
+  reg   u64 rate
+)
+{
+  reg u64 out;
+  stack u64 s_outlen s_rate;
+
+  // intermediate blocks
+  while ( outlen > rate )
+  {
+    s_outlen = outlen;
+    s_rate = rate;
+    state = __keccakf1600_ref1(state);
+    out = s_out;
+    outlen = s_outlen;
+    rate = s_rate;
+
+    out, outlen = __xtr_full_block_out_u64(state, out, outlen, rate);
+    s_out = out;
+  }
+
+  s_outlen = outlen;
+  state = __keccakf1600_ref1(state);
+  out = s_out;
+  outlen = s_outlen;
+
+  out = __xtr_bytes_out_u64(state, out, outlen);
+}
+
+inline fn __keccak1600_out_u64<INLEN>(
+    reg u64 out outlen,
+    reg ptr u8[INLEN] in,
+    reg u8 trail_byte,
+    reg u64 rate
+)
+{
+  stack u64[25] _state;
+  reg ptr u64[25] state;
+
+  stack u64 s_out s_outlen;
+  stack u8 s_trail_byte;
+
+  reg u64 offset;
+
+  s_out = out;
+  s_outlen = outlen;
+  s_trail_byte = trail_byte;
+
+  state = _state;
+  state = __keccak_init(state);
+
+  // absorb
+  offset = 0;
+  state, rate = __absorb<INLEN>(state, in, offset, s_trail_byte, rate);
+  _state = state;
+
+  // squeeze
+  outlen = s_outlen;
+  __squeeze_out_u64(state, s_out, outlen, rate);
+}//<>   
+
+
+inline fn __shake256_out_u64<INLEN>(reg u64 out outlen, reg ptr u8[INLEN] in)
+{
+  reg u64 rate;
+  reg u8 trail_byte;
+
+  trail_byte = 0x1F;
+  rate = (1088/8);
+
+  __keccak1600_out_u64<INLEN>(out, outlen, in, trail_byte, rate);
+}//<>

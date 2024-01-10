@@ -1,14 +1,15 @@
 # ------------------------------------------------------------------------------
 AS       ?= as
 CC       ?= clang
-CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
+CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 	          -Wundef -Wshadow -Wcast-align -Wpointer-arith \
 	          -fstrict-aliasing -fno-common -pipe -g
 
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
+# Ignore Compilation Warnings for now
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning # -lazy-regalloc
+JFLAGS       ?= # -lazy-regalloc
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
@@ -45,7 +46,7 @@ bin/test_wots_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --workers 8 --input_file $@ --output_file $@ --task "fn:base_w_jazz p:MSG_LEN:$(GET_MSG_LEN)"
+	$(PREPROCESSOR) --input_file $@ --output_file $@
 
 .PRECIOUS: bin/test_wots_%.s
 bin/test_wots_%.s: bin/test_wots_%.jpp
@@ -55,7 +56,9 @@ $(TESTS):
 bin/test_wots_%: bin/test_wots_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DMSG_LEN=$(GET_MSG_LEN) \
 -I../common -I../../ -I../../params \
-test_wots.c $< ../../hash_$(GET_HASH).c ../../wots.c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c
+test_wots.c $< ../../hash_$(GET_HASH).c ../../wots.c ../../fips202.c \
+../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
+../../utilsx1.c
 
 bin/test_wots_%.out: bin/test_wots_%
 	@./$<

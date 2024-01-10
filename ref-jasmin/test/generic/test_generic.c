@@ -34,9 +34,6 @@ extern uint64_t bytes_to_ull_jazz(const uint8_t *a);
 #define zero_array_u32_jazz NAMESPACE1(zero_array_u32_jazz, INLEN)
 extern void zero_array_u32_jazz(uint32_t *);
 
-#define mem_eq_u8_jazz NAMESPACE1(mem_eq_u8_jazz, INLEN)
-extern int mem_eq_u8_jazz(const uint8_t *, const uint8_t *);
-
 extern void get_sk_prf_from_sk_jazz(const uint8_t *sk, uint8_t *prf);
 
 // u32
@@ -54,7 +51,6 @@ void test_ull_to_bytes(
 void test_ull_to_bytes_t(void);
 void test_bytes_to_ull(void);
 void test_zero_array_u32_jazz(void);
-void test_mem_eq_u8_jazz(void);
 
 void test_cond_u64_a_below_b_and_a_below_c(void) {
     uint64_t a, b, c;
@@ -267,18 +263,6 @@ void test_zero_array_u32(void) {
         randombytes1((uint8_t *)in, INLEN);
         zero_array_u32_jazz(in);
         assert(memcmp(in, zero, INLEN) == 0);
-    }
-}
-
-void test_mem_eq_u8_jazz(void) {
-    uint8_t a[INLEN], b[INLEN];
-    int r;
-
-    for (int i = 0; i < TESTS; i++) {
-        randombytes1(a, INLEN);
-        randombytes1(b, INLEN);
-        r = mem_eq_u8_jazz(a, b);
-        assert(r == memcmp(a, b, INLEN));
     }
 }
 

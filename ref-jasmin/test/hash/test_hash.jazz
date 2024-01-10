@@ -1,4 +1,5 @@
 from Sphincs require "hash/hash_shake.jtmpl"
+from Sphincs require "generic/utils.jtmpl"
 
 inline fn __load_addr(reg ptr u32[8] addr, reg u64 p) -> reg ptr u32[8]
 {
@@ -29,12 +30,9 @@ inline fn __load_args(
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_PK_BYTES] pk,
   reg u64 addr
-) -> reg ptr u8[SPX_N], reg ptr u8[SPX_PK_BYTES]
+) -> reg ptr u8[SPX_N], 
+     reg ptr u8[SPX_PK_BYTES]
 {
-  // typedef struct {
-  //   uint8_t R[SPX_N];
-  //   uint8_t pk[SPX_PK_BYTES];
-  // } args;
   R = __load_u8_array<SPX_N>(R, addr);
   addr += SPX_N;
 
@@ -89,6 +87,20 @@ export fn prf_addr_jazz(reg u64 _out _pub_seed _sk_seed _addr) {
   }
 }
 
+export fn prf_addr_out_u64_jazz(reg u64 out _pub_seed _sk_seed _addr)
+{
+  stack u8[32] addr;
+  stack u8[SPX_N] pub_seed;
+  stack u8[SPX_N] sk_seed;
+
+  stack u64 s_out s_pub_seed s_sk_seed s_addr;
+
+  addr = __load_u32_array<8>(addr, _addr);
+  pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
+  sk_seed = __load_u8_array<SPX_N>(sk_seed, _sk_seed);
+  __prf_addr_out_u64(out, pub_seed, sk_seed, addr);
+}
+
 export fn gen_message_random_jazz(
   reg u64 _R _sk_prf _optrand msg msg_len
 )
@@ -104,7 +116,6 @@ export fn gen_message_random_jazz(
   stack u64 s_R s_sk_prf s_optrand s_m;
 
   R_p = R; 
-  // R_p = __load_u8_array<SPX_N>(R_p, _R);
   
   sk_prf_p = sk_prf; 
   sk_prf_p = __load_u8_array<SPX_N>(sk_prf_p, _sk_prf);
@@ -145,7 +156,7 @@ export fn hash_message_jazz(
   s_tree = _tree;
   s_leaf_idx = _leaf_idx;
 
-  digest, tree, leaf_idx = __hash_message(digest, tree, leaf_idx, R, pk, msg, msg_len);
+  digest, tree, leaf_idx = __hash_message<SPX_PK_BYTES>(digest, tree, leaf_idx, R, pk, msg, msg_len);
 
   _digest = s_digest;
   _tree = s_tree;

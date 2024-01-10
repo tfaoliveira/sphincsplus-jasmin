@@ -1,14 +1,17 @@
 # ------------------------------------------------------------------------------
 AS       ?= as
 CC       ?= clang
-CFLAGS   ?= -O3 -Wall -Wextra # -Wpedantic -Werror -std=c99 \
-	          -Wundef -Wshadow -Wcast-align -Wpointer-arith -Wmissing-prototypes \
+CFLAGS   ?= -w # -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
+	          -Wundef -Wshadow -Wcast-align -Wpointer-arith \
 	          -fstrict-aliasing -fno-common -pipe -g
+
+# Suppress compilation warnings for now
 
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
-JASMIN   ?= jasminc
-JPP      ?= ../scripts/jpp
+JASMIN       ?= jasminc
+JFLAGS       ?= -nowarning # -lazy-regalloc
+JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
@@ -20,7 +23,7 @@ THASH_LIST    := simple robust
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
-TESTS      := $(addprefix bin/test_hash_, $(TLIST))
+TESTS      := $(addprefix bin/test_wotsx1_, $(TLIST))
 OUT        := $(addsuffix .out, $(TESTS))
 
 GET_HASH       = $(word 1, $(subst _, ,$*))
@@ -36,24 +39,29 @@ run: $(OUT)
 jpp_files: $(JPP_FILES)
 
 $(JPP_FILES):
-.PRECIOUS: bin/test_hash_%.jpp
-bin/test_hash_%.jpp: | bin/
-	cp test_hash.jazz $@
+.PRECIOUS: bin/test_wotsx1_%.jpp
+bin/test_wotsx1_%.jpp: | bin/
+	cp test_wotsx1.jazz $@
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
+	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --input_file $@ --output_file $@ 
+	$(PREPROCESSOR) --workers 8 --input_file $@ --output_file $@
 
-.PRECIOUS: bin/test_hash_%.s
-bin/test_hash_%.s: bin/test_hash_%.jpp
-	$(JASMIN) $< -o $@
+.PRECIOUS: bin/test_wotsx1_%.s
+bin/test_wotsx1_%.s: bin/test_wotsx1_%.jpp
+	$(JASMIN) $(JFLAGS) $< -o $@
 
 $(TESTS):
-bin/test_hash_%: bin/test_hash_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+bin/test_wotsx1_%: bin/test_wotsx1_%.s | bin/
+	$(CC) $(CFLAGS) -o $@ \
+	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
+	-DTEST_WOTSX1=1 \
 -I../common -I../../ -I../../params \
-test_hash.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c
+test_wotsx1.c $< \
+../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
+../../utilsx1.c ../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c ../../fors.c  
 
-bin/test_hash_%.out: bin/test_hash_%
+bin/test_wotsx1_%.out: bin/test_wotsx1_%
 	@./$<
 
 bin/:

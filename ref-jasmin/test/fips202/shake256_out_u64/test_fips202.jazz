@@ -1,0 +1,13 @@
+from Sphincs require "fips202/shake256_out_u64/shake256_out_u64.jtmpl"
+from Sphincs require "generic/utils.jtmpl"
+
+export fn shake256_out_u64<INLEN>(reg u64 out outlen _in)
+{
+  stack u8[INLEN] in;
+  reg ptr u8[INLEN] in_p;
+
+  in_p = in;
+  in_p = __load_u8_array<INLEN>(in_p, _in);
+
+  __shake256_out_u64<INLEN>(out, outlen, in_p);
+}//<>

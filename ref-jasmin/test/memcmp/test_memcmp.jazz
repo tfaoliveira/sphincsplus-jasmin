@@ -1,19 +1,30 @@
-from Sphincs require "memcmp/memcmp.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
+from Sphincs require "memcmp/memcmp.jtmpl"
 
-////////////////////////////////////////////////////////////////////////////////
-
-export fn memcmp_jazz<INLEN>(
-  reg u64 _a _b
-) -> reg u64
+export fn memcmp_jazz<INLEN>(reg u64 _a _b) -> reg u64
 {
-  stack u8[INLEN] a b;
+  stack u8[INLEN] a;
+  reg ptr u8[INLEN] ap;
+
+  reg ptr u8[INLEN] b;
+  reg ptr u8[INLEN] bp;
+
   reg u64 r;
 
-  a = __load_u8_array<INLEN>(a, _a);
-  b = __load_u8_array<INLEN>(b, _a);
+  ap = a;
+  bp = a;
 
-  r = __memcmp_u8<INLEN>(a, b);
+  ap = __load_u8_array<INLEN>(ap, _a);
+  bp = __load_u8_array<INLEN>(bp, _b);
+  
+  r = _memcmp<INLEN>(ap, bp, r);
 
   return r;
 }//<>
+
+export fn memcmp__jazz(reg u64 a b n) -> reg u64
+{
+  reg u64 r;
+  r = _memcmp(a, b, n, r);
+  return r;
+}

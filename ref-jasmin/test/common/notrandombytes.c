@@ -202,10 +202,17 @@ void resetrandombytes(void)
   memset(g0, 0, KEYBYTES);
 }
 
+#ifndef STUPID_RANDOMBYTES
 void randombytes(uint8_t* x, uint64_t xlen)
 {
   randombytes_internal(x,xlen,g0,r0,&pos0);
 }
+#else 
+void randombytes(uint8_t* x, uint64_t xlen)
+{
+  for (size_t i = 0; i < xlen; i++) { x[i] = 0x123456; }
+}
+#endif
 
 // ////////
 
@@ -227,4 +234,3 @@ uint8_t* __jasmin_syscall_randombytes__(uint8_t* x, uint64_t xlen)
   randombytes(x, xlen);
   return x;
 }
-

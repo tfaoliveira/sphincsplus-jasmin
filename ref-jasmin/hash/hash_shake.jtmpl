@@ -1,5 +1,6 @@
 from Sphincs require "fips202/shake256_array/shake256.jtmpl"
 from Sphincs require "fips202/shake256_inc/shake256_inc.jinc" // FIXME: extension should be jtmpl
+from Sphincs require "fips202/shake256_out_u64/shake256_out_u64.jtmpl"
 from Sphincs require "memcpy/memcpy.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
 
@@ -17,7 +18,6 @@ inline fn __prf_addr(
   reg ptr u8[2*SPX_N + SPX_ADDR_BYTES] buf_p;
 
   reg u64 offset;
-  stack u64 s_offset;
 
   buf_p = buf;
   offset = 0;
@@ -26,18 +26,39 @@ inline fn __prf_addr(
   buf_p, offset = _x_memcpy_u8u32<2*SPX_N + SPX_ADDR_BYTES, 8>(buf_p, offset, addr);
   buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, sk_seed);
 
-  s_offset = offset;
-
   out = __shake256<SPX_N, 2*SPX_N + SPX_ADDR_BYTES>(out, buf_p);
   return out;
 }
 
-/*
- * Computes the message-dependent randomness R, using a secret seed and an
- * optional randomization value as well as the message
- */
 
- // TODO: DELETE THIS FUNCTION. IT IS NEVER USED
+//// PRF [out is a reg u64 instead of reg ptr u8]
+inline fn __prf_addr_out_u64(
+  reg u64 out,// reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] addr
+)
+{
+  stack u8[2*SPX_N + SPX_ADDR_BYTES] buf;
+  reg ptr u8[2*SPX_N + SPX_ADDR_BYTES] buf_p;
+
+  reg u64 offset;
+  inline u64 outlen;
+
+  outlen = SPX_N;
+
+  buf_p = buf;
+  offset = 0;
+
+  buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, pub_seed);
+  buf_p, offset = _x_memcpy_u8u32<2*SPX_N + SPX_ADDR_BYTES, 8>(buf_p, offset, addr);
+  buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, sk_seed);
+
+  __shake256_out_u64<2*SPX_N + SPX_ADDR_BYTES>(out, outlen, buf_p);
+}
+
+////
+
 inline fn __gen_message_random(
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_N] sk_prf,
@@ -70,7 +91,7 @@ inline fn __gen_message_random(
   shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, optrand);
 
   msg = s_msg; msg_len = s_msg_len;
-  shake_state_p = __shake256_inc_absorb(shake_state_p, msg, msg_len);
+  shake_state_p = _shake256_inc_absorb(shake_state_p, msg, msg_len);
 
   shake_state_p = __shake256_inc_finalize(shake_state_p);
 
@@ -80,6 +101,7 @@ inline fn __gen_message_random(
   return R;
 }
 
+/// FIXME: DELETE THIS (ESTA FUNCAOI NAO E USADA: NAO E PRECISOU OUTLENPQ OUTLEN E SPEMRP SPX_N)
 inline fn __gen_message_random<OUTLEN>(
   reg ptr u8[OUTLEN] R,
   reg ptr u8[SPX_N] sk_prf,
@@ -113,7 +135,7 @@ inline fn __gen_message_random<OUTLEN>(
   shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, optrand);
 
   msg = s_msg; msg_len = s_msg_len;
-  shake_state_p = __shake256_inc_absorb(shake_state_p, msg, msg_len);
+  shake_state_p = _shake256_inc_absorb(shake_state_p, msg, msg_len);
 
   shake_state_p = __shake256_inc_finalize(shake_state_p);
 
@@ -129,12 +151,12 @@ inline fn __gen_message_random<OUTLEN>(
  * the tree index and the leaf index, for convenient copying to an address.
  * 
  */
-inline fn __hash_message(
+inline fn __hash_message<PKLEN>( // FIXME:
   reg ptr u8[SPX_FORS_MSG_BYTES] digest,
   reg u64 tree,
   reg u32 leaf_idx,
   reg ptr u8[SPX_N] R,
-  reg ptr u8[SPX_N] pk,
+  reg ptr u8[PKLEN] pk,
   reg u64 msg msg_len
 ) -> reg ptr u8[SPX_FORS_MSG_BYTES], reg u64, reg u32
 {
@@ -144,6 +166,7 @@ inline fn __hash_message(
    */
   
   stack u8[SPX_DGST_BYTES] buf;
+  reg ptr u8[SPX_DGST_BYTES] buf_p;
 
   stack u64[26] shake256_state;
   reg ptr u64[26] shake256_state_p; 
@@ -151,12 +174,14 @@ inline fn __hash_message(
   stack ptr u8[SPX_FORS_MSG_BYTES] s_digest;
   stack u64 s_tree s_msg s_msg_len;
   stack u32 s_leaf_idx;
-  stack ptr u8[SPX_N] s_R;
-  stack ptr u8[SPX_N] s_pk;
+  stack ptr u8[PKLEN] s_pk;
 
   reg u64 offset;
-  reg u64 t u z;
+  reg u64 t u;
 
+  reg ptr u8[SPX_TREE_BYTES] tree_bytes;
+  reg ptr u8[SPX_LEAF_BYTES] leaf_bytes;
+ 
   shake256_state_p = shake256_state;
 
   shake256_state_p = __shake256_inc_init_(shake256_state_p);
@@ -172,36 +197,56 @@ inline fn __hash_message(
   shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, R);
 
   pk = s_pk;
-  shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, pk);
+  shake256_state_p = __shake256_inc_absorb_t<PKLEN>(shake256_state_p, pk);
 
   msg = s_msg;
   msg_len = s_msg_len;
-  shake256_state_p = __shake256_inc_absorb(shake256_state_p, msg, msg_len);
+  shake256_state_p = _shake256_inc_absorb(shake256_state_p, msg, msg_len);
 
   shake256_state_p = __shake256_inc_finalize(shake256_state_p);
 
-  buf, _ = __shake256_inc_squeeze_t<SPX_DGST_BYTES>(buf, shake256_state_p);
+  buf_p = buf;
+  buf_p, _ = __shake256_inc_squeeze_t<SPX_DGST_BYTES>(buf_p, shake256_state_p);
 
   offset = 0;
   digest = s_digest;
-  digest, _ = __memcpy_u8u8<SPX_FORS_MSG_BYTES, SPX_DGST_BYTES>(digest, offset, buf);
+  digest, _ = __memcpy_u8u8<SPX_FORS_MSG_BYTES, SPX_DGST_BYTES>(digest, offset, buf_p);
 
-  tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, buf[SPX_FORS_MSG_BYTES:SPX_TREE_BYTES]);
+  tree_bytes = buf[SPX_FORS_MSG_BYTES:SPX_TREE_BYTES];
+  tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, tree_bytes);
   ?{}, t = #set0(); 
   t = #NOT_64(t);
   u = 64;
   u -= SPX_TREE_BITS;
-  t = #SHR(t, u);
+  ?{}, t = #SHR(t, u);
   tree &= t;
   
-  t = __bytes_to_ull<SPX_LEAF_BYTES>(t, buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES]);
-  leaf_idx = (32u)t;
+  leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES];
+  t = __bytes_to_ull<SPX_LEAF_BYTES>(t, leaf_bytes);
+  leaf_idx = (32u) t;
   t = 0; 
   t = #NOT_64(t);
   u = 32;
   u -= SPX_LEAF_BITS;
-  t >>= (u & 63);
-  leaf_idx &= (32u)t;
+  ?{}, t = #SHR(t, u);
+  leaf_idx &= (32u) t;
 
   return digest, tree, leaf_idx;
-}
+}//<>
+
+#[returnaddress="stack"]
+fn _hash_message<PKLEN>( // FIXME:
+  reg ptr u8[SPX_FORS_MSG_BYTES] digest,
+  reg u64 tree,
+  reg u32 leaf_idx,
+  reg ptr u8[SPX_N] R,
+  reg ptr u8[PKLEN] pk,
+  reg u64 msg,
+  reg u64 msg_len
+) -> reg ptr u8[SPX_FORS_MSG_BYTES], 
+     reg u64, 
+     reg u32
+{
+  digest, tree, leaf_idx = __hash_message<PKLEN>(digest, tree, leaf_idx, R, pk, msg, msg_len);
+  return digest, tree, leaf_idx;
+}//<>
