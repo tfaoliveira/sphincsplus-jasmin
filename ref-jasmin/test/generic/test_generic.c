@@ -50,7 +50,7 @@ void test_ull_to_bytes(
     void);  // TODO: FIXME: remove this. This is the particular case when OUTLEN=8
 void test_ull_to_bytes_t(void);
 void test_bytes_to_ull(void);
-void test_zero_array_u32_jazz(void);
+void test_zero_array_u32(void);
 
 void test_cond_u64_a_below_b_and_a_below_c(void) {
     uint64_t a, b, c;

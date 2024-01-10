@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <string.h>
+#include "print.h"
 #include "randombytes.h"
 
 
@@ -229,8 +230,26 @@ void randombytes1(uint8_t* x, uint64_t xlen)
 
 // ////////
 
+#ifndef DEBUG_PRINT
 uint8_t* __jasmin_syscall_randombytes__(uint8_t* x, uint64_t xlen)
 {
   randombytes(x, xlen);
   return x;
 }
+
+#else
+
+uint8_t* __jasmin_syscall_randombytes__(uint8_t* x, uint64_t xlen)
+{
+  printf("Value before random bytes: ");
+  print_str_u8("x", x, xlen);
+
+  randombytes(x, xlen);
+
+  printf("Value after random bytes: ");
+  print_str_u8("x", x, xlen);
+
+  return x;
+}
+
+#endif

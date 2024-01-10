@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.jtmpl": "jasmin",
+        "*.jpp": "jasmin",
+        "randombytes.h": "c"
+    }
+}
