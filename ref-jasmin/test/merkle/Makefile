@@ -55,7 +55,7 @@ $(TESTS):
 bin/test_merkle_%: bin/test_merkle_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
 	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
-	-DTEST_MERKLE=1 \
+	-DTEST_MERKLE=1 -DDEBUG_PRINT=1 \
 -I../common -I../../ -I../../params \
 test_merkle.c $< \
 ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \

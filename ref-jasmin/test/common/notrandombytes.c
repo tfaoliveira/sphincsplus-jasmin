@@ -2,6 +2,8 @@
 
 #include <inttypes.h>
 #include <string.h>
+#include <stdarg.h>
+
 #include "print.h"
 #include "randombytes.h"
 
@@ -239,16 +241,19 @@ uint8_t* __jasmin_syscall_randombytes__(uint8_t* x, uint64_t xlen)
 
 #else
 
+static void print_green(const char *format, ...) {
+    printf("\033[1;32m");
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+    printf("\033[0m");
+}
+
 uint8_t* __jasmin_syscall_randombytes__(uint8_t* x, uint64_t xlen)
 {
-  printf("Value before random bytes: ");
-  print_str_u8("x", x, xlen);
-
-  randombytes(x, xlen);
-
-  printf("Value after random bytes: ");
-  print_str_u8("x", x, xlen);
-
+  print_green("[DEBUG from #randombytes]: ");
+  print_str_u8("buffer", x, xlen);
   return x;
 }
 

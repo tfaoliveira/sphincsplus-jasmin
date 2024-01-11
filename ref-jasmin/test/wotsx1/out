@@ -1,1 +1,0 @@
-jasminc -nowarning  bin/test_wotsx1_shake_256f_simple.jpp -o bin/test_wotsx1_shake_256f_simple.s

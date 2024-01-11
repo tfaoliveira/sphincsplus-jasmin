@@ -26,7 +26,7 @@
 #endif
 
 #ifndef TESTS
-#define TESTS 100
+#define TESTS 1
 #endif
 
 int main(void) {

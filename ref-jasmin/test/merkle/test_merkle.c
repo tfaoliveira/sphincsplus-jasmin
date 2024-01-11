@@ -44,9 +44,7 @@ void test_merkle_sign(void) {
     uint32_t tree_addr_ref[8], tree_addr_jazz[8];
     uint32_t idx_leaf;
 
-    bool debug = true;
-
-    if (debug) { puts("Testing merkle_sign_jazz with random bytes"); }
+    bool debug = false;
 
     for (int i = 0; i < TESTS; i++) {
         memset(sig_ref, 0, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
@@ -141,10 +139,7 @@ void test_merkle_gen_root_2(void) {
 
 int main(void) {
     // Test first with genuine input
-    
     test_merkle_gen_root_1();  // test in sign.c (also tests merkle sign)
-
-    // test later with random input
     test_merkle_sign();  // This uses random bytes 
     test_merkle_gen_root_2();  // test with randombytes
     printf("Pass merkle : { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));

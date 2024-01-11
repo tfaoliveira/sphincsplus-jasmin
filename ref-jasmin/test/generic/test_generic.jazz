@@ -67,18 +67,6 @@ export fn cond_u32_a_eq_b_and_c_below_d_jazz(
     (u8)[_res] = r;
 }
 
-export fn cond_u64_a_eq_b_or_c_eq_d_jazz(
-    reg u64 a b c d _res   
-)
-{
-    reg u8 r;
-    reg u8 res;
-
-    res = __cond_u64_a_eq_b_or_c_eq_d(a, b, c, d, res);
-
-    (u8)[_res] = res;
-}
-
 export fn zero_array_u32_jazz<INLEN>(reg u64 addr) {
     stack u32[INLEN] a;
     reg ptr u32[INLEN] ap;

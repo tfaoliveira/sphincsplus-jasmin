@@ -44,7 +44,6 @@ void test_cond_u32_a_eq_b_and_c_below_d(void);
 void test_cond_u64_a_below_b_and_a_below_c(void);
 void test_cond_u64_a_dif_b_and_a_dif_c(void);
 void test_cond_u64_a_dif_b_and_c_dif_d(void);
-void test_cond_u64_a_eq_b_or_c_eq_d_jazz(void);
 
 void test_ull_to_bytes(
     void);  // TODO: FIXME: remove this. This is the particular case when OUTLEN=8
@@ -158,21 +157,6 @@ void test_cond_u64_a_dif_b_and_c_dif_d(void) {
     }
 }
 
-void test_cond_u64_a_eq_b_or_c_eq_d_jazz(void) {
-    uint64_t a, b, c, d;
-    uint8_t r;
-
-    for (int i = 0; i < TESTS; i++) {
-        randombytes1((uint8_t *)&a, sizeof(uint64_t));
-        randombytes1((uint8_t *)&b, sizeof(uint64_t));
-        randombytes1((uint8_t *)&c, sizeof(uint64_t));
-        randombytes1((uint8_t *)&d, sizeof(uint64_t));
-
-        cond_u64_a_eq_b_or_c_eq_d_jazz(a, b, c, d, &r);
-        assert((a == b && c == d) ? (r == 1) : (r == 0));
-    }
-}
-
 // from C impl
 static void ull_to_bytes(unsigned char *out, unsigned int outlen, unsigned long long in) {
     int i;
@@ -200,7 +184,7 @@ void test_ull_to_bytes(void) {
 
         if (memcmp(out_ref, out_jazz, 8 * sizeof(unsigned char))) {
             print_str_u8("ref", out_ref, 8 * sizeof(unsigned char));
-            print_str_u8("jazz", out_jazz, 8* sizeof(unsigned char));
+            print_str_u8("jazz", out_jazz, 8 * sizeof(unsigned char));
         }
 
         assert(memcmp(out_ref, out_jazz, 8) == 0);
@@ -267,19 +251,15 @@ void test_zero_array_u32(void) {
 }
 
 int main(void) {
-    // test_cond_u32_a_below_b_and_a_below_c();
-    // test_cond_u32_a_eq_b_and_c_below_d();
-
-    // test_cond_u64_a_below_b_and_a_below_c();
-    // test_cond_u64_a_dif_b_and_a_dif_c();
-    // test_cond_u64_a_dif_b_and_c_dif_d();
-
+    test_cond_u32_a_below_b_and_a_below_c();
+    test_cond_u32_a_eq_b_and_c_below_d();
+    test_cond_u64_a_below_b_and_a_below_c();
+    test_cond_u64_a_dif_b_and_a_dif_c();
+    test_cond_u64_a_dif_b_and_c_dif_d();
     test_ull_to_bytes();
     test_ull_to_bytes_t();
-    // test_bytes_to_ull();
-
-    // test_zero_array_u32_jazz();
-
+    test_bytes_to_ull();
+    test_zero_array_u32();
     puts("PASS: generic");
     return 0;
 }
