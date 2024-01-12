@@ -38,10 +38,6 @@ inline fn __wots_gen_leafx1(
   reg ptr u8[SPX_N] wots_sig_spx_n;
   stack u32 s_k;
 
-  // TODO: REMOVE THIS LATER
-  stack u8[1] debug_print_buffer;
-  reg u32 temp;
-
   pk_buffer = __zero_array_u8<SPX_WOTS_BYTES>(pk_buffer); // FIXME: REMOVFE THIS WHEN THE IMPL WORKS
 
   // Initial Spills

@@ -17,7 +17,6 @@ fn _crypto_sign_seed_keypair(
   ////
   stack ptr u8[SPX_PK_BYTES] s_pk;
   stack ptr u8[SPX_SK_BYTES] s_sk;
-  stack ptr u8[CRYPTO_SEEDBYTES] s_seed;
   ////
 
   stack u8[SPX_N] pub_seed;
@@ -29,8 +28,6 @@ fn _crypto_sign_seed_keypair(
   reg ptr u8[SPX_N] root;
   reg ptr u8[SPX_N] buf;
   reg u64 offset;
-  reg u8 t;
-  inline int i;
 
   // Initialize SK_SEED, SK_PRF and PUB_SEED from seed
 
@@ -57,26 +54,24 @@ fn _crypto_sign_seed_keypair(
   sk_seed_p, _ = _x_memcpy_u8u8<SPX_N, SPX_N>(sk_seed_p, offset, buf);
   sk_seed = sk_seed_p;
 
-  // Compute root node of the top-most subtree.
-  // merkle_gen_root(sk + 3 * SPX_N, &ctx);
-  s_pk = pk;
-  s_sk = sk;
+  s_pk = pk; // spills
+  s_sk = sk; // spills
 
-  s_sk = sk;
-  root = s_sk[3*SPX_N : SPX_N];
+  // merkle_gen_root(sk + 3 * SPX_N, &ctx);
+  sk = s_sk;
+  root = sk[3*SPX_N : SPX_N];
   pub_seed_p = pub_seed;
   sk_seed_p = sk_seed;
-  root = _merkle_gen_root(root, pub_seed_p, sk_seed_p);
-  s_sk[3*SPX_N : SPX_N] = root;
+  sk[3*SPX_N : SPX_N] = _merkle_gen_root(root, pub_seed_p, sk_seed_p);
+  s_sk = sk;
 
   // memcpy(pk + SPX_N, sk + 3 * SPX_N, SPX_N);  
-  // offset = SPX_N;
-  // buf = sk[3*SPX_N : SPX_N];
-  // pk = s_pk;
-  // pk, _ = _x_memcpy_u8u8<SPX_PK_BYTES, SPX_N>(pk, offset, buf);
+  offset = SPX_N;
+  buf = sk[3*SPX_N : SPX_N];
+  pk = s_pk; // unspill
+  pk, _ = _x_memcpy_u8u8<SPX_PK_BYTES, SPX_N>(pk, offset, buf);
 
-  pk = s_pk;
-  sk = s_sk;
+  sk = s_sk; // unspill
 
   return pk, sk;
 }
@@ -98,17 +93,12 @@ inline fn __crypto_sign_seed_keypair(reg u64 _pk _sk _seed) -> reg u64
 
   stack u64 s_pk s_sk;
 
-  // load PK
-  pk_p = pk;
-  offset = 0;
-  inlen = SPX_PK_BYTES;
-  pk_p, _ = _x_memcpy_u8u8p<SPX_PK_BYTES>(pk_p, offset, _pk, inlen);
+  // FIXME: TODO: REMOVE THIS WHEN GEN ROOT IS IMPLEMENTED CORRECTLY
+  sk = __load_u8_array<SPX_SK_BYTES>(sk, _sk);
+  pk = __load_u8_array<SPX_PK_BYTES>(pk, _pk);
 
-  // load SK
-  sk_p = sk;
-  offset = 0;
-  inlen = SPX_PK_BYTES;
-  sk_p, _ = _x_memcpy_u8u8p<SPX_SK_BYTES>(sk_p, offset, _sk, inlen);
+  s_pk = _pk; // spill 
+  s_sk = _sk; // spill
 
   // load seed
   seed_p = seed;
@@ -116,16 +106,16 @@ inline fn __crypto_sign_seed_keypair(reg u64 _pk _sk _seed) -> reg u64
   inlen = CRYPTO_SEEDBYTES;
   seed_p, _ = _x_memcpy_u8u8p<CRYPTO_SEEDBYTES>(seed_p, offset, _seed, inlen);
 
-  s_pk = _pk; // spill 
-  s_sk = _sk; // spill
+  pk_p = pk;
+  sk_p = sk;
 
   pk_p, sk_p = _crypto_sign_seed_keypair(pk_p, sk_p, seed_p);
 
   _pk = s_pk; // unspill 
   _sk = s_sk; // unspill
 
-  // __store_u8_array<SPX_PK_BYTES>(pk_p, _pk);
-  // __store_u8_array<SPX_SK_BYTES>(sk_p, _sk);
+  __store_u8_array<SPX_PK_BYTES>(pk_p, _pk);
+  __store_u8_array<SPX_SK_BYTES>(sk_p, _sk);
 
   ?{}, r = #set0();
   return r;
@@ -145,21 +135,7 @@ inline fn __crypto_sign_keypair(reg u64 _pk _sk) -> reg u64
   stack u8[CRYPTO_SEEDBYTES] seed;
   reg ptr u8[CRYPTO_SEEDBYTES] seed_p;
 
-  reg u64 offset inlen;
-
   stack u64 s_pk s_sk;
-
-  // load pk
-  pk_p = pk;
-  offset = 0;
-  inlen = SPX_PK_BYTES;
-  pk_p, _ = _x_memcpy_u8u8p<SPX_PK_BYTES>(pk_p, offset, _pk, inlen);
-
-  // load SK
-  sk_p = sk;
-  offset = 0;
-  inlen = SPX_PK_BYTES;
-  sk_p, _ = _x_memcpy_u8u8p<SPX_SK_BYTES>(sk_p, offset, _sk, inlen);
 
   s_pk = _pk; // spill
   s_sk = _sk; // spill 
@@ -167,6 +143,8 @@ inline fn __crypto_sign_keypair(reg u64 _pk _sk) -> reg u64
   seed_p = seed;
   seed_p = #randombytes(seed_p);
 
+  pk_p = pk;
+  sk_p = sk;
   pk_p, sk_p = _crypto_sign_seed_keypair(pk_p, sk_p, seed_p);
 
   _pk = s_pk; // unspill 
@@ -174,266 +152,6 @@ inline fn __crypto_sign_keypair(reg u64 _pk _sk) -> reg u64
 
   __store_u8_array<SPX_PK_BYTES>(pk_p, _pk);
   __store_u8_array<SPX_SK_BYTES>(sk_p, _sk);
-
-  ?{}, r = #set0();
-  return r;
-}
-
-//////////////////////// SIGN SIGNATURE
-inline fn __crypto_sign_signature(
-  reg u64 sig,
-  reg u64 msg,
-  reg u64 msg_len,
-  reg ptr u8[SPX_SK_BYTES] sk
-)
-{
-  /////// Variables for spills
-  stack u64 s_sig;
-  stack u64 s_msg;
-  stack u64 s_msg_len;
-  stack ptr u8[SPX_SK_BYTES] s_sk;
-  ///////
-
-  stack u8[SPX_N] pub_seed;
-  reg ptr u8[SPX_N] pub_seed_p; 
-
-  stack u8[SPX_N] sk_seed;
-  reg ptr u8[SPX_N] sk_seed_p;
-
-  reg ptr u8[SPX_N] sk_prf;
-  stack ptr u8[SPX_N] s_sk_prf;
-
-  reg ptr u8[SPX_N] pk;
-  stack ptr u8[SPX_N] s_pk;
-
-  stack u8[SPX_N] optrand;
-  reg ptr u8[SPX_N] optrand_p;
-
-  stack u8[SPX_N] randomness;
-  reg ptr u8[SPX_N] randomness_p;
-
-  stack u8[SPX_FORS_MSG_BYTES] mhash;
-  reg ptr u8[SPX_FORS_MSG_BYTES] mhash_p;
-  
-  stack u8[SPX_N] root;
-  reg ptr u8[SPX_N] root_p;
-
-  stack u32[8] wots_addr;
-  reg ptr u32[8] wots_addr_p;
-
-  stack u32[8] tree_addr;
-  reg ptr u32[8] tree_addr_p;
-
-  reg u32 idx_leaf; 
-  stack u32 s_idx_leaf;
-
-  reg u64 tree; 
-  stack u64 s_tree;
-
-  reg u64 offset;
-  reg u32 type;
-
-  reg ptr u8[SPX_N] buf;
-
-  reg u32 i;
-  stack u32 s_i;
-
-  inline int k;
-  reg u32 t;
-
-  stack u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] auth_path; // FIXME: Fazer _merkle_sign com um reg 64 em vez de reg ptr
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] auth_path_p;
-
-  ///////////// initial spills
-  s_sig = sig;
-  s_msg = msg;
-  s_msg_len = msg_len;
-  s_sk = sk;
-  /////////////
-
-  // const unsigned char *sk_prf = sk + SPX_N;
-  sk_prf = sk[SPX_N : SPX_N];
-  s_sk_prf = sk_prf;
-
-  // const unsigned char *pk = sk + 2 * SPX_N;
-  pk = sk[2*SPX_N : SPX_N];  
-  s_pk = pk;
-
-  // uint32_t wots_addr[8] = {0};
-  wots_addr_p = wots_addr;
-  wots_addr = __zero_array_u32<8>(wots_addr);
-  wots_addr = wots_addr_p;
-
-  // uint32_t tree_addr[8] = {0};
-  tree_addr_p = tree_addr;
-  tree_addr = __zero_array_u32<8>(tree_addr);
-  tree_addr = tree_addr_p;
-
-  // memcpy(ctx.sk_seed, sk, SPX_N);
-  offset = 0;
-  buf = sk[0:SPX_N];
-  sk_seed_p = sk_seed;
-  sk_seed_p, _ = _x_memcpy_u8u8<SPX_N, SPX_N>(sk_seed_p, offset, buf);
-  sk_seed = sk_seed_p;
-
-  // memcpy(ctx.pub_seed, pk, SPX_N);
-  offset = 0;
-  buf = pk[0:SPX_N];
-  pub_seed_p = pub_seed;
-  pub_seed_p, _ = _x_memcpy_u8u8<SPX_N, SPX_N>(pub_seed_p, offset, buf);
-  pub_seed = pub_seed_p;
-
-
-  // set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
-  type = SPX_ADDR_TYPE_WOTS;
-  wots_addr_p = wots_addr;
-  wots_addr_p = __set_type(wots_addr_p, type);
-
-  // set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
-  type = SPX_ADDR_TYPE_HASHTREE;
-  tree_addr_p = tree_addr;
-  tree_addr_p = __set_type(tree_addr_p, type);
-
-  wots_addr = wots_addr_p;
-  tree_addr = tree_addr_p;
-
-  // randombytes(optrand, SPX_N);
-  optrand_p = optrand;
-  optrand_p = #randombytes(optrand_p);
-
-  // gen_message_random(sig, sk_prf, optrand, m, mlen, &ctx);
-    randomness_p = randomness;
-    msg = s_msg;
-    msg_len = s_msg_len;
-    sk_prf = s_sk_prf;
-  randomness_p = __gen_message_random(randomness_p, sk_prf, optrand_p, msg, msg_len);
-    
-      sig = s_sig;
-      offset = 0;
-    sig, _ = _x_memcpy_u8pu8<SPX_N>(sig, offset, randomness_p);
-      s_sig = sig;
-
-  // hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
-  //                                        || 
-  //                                        \/
-  //                         Here, the 1st SPX_N bytes of sig
-  //                         are the randomness bytes
-    pk = s_pk;
-    tree = s_tree;
-    idx_leaf = s_idx_leaf;
-    msg_len = s_msg_len;
-    msg = s_msg;
-    mhash_p = mhash;
-  mhash_p, tree, idx_leaf = _hash_message<SPX_N>(mhash_p, tree, idx_leaf, randomness_p, pk, msg, msg_len);
-    s_tree = tree;
-    s_idx_leaf = s_idx_leaf;
-    mhash = mhash_p;
-  
-  // sig += SPX_N;
-  s_sig += SPX_N;
-
-  // set_tree_addr(wots_addr, tree);
-  tree = s_tree;
-  wots_addr_p = wots_addr;
-  wots_addr_p = __set_tree_addr(wots_addr_p, tree);
-
-  // set_keypair_addr(wots_addr, idx_leaf);
-  idx_leaf = s_idx_leaf;
-  wots_addr_p = __set_keypair_addr(wots_addr_p, idx_leaf);
-  wots_addr = wots_addr_p;
-
-  // fors_sign(sig, root, mhash, &ctx, wots_addr);
-    sig = s_sig;
-    root_p = root;
-    mhash_p = mhash;
-    pub_seed_p = pub_seed;
-    sk_seed_p = sk_seed;
-    wots_addr_p = wots_addr;
-  root_p = _fors_sign(sig, root_p, mhash_p, pub_seed_p, sk_seed_p, wots_addr_p);
-    root = root_p;
-
-  // sig += SPX_FORS_BYTES;
-  s_sig += SPX_FORS_BYTES;
-
-  ?{}, i = #set0_32();
-  while (i < SPX_D)
-  {
-    s_i = i;
-
-    // set_layer_addr(tree_addr, i);
-    tree_addr = __set_layer_addr(tree_addr, i);
-
-    // set_tree_addr(tree_addr, tree);
-    tree = s_tree;
-    tree_addr = __set_tree_addr(tree_addr, tree);
-
-    // copy_subtree_addr(wots_addr, tree_addr);
-    wots_addr = __copy_subtree_addr(wots_addr, tree_addr);
-
-    // set_keypair_addr(wots_addr, idx_leaf);
-    wots_addr = __set_keypair_addr(wots_addr, idx_leaf);
-
-    // merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf);
-            sig = s_sig;
-            auth_path_p = auth_path;
-            auth_path_p = __load_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(auth_path_p, sig);
-    root_p = root;
-    pub_seed_p = pub_seed;
-    sk_seed_p = sk_seed;
-    idx_leaf = s_idx_leaf;
-    
-            sig = s_sig; // TODO: Rewrite merkle sign but with reg u64 instead of reg ptr u8
-            __store_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(auth_path_p, sig); // TODO: Rewrite merkle sign but with reg u64 instead of reg ptr u8
-            auth_path = auth_path_p;
-
-    //sig += SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N;
-    s_sig += SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N;
-
-    // idx_leaf = (tree & ((1 << SPX_TREE_HEIGHT) - 1));
-    k = (1 << SPX_TREE_HEIGHT) - 1;
-    idx_leaf = s_tree;
-    t = k;
-    idx_leaf &= t;
-    s_idx_leaf = idx_leaf;
-
-    // tree = tree >> SPX_TREE_HEIGHT;
-    ?{}, tree = #SHR(tree, SPX_TREE_HEIGHT);
-    s_tree = tree;
-
-    i = s_i;
-    i += 1;
-  }
-}
-
-#[returnaddress="stack"]
-fn _crypto_sign_signature(
-  reg u64 sig,
-  reg u64 msg,
-  reg u64 msg_len,
-  reg ptr u8[SPX_SK_BYTES] sk
-)
-{
-  __crypto_sign_signature(sig, msg, msg_len, sk);
-}
-
-inline fn ___crypto_sign_signature_(
-  reg u64 r sig _sig_len m mlen _sk
-) -> reg u64
-{
-  stack u64 s_sig_len;
-
-  s_sig_len = _sig_len; // spill
-
-  stack u8[SPX_SK_BYTES] sk;
-  reg ptr u8[SPX_SK_BYTES] sk_p;
-
-  sk_p = sk;
-  sk_p  = __load_u8_array<SPX_SK_BYTES>(sk_p, _sk);
-
-  _crypto_sign_signature(sig, m, mlen, sk_p);
-
-  _sig_len = s_sig_len; // unspill
-  [_sig_len] = SPX_BYTES;
 
   ?{}, r = #set0();
   return r;

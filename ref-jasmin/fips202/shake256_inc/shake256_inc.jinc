@@ -43,8 +43,6 @@ inline fn __keccak_inc_absorb(
 
   reg u64 t u v z;
 
-  reg u8 t8;
-
   stack u64 s_inlen s_in s_i s_offset_in s_t s_u s_v s_z;
 
   reg ptr u64[25] non_absorbed_byes;
@@ -343,8 +341,6 @@ inline fn __keccak_inc_absorb_t<INLEN>(
   reg u64 i inlen offset_in;
 
   reg u64 t u v z;
-
-  reg u8 t8;
 
   stack u64 s_inlen s_i s_offset_in s_t s_u s_v s_z;
   stack ptr u8[INLEN] s_in;

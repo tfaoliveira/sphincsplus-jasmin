@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,25 +25,29 @@
 #define THASH simple
 #endif
 
+// NOTE: for testing purposes, randombytes always outputs the same value, so all the tests are the
+// same
 #ifndef TESTS
-#define TESTS 100
+#define TESTS 1
 #endif
 
 #ifndef MAX_MLEN
 #define MAX_MLEN 128
 #endif
 
-// extern int crypto_sign_seed_keypair_jazz(uint8_t *pk, uint8_t *sk, const uint8_t *seed);
-// extern int crypto_sign_keypair_jazz(uint8_t *pk, uint8_t *sk);
-// extern int crypto_sign_signature_jazz(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen,
+extern int crypto_sign_seed_keypair_jazz(uint8_t *pk, uint8_t *sk, const uint8_t *seed);
+extern int crypto_sign_keypair_jazz(uint8_t *pk, uint8_t *sk);
+// extern int crypto_sign_signature_jazz(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
+// mlen,
 //                                       const uint8_t *sk);
 
-// void test_crypto_sign_seed_keypair(void);
-// void test_crypto_sign_keypair(void);
+void test_crypto_sign_seed_keypair(void);
+void test_crypto_sign_keypair(void);
 // void test_crypto_sign_signature(void);
 
-/*
 void test_crypto_sign_seed_keypair(void) {
+    bool debug = true;
+
     uint8_t pk_jazz[SPX_PK_BYTES];
     uint8_t sk_jazz[SPX_SK_BYTES];
 
@@ -50,6 +55,8 @@ void test_crypto_sign_seed_keypair(void) {
     unsigned char sk_ref[SPX_SK_BYTES];
 
     uint8_t seed[CRYPTO_SEEDBYTES];
+
+    int res_ref, res_jazz;
 
     for (int i = 0; i < TESTS; i++) {
         memset(pk_jazz, 0, SPX_PK_BYTES);
@@ -59,20 +66,39 @@ void test_crypto_sign_seed_keypair(void) {
 
         randombytes(seed, CRYPTO_SEEDBYTES);
 
-        crypto_sign_seed_keypair(pk_ref, sk_ref, seed);
-        crypto_sign_seed_keypair_jazz(pk_jazz, sk_jazz, seed);
+        assert(memcmp(pk_jazz, pk_ref, SPX_PK_BYTES) == 0);
+        assert(memcmp(sk_jazz, sk_ref, SPX_SK_BYTES) == 0);
+
+        res_ref = crypto_sign_seed_keypair(pk_ref, sk_ref, seed);
+        res_jazz = crypto_sign_seed_keypair_jazz(pk_jazz, sk_jazz, seed);
+
+        if (debug && memcmp(pk_jazz, pk_ref, SPX_PK_BYTES) != 0) {
+            print_str_u8("[crypto_sign_seed_keypair]: pk ref", pk_ref, SPX_PK_BYTES);
+            print_str_u8("[crypto_sign_seed_keypair]: pk jazz", pk_jazz, SPX_PK_BYTES);
+        }
+
+        if (debug && memcmp(sk_jazz, sk_ref, SPX_SK_BYTES) != 0) {
+            print_str_u8("[crypto_sign_seed_keypair]: sk ref", sk_ref, SPX_SK_BYTES);
+            print_str_u8("[crypto_sign_seed_keypair]: sk jazz", sk_jazz, SPX_SK_BYTES);
+        }
 
         assert(memcmp(pk_jazz, pk_ref, SPX_PK_BYTES) == 0);
         assert(memcmp(sk_jazz, sk_ref, SPX_SK_BYTES) == 0);
+        assert(res_jazz == res_ref);
+        assert(res_jazz == 0);
     }
 }
 
 void test_crypto_sign_keypair(void) {
+    bool debug = true;
+
     uint8_t pk_jazz[SPX_PK_BYTES];
     uint8_t sk_jazz[SPX_SK_BYTES];
 
     unsigned char pk_ref[SPX_PK_BYTES];
     unsigned char sk_ref[SPX_SK_BYTES];
+
+    int res_ref, res_jazz;
 
     for (int i = 0; i < TESTS; i++) {
         memset(pk_jazz, 0, SPX_PK_BYTES);
@@ -80,19 +106,35 @@ void test_crypto_sign_keypair(void) {
         memset(pk_ref, 0, SPX_PK_BYTES);
         memset(sk_ref, 0, SPX_SK_BYTES);
 
-        crypto_sign_keypair(pk_ref, sk_ref);
-        crypto_sign_keypair_jazz(pk_jazz, sk_jazz);
+        assert(memcmp(pk_jazz, pk_ref, SPX_PK_BYTES) == 0);
+        assert(memcmp(sk_jazz, sk_ref, SPX_SK_BYTES) == 0);
+
+        res_ref = crypto_sign_keypair(pk_ref, sk_ref);
+        res_jazz = crypto_sign_keypair_jazz(pk_jazz, sk_jazz);
+
+        if (debug && memcmp(pk_jazz, pk_ref, SPX_PK_BYTES) != 0) {
+            print_str_u8("[crypto_sign_keypair]: pk ref", pk_ref, SPX_PK_BYTES);
+            print_str_u8("[crypto_sign_keypair]: pk jazz", pk_jazz, SPX_PK_BYTES);
+        }
+
+        if (debug && memcmp(sk_jazz, sk_ref, SPX_SK_BYTES) != 0) {
+            print_str_u8("[crypto_sign_keypair]: sk ref", sk_ref, SPX_SK_BYTES);
+            print_str_u8("[crypto_sign_keypair]: sk jazz", sk_jazz, SPX_SK_BYTES);
+        }
 
         assert(memcmp(pk_jazz, pk_ref, SPX_PK_BYTES) == 0);
         assert(memcmp(sk_jazz, sk_ref, SPX_SK_BYTES) == 0);
+
+        assert(res_jazz == res_ref);
+        assert(res_jazz == 0);
     }
 }
 
 void test_crypto_sign_signature(void) {
-    uint8_t pk_jazz[SPX_PK_BYTES];  // ignored
+    uint8_t pk_jazz[SPX_PK_BYTES];  // ignored (used to generate a valid keypair)
     uint8_t sk_jazz[SPX_SK_BYTES];
 
-    uint8_t pk_ref[SPX_PK_BYTES];  // ignored
+    uint8_t pk_ref[SPX_PK_BYTES];  // ignored (used to generate a valid keypair)
     uint8_t sk_ref[SPX_SK_BYTES];
 
     uint8_t *m_jazz;
@@ -138,12 +180,20 @@ void test_crypto_sign_signature(void) {
     }
 }
 
-*/
+void test_api() {
+    for (int i = 0; i < TESTS; i++) {
+    }
+}
 
 int main(void) {
-    // test_crypto_sign_seed_keypair();
-    // test_crypto_sign_keypair();
+// #ifndef TEST_FAST
+// #endif
+#if 0
+    test_crypto_sign_keypair();
+    #endif
+    test_crypto_sign_seed_keypair();
     // test_crypto_sign_signature();
-    printf("Pass sign: { params: %s ; thash:c %s}\n", xstr(PARAMS), xstr(THASH));
+    test_api();
+    printf("Pass sign: { params: %s ; thash: %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;
 }

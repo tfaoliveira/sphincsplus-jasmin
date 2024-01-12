@@ -18,7 +18,7 @@ inline fn __gen_chain(
 
   reg bool cond;
   reg u32 i t z;
-  stack u32 s_i s_t s_z;
+  stack u32 s_i s_t;
 
   reg u64 offset inlen;
 
@@ -159,7 +159,6 @@ inline fn __wots_checksum(
 
   reg u64 i;
   reg u64 csum t u;
-  stack u64 s_t;
 
   inline int k;
 

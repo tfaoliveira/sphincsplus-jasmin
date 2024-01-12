@@ -762,13 +762,13 @@ inline fn __fors_pk_from_sig(
   
   reg u32 idx_offset t;
   
-  stack u32 s_idx_offset s_t;
+  stack u32 s_idx_offset;
   
   inline int i;
 
   reg ptr u8[SPX_N] buf;
 
-  reg u32 addr type height;
+  reg u32 type height;
 
   ///////////////////////////// Initial spills (start from a clean state)
   s_pk = pk;

@@ -44,7 +44,6 @@ inline fn __treehash_wots(
   reg ptr u8[2 * SPX_N] current_p;
   reg ptr u8[SPX_N] buf;
 
-  reg u32 idx;
   reg u32 temp;
 
   stack u8[SPX_TREE_HEIGHT * SPX_N] nodes;
@@ -52,7 +51,7 @@ inline fn __treehash_wots(
 
   stack u32 s_exit_outer_loop s_exit_inner_loop;
 
-  stack u32 s_idx s_internal_idx_offset s_internal_idx s_internal_leaf s_h;
+  stack u32 s_idx s_internal_idx s_internal_leaf s_h;
   stack u64 s_h_spx_n;
 
   reg u64 out_offset in_offset bytes;
@@ -283,10 +282,10 @@ inline fn __merkle_sign(
 
   reg u32 wots_sign_leaf;
   stack u32[8] leaf_addr pk_addr;
-  stack u32[SPX_WOTS_LEN] wots_steps; // TODO: WE DO NOT NEED   THIS VARIABLKE I THINk
+  // stack u32[SPX_WOTS_LEN] wots_steps; // TODO: WE DO NOT NEED   THIS VARIABLKE I THINk
   // struct leaf info
 
-  reg u32 addr type;
+  reg u32 type;
 
   reg u64 offset;
 
@@ -390,7 +389,6 @@ inline fn __merkle_sign_(
      reg ptr u8[SPX_N],
      reg ptr u32[8]
 {
-  stack ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] s_sig;
   stack ptr u8[SPX_N] s_root;
   stack ptr u8[SPX_N] s_pub_seed;
   stack ptr u8[SPX_N] s_sk_seed;
