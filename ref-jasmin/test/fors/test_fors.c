@@ -5,20 +5,19 @@
 #include <string.h>
 
 #include "address.h"
+#include "api.h"
 #include "context.h"
-#include "fors.h"
 #include "fors.c"
+#include "fors.h"
 #include "hash.h"
-#include "thash.h"
 #include "macros.h"
 #include "notrandombytes.c"
 #include "params.h"
 #include "print.c"
-
-#include "api.h"
+#include "thash.h"
 
 #ifndef PARAMS
-#define PARAMS sphincs-shake-128f
+#define PARAMS sphincs - shake - 128f
 #endif
 
 #ifndef THASH
@@ -51,8 +50,7 @@ extern void fors_sign_jazz(uint8_t *sig, uint8_t *pk, const uint8_t *m, const ui
                            const uint8_t *sk_seed, const uint32_t fors_addr[8]);
 
 extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m,
-                                  const uint8_t *pub_seed, const uint8_t *sk_seed,
-                                  const uint32_t fors_addr[8]);
+                                  const uint8_t *pub_seed, const uint32_t fors_addr[8]);
 
 void test_fors_gen_sk(void);
 void test_fors_sk_to_leaf(void);
@@ -253,7 +251,7 @@ void test_pk_from_sig(void) {
         randombytes((uint8_t *)addr, 8 * sizeof(uint32_t));
 
         fors_pk_from_sig(pk_ref, sig, msg, &ctx, addr);
-        fors_pk_from_sig_jazz(pk_jazz, sig, msg, ctx.pub_seed, ctx.sk_seed, addr);
+        fors_pk_from_sig_jazz(pk_jazz, sig, msg, ctx.pub_seed, addr);
 
         if (memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) != 0) {
             print_str_u8("pk ref", pk_ref, SPX_FORS_PK_BYTES);
@@ -266,45 +264,43 @@ void test_pk_from_sig(void) {
 
 #endif
 
-void test_treehash_fors(void)
-{
-  #define MESSAGE_LENGTH 32
+void test_treehash_fors(void) {
+#define MESSAGE_LENGTH 32
 
-  uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
-  uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
+    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
+    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
 
-  uint8_t signature[CRYPTO_BYTES];
-  size_t signature_length;
+    uint8_t signature[CRYPTO_BYTES];
+    size_t signature_length;
 
-  uint8_t message[MESSAGE_LENGTH];
-  size_t message_length = MESSAGE_LENGTH;
+    uint8_t message[MESSAGE_LENGTH];
+    size_t message_length = MESSAGE_LENGTH;
 
-  for (int i = 0; i < 100; i++)
-  {
-    // note: the 'real' test is in fors.c file and it is activated when TEST_FORS_TREEHASH is defined
-    randombytes(message, MESSAGE_LENGTH);
+    for (int i = 0; i < 100; i++) {
+        // note: the 'real' test is in fors.c file and it is activated when TEST_FORS_TREEHASH is
+        // defined
+        randombytes(message, MESSAGE_LENGTH);
 
-    crypto_sign_keypair(public_key, secret_key);
-    crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-    crypto_sign_verify(signature, signature_length, message, message_length, public_key);
-  }
+        crypto_sign_keypair(public_key, secret_key);
+        crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+        crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+    }
 
-  #undef MESSAGE_LENGTH
+#undef MESSAGE_LENGTH
 }
 
 int main(void) {
-
 #if 0
     // test_message_to_indices_t();  // msg is a reg ptr u8[MSG_LEN]
     // TODO: Check this test. test_message_to_indices_t should work because it
     // is called in other functions and those functions pass the tests
 #endif
-    test_fors_gen_sk(); // WORKS
-    test_fors_sk_to_leaf(); // WORKS
-    test_fors_gen_leafx1(); // works
-    test_pk_from_sig(); // works
-    test_fors_sign(); // Works
-    test_treehash_fors(); // Works
+    test_fors_gen_sk();      // WORKS
+    test_fors_sk_to_leaf();  // WORKS
+    test_fors_gen_leafx1();  // works
+    test_pk_from_sig();      // works
+    test_fors_sign();        // Works
+    test_treehash_fors();    // Works
 
     printf("PASS: fors = { msg len : %d ; params : %s }\n", MSG_LEN, xstr(PARAMS));
 

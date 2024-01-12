@@ -143,7 +143,7 @@ export fn message_to_indices_t_jazz<MSG_LEN>(
 
 export fn fors_sign_jazz(reg u64 sig _pk _msg _pub_seed _sk_seed _fors_addr)
 {
-   stack u8[SPX_FORS_PK_BYTES] pk;
+  stack u8[SPX_FORS_PK_BYTES] pk;
   stack u8[SPX_FORS_MSG_BYTES] msg;
   stack u8[SPX_N] pub_seed;
   stack u8[SPX_N] sk_seed;
@@ -151,7 +151,7 @@ export fn fors_sign_jazz(reg u64 sig _pk _msg _pub_seed _sk_seed _fors_addr)
 
   stack u64 s_pk;
 
-  pk = __load_u8_array<SPX_FORS_PK_BYTES>(pk, _pk);
+  // pk = __load_u8_array<SPX_FORS_PK_BYTES>(pk, _pk); // we dont need to read this value because we only write to this array
   msg = __load_u8_array<SPX_FORS_MSG_BYTES>(msg, _msg);
   pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
   sk_seed = __load_u8_array<SPX_N>(sk_seed, _sk_seed);
@@ -166,7 +166,7 @@ export fn fors_sign_jazz(reg u64 sig _pk _msg _pub_seed _sk_seed _fors_addr)
 }//<>
 
 export fn fors_pk_from_sig_jazz(
-  reg u64 _pk sig _msg _pub_seed _sk_seed _fors_addr
+  reg u64 _pk sig _msg _pub_seed _fors_addr
 )
 {
   stack u8[SPX_N] pk; // root
@@ -180,12 +180,11 @@ export fn fors_pk_from_sig_jazz(
   pk = __load_u8_array<SPX_N>(pk, _pk);
   msg = __load_u8_array<SPX_FORS_MSG_BYTES>(msg, _msg);
   pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
-  sk_seed = __load_u8_array<SPX_N>(sk_seed, _sk_seed);
   fors_addr = __load_u32_array<8>(fors_addr, _fors_addr);
 
   s_pk = _pk;
 
-  pk = __fors_pk_from_sig_(pk, sig, msg, pub_seed, sk_seed, fors_addr);
+  pk = __fors_pk_from_sig_(pk, sig, msg, pub_seed, fors_addr);
   
   _pk = s_pk;
   __store_u8_array<SPX_N>(pk, _pk);

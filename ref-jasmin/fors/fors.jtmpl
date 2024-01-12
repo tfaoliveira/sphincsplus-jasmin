@@ -732,7 +732,6 @@ inline fn __fors_pk_from_sig(
   reg u64 sig,
   reg ptr u8[SPX_FORS_MSG_BYTES] msg,
   reg ptr u8[SPX_N] pub_seed,
-  reg ptr u8[SPX_N] sk_seed,
   reg ptr u32[8] fors_addr
 ) -> reg ptr u8[SPX_N]
 {
@@ -741,7 +740,6 @@ inline fn __fors_pk_from_sig(
   stack u64 s_sig;
   stack ptr u8[SPX_FORS_MSG_BYTES] s_msg;
   stack ptr u8[SPX_N] s_pub_seed;
-  stack ptr u8[SPX_N] s_sk_seed;
   stack ptr u32[8] s_fors_addr;
   /////////////////////////////////////////
   
@@ -775,7 +773,6 @@ inline fn __fors_pk_from_sig(
   s_sig = sig;
   s_msg = msg;
   s_pub_seed = pub_seed;
-  s_sk_seed = sk_seed;
   s_fors_addr = fors_addr;
   /////////////////////////////
 
@@ -879,11 +876,10 @@ fn _fors_pk_from_sig(
   reg u64 sig,
   reg ptr u8[SPX_FORS_MSG_BYTES] msg,
   reg ptr u8[SPX_N] pub_seed,
-  reg ptr u8[SPX_N] sk_seed,
   reg ptr u32[8] fors_addr
 ) -> reg ptr u8[SPX_N]
 {
-  pk = __fors_pk_from_sig(pk, sig, msg, pub_seed, sk_seed, fors_addr);
+  pk = __fors_pk_from_sig(pk, sig, msg, pub_seed, fors_addr);
   return pk;
 }
 
@@ -892,7 +888,6 @@ inline fn __fors_pk_from_sig_(
   reg u64 sig,
   reg ptr u8[SPX_FORS_MSG_BYTES] msg,
   reg ptr u8[SPX_N] pub_seed,
-  reg ptr u8[SPX_N] sk_seed,
   reg ptr u32[8] fors_addr
 ) -> reg ptr u8[SPX_N]
 {
@@ -900,10 +895,9 @@ inline fn __fors_pk_from_sig_(
   sig = sig;
   msg = msg;
   pub_seed = pub_seed;
-  sk_seed = sk_seed;
   fors_addr = fors_addr;
 
-  pk = _fors_pk_from_sig(pk, sig, msg, pub_seed, sk_seed, fors_addr);
+  pk = _fors_pk_from_sig(pk, sig, msg, pub_seed, fors_addr);
 
   pk = pk;
   return pk;
