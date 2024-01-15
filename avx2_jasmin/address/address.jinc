@@ -1,0 +1,253 @@
+
+
+// 
+// Specify which level of Merkle tree (the "layer") we're working on
+// 
+inline fn __set_layer_addr(
+  reg ptr u32[8] addr,
+  reg u32 layer)
+  ->
+  reg ptr u32[8]
+{
+  // corresponding code in the C implementation:
+  // - ((unsigned char *)addr)[SPX_OFFSET_LAYER] = (unsigned char)layer;
+
+  addr[u8 SPX_OFFSET_LAYER] = (8u) layer;
+
+  return addr;
+}
+
+
+// 
+// Specify which Merkle tree within the level (the "tree address") we're working on
+//
+inline fn __set_tree_addr(
+  reg ptr u32[8] addr,
+  reg u64 tree)
+  ->
+  reg ptr u32[8]
+{
+  // corresponding code in the C implementation:
+  // - ull_to_bytes(&((unsigned char *)addr)[SPX_OFFSET_TREE], 8, tree);
+
+  inline int i;
+
+  tree = tree;
+  tree = #BSWAP_64(tree); // little-endian
+
+  // at the time of this implementation, SPX_OFFSET_TREE is defined as
+  // - 1 when sha2
+  // - 8 when shake
+  // - 8 when haraka
+
+  // note: for the moment, only the 'generic' version of the copy is implemented/tested
+  // TODO: optimize with an (static resolved) if to check if it is safe to do:
+  // - addr[u64 SPX_OFFSET_TREE >> 3] = tree;
+
+  for i=0 to 8
+  {  addr[u8 SPX_OFFSET_TREE + i] = (8u) tree;
+     if(i != 7){ tree >>= 8; } // statically resolved if
+  }
+
+  return addr;
+}
+
+
+// 
+// Specify the reason we'll use this address structure for, that is, what
+// hash will we compute with it.  This is used so that unrelated types of
+// hashes don't accidentally get the same address structure.  The type will be
+// one of the SPX_ADDR_TYPE constants
+//
+inline fn __set_type(
+  reg ptr u32[8] addr,
+  reg u32 type)
+  ->
+  reg ptr u32[8]
+{
+  // corresponding code in the C implementation:
+  // - ((unsigned char *)addr)[SPX_OFFSET_TYPE] = (unsigned char)type;
+
+  addr[u8 SPX_OFFSET_TYPE] = (8u) type;
+
+  return addr;
+}
+
+
+// 
+// Copy the layer and tree fields of the address structure.  This is used
+// when we're doing multiple types of hashes within the same Merkle tree
+// 
+inline fn __copy_subtree_addr(
+  reg ptr u32[8] out,
+  reg ptr u32[8] in)
+  ->
+  reg ptr u32[8]
+{
+  // corresponding code in the C implementation:
+  // - memcpy( out, in, SPX_OFFSET_TREE+8 );
+
+  // similarly to the notes from __set_tree_addr, TODO, optimize
+
+  inline int i;
+  reg u8 v;
+
+  for i=0 to SPX_OFFSET_TREE+8
+  { v = in[u8 i];
+    out[u8 i] = v; }
+
+  return out;
+}
+
+
+// These functions are used for OTS addresses.
+
+
+// 
+// Specify which Merkle leaf we're working on; that is, which OTS keypair
+// we're talking about.
+// 
+inline fn __set_keypair_addr(
+  reg ptr u32[8] addr,
+  reg u32 keypair)
+  ->
+  reg ptr u32[8]
+{
+  // corresponding code in the C implementation:
+  // - #if SPX_FULL_HEIGHT/SPX_D > 8
+  // -   ((unsigned char *)addr)[SPX_OFFSET_KP_ADDR2] = (unsigned char)(keypair >> 8);
+  // - #endif
+  // -   ((unsigned char *)addr)[SPX_OFFSET_KP_ADDR1] = (unsigned char)keypair;
+
+  reg u32 t;
+
+  if( (SPX_FULL_HEIGHT / SPX_D) > 8 )
+  { t = keypair;
+    t >>= 8; 
+    addr[u8 SPX_OFFSET_KP_ADDR2] = (8u) t;
+  }
+
+  addr[u8 SPX_OFFSET_KP_ADDR1] = (8u) keypair;
+
+  return addr;
+}
+
+
+// 
+// Copy the layer, tree and keypair fields of the address structure.  This is
+// used when we're doing multiple things within the same OTS keypair
+// 
+inline fn __copy_keypair_addr(
+  reg ptr u32[8] out,
+  reg ptr u32[8] in)
+  ->
+  reg ptr u32[8]
+{
+  // corresponding code in the C implementation:
+  // - memcpy( out, in, SPX_OFFSET_TREE+8 );
+  // - #if SPX_FULL_HEIGHT/SPX_D > 8
+  // -  ((unsigned char *)out)[SPX_OFFSET_KP_ADDR2] = ((unsigned char *)in)[SPX_OFFSET_KP_ADDR2];
+  // - #endif
+  // - ((unsigned char *)out)[SPX_OFFSET_KP_ADDR1] = ((unsigned char *)in)[SPX_OFFSET_KP_ADDR1];
+
+  reg u8 t;
+
+  out = __copy_subtree_addr(out, in); // same as memcpy( out, in, SPX_OFFSET_TREE+8 )
+
+  if( (SPX_FULL_HEIGHT / SPX_D) > 8 )
+  { t = in[u8 SPX_OFFSET_KP_ADDR2];
+    out[u8 SPX_OFFSET_KP_ADDR2] = t;
+  }
+
+  t = in[u8 SPX_OFFSET_KP_ADDR1];
+  out[u8 SPX_OFFSET_KP_ADDR1] = t;
+
+  return out;
+}
+
+
+// 
+// Specify which Merkle chain within the OTS we're working with
+// (the chain address)
+// 
+inline fn __set_chain_addr(
+  reg ptr u32[8] addr,
+  reg u32 chain)
+  ->
+  reg ptr u32[8]
+{
+  // corresponding code in the C implementation:
+  // - ((unsigned char *)addr)[SPX_OFFSET_CHAIN_ADDR] = (unsigned char)chain;
+
+  addr[u8 SPX_OFFSET_CHAIN_ADDR] = (8u) chain;
+
+  return addr;
+}
+
+
+//
+// Specify where in the Merkle chain we are
+// (the hash address)
+//
+inline fn __set_hash_addr(
+  reg ptr u32[8] addr,
+  reg u32 hash)
+  ->
+  reg ptr u32[8]
+{
+  // corresponding code in the C implementation:
+  // - ((unsigned char *)addr)[SPX_OFFSET_CHAIN_ADDR] = (unsigned char)chain;
+
+  addr[u8 SPX_OFFSET_HASH_ADDR] = (8u) hash;
+
+  return addr;
+}
+
+
+// These functions are used for all hash tree addresses (including FORS).
+
+
+// 
+// Specify the height of the node in the Merkle/FORS tree we are in
+// (the tree height)
+// 
+inline fn __set_tree_height(
+  reg ptr u32[8] addr,
+  reg u32 tree_height)
+  ->
+  reg ptr u32[8]
+{
+  // corresponding code in the C implementation:
+  // - ((unsigned char *)addr)[SPX_OFFSET_TREE_HGT] = (unsigned char)tree_height;
+
+  addr[u8 SPX_OFFSET_TREE_HGT] = (8u) tree_height;
+
+  return addr;
+}
+
+
+// 
+// Specify the distance from the left edge of the node in the Merkle/FORS tree
+// (the tree index)
+// 
+inline fn __set_tree_index(
+  reg ptr u32[8] addr,
+  reg u32 tree_index)
+  ->
+  reg ptr u32[8]
+{
+  // corresponding code in the C implementation:
+  // - u32_to_bytes(&((unsigned char *)addr)[SPX_OFFSET_TREE_INDEX], tree_index );
+
+  inline int i;
+
+  tree_index = #BSWAP_32(tree_index); // little-endian
+
+  for i=0 to 4
+  {  addr[u8 SPX_OFFSET_TREE_INDEX + i] = (8u) tree_index;
+     if(i != 4){ tree_index >>= 8; }
+  }
+
+  return addr;
+}
+

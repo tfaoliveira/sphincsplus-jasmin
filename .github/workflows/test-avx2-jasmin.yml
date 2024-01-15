@@ -1,0 +1,25 @@
+name: Tests for jasmin-avx2 implementation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ref-jasmin
+  pull_request:
+
+jobs:
+  test:
+    runs-on: [self-hosted, linux, X64, amd64-main]
+    strategy:
+      matrix:
+        directory:
+          - address
+    steps:
+      - uses: actions/checkout@v1
+      - name: Compile tests
+        run:
+          JASMIN=$(which_jasminc) make -C avx2_jasmin/test/${{ matrix.directory }}
+      - name: Run tests
+        run:
+          JASMIN=$(which_jasminc) make -C avx2_jasmin/test/${{ matrix.directory }} run
+          

@@ -1,0 +1,238 @@
+
+from Sphincs require "address/address.jinc"
+
+inline fn __load_addr(reg ptr u32[8] addr, reg u64 p) -> reg ptr u32[8]
+{
+  inline int i;
+  reg u32 t;
+
+  for i=0 to 8
+  { t = (u32)[p + 4*i];
+    addr[i] = t;
+  }
+
+  return addr;
+}
+
+
+inline fn __store_addr(reg ptr u32[8] addr, reg u64 p)
+{
+  inline int i;
+  reg u32 t;
+
+  for i=0 to 8
+  { t = addr[i];
+    (u32)[p + 4*i] = t;
+  }
+}
+
+
+// 
+// Specify which level of Merkle tree (the "layer") we're working on
+// 
+export fn set_layer_addr_jazz(
+  reg u64 addr_ptr,
+  reg u32 layer)
+{
+  stack u32[8] addr_s;
+  reg ptr u32[8] addr_p;
+
+  addr_p = addr_s;
+  addr_p = __load_addr(addr_p, addr_ptr);
+  
+    addr_p = __set_layer_addr(addr_p, layer);
+ 
+  __store_addr(addr_p, addr_ptr);
+}
+
+
+// 
+// Specify which Merkle tree within the level (the "tree address") we're working on
+//
+export fn set_tree_addr_jazz(
+  reg u64 addr_ptr,
+  reg u64 tree)
+{
+  stack u32[8] addr_s;
+  reg ptr u32[8] addr_p;
+
+  addr_p = addr_s;
+  addr_p = __load_addr(addr_p, addr_ptr);
+  
+    addr_p = __set_tree_addr(addr_p, tree);
+ 
+  __store_addr(addr_p, addr_ptr);
+}
+
+
+// 
+// Specify the reason we'll use this address structure for, that is, what
+// hash will we compute with it.  This is used so that unrelated types of
+// hashes don't accidentally get the same address structure.  The type will be
+// one of the SPX_ADDR_TYPE constants
+//
+export fn set_type_jazz(
+  reg u64 addr_ptr,
+  reg u32 type)
+{
+  stack u32[8] addr_s;
+  reg ptr u32[8] addr_p;
+
+  addr_p = addr_s;
+  addr_p = __load_addr(addr_p, addr_ptr);
+  
+    addr_p = __set_type(addr_p, type);
+ 
+  __store_addr(addr_p, addr_ptr);
+}
+
+
+// 
+// Copy the layer and tree fields of the address structure.  This is used
+// when we're doing multiple types of hashes within the same Merkle tree
+// 
+export fn copy_subtree_addr_jazz(
+  reg u64 out_addr_ptr,
+  reg u64 in_addr_ptr)
+{
+  stack u32[8] out_addr_s, in_addr_s;
+  reg ptr u32[8] out_addr_p, in_addr_p;
+
+  out_addr_p = out_addr_s;
+  in_addr_p = in_addr_s;
+
+  in_addr_p = __load_addr(in_addr_p, in_addr_ptr);
+  out_addr_p = __load_addr(out_addr_p, out_addr_ptr);
+  
+  out_addr_p = __copy_subtree_addr(out_addr_p, in_addr_p);
+ 
+  __store_addr(out_addr_p, out_addr_ptr);
+}
+
+
+// 
+// Specify which Merkle leaf we're working on; that is, which OTS keypair
+// we're talking about.
+//
+export fn set_keypair_addr_jazz(
+  reg u64 addr_ptr,
+  reg u32 keypair)
+{
+  stack u32[8] addr_s;
+  reg ptr u32[8] addr_p;
+
+  addr_p = addr_s;
+  addr_p = __load_addr(addr_p, addr_ptr);
+  
+    addr_p = __set_keypair_addr(addr_p, keypair);
+ 
+  __store_addr(addr_p, addr_ptr);
+}
+
+
+// 
+// Copy the layer, tree and keypair fields of the address structure.  This is
+// used when we're doing multiple things within the same OTS keypair
+// 
+export fn copy_keypair_addr_jazz(
+  reg u64 out_addr_ptr,
+  reg u64 in_addr_ptr)
+{
+  stack u32[8] out_addr_s, in_addr_s;
+  reg ptr u32[8] out_addr_p, in_addr_p;
+
+  out_addr_p = out_addr_s;
+  in_addr_p = in_addr_s;
+
+  in_addr_p = __load_addr(in_addr_p, in_addr_ptr);
+  out_addr_p = __load_addr(out_addr_p, out_addr_ptr);
+  
+  out_addr_p = __copy_keypair_addr(out_addr_p, in_addr_p);
+ 
+  __store_addr(out_addr_p, out_addr_ptr);
+}
+
+
+// 
+// Specify which Merkle chain within the OTS we're working with
+// (the chain address)
+//
+export fn set_chain_addr_jazz(
+  reg u64 addr_ptr,
+  reg u32 chain)
+{
+  stack u32[8] addr_s;
+  reg ptr u32[8] addr_p;
+
+  addr_p = addr_s;
+  addr_p = __load_addr(addr_p, addr_ptr);
+  
+    addr_p = __set_chain_addr(addr_p, chain);
+ 
+  __store_addr(addr_p, addr_ptr);
+}
+
+
+//
+// Specify where in the Merkle chain we are
+// (the hash address)
+//
+export fn set_hash_addr_jazz(
+  reg u64 addr_ptr,
+  reg u32 hash)
+{
+  stack u32[8] addr_s;
+  reg ptr u32[8] addr_p;
+
+  addr_p = addr_s;
+  addr_p = __load_addr(addr_p, addr_ptr);
+  
+    addr_p = __set_hash_addr(addr_p, hash);
+ 
+  __store_addr(addr_p, addr_ptr);
+}
+
+
+// These functions are used for all hash tree addresses (including FORS).
+
+
+// 
+// Specify the height of the node in the Merkle/FORS tree we are in
+// (the tree height)
+// 
+export fn set_tree_height_jazz(
+  reg u64 addr_ptr,
+  reg u32 tree_height)
+{
+  stack u32[8] addr_s;
+  reg ptr u32[8] addr_p;
+
+  addr_p = addr_s;
+  addr_p = __load_addr(addr_p, addr_ptr);
+  
+    addr_p = __set_tree_height(addr_p, tree_height);
+ 
+  __store_addr(addr_p, addr_ptr);
+}
+
+
+// 
+// Specify the distance from the left edge of the node in the Merkle/FORS tree
+// (the tree index)
+// 
+export fn set_tree_index_jazz(
+  reg u64 addr_ptr,
+  reg u32 tree_index)
+{
+  stack u32[8] addr_s;
+  reg ptr u32[8] addr_p;
+
+  addr_p = addr_s;
+  addr_p = __load_addr(addr_p, addr_ptr);
+  
+    addr_p = __set_tree_index(addr_p, tree_index);
+ 
+  __store_addr(addr_p, addr_ptr);
+}
+
+
