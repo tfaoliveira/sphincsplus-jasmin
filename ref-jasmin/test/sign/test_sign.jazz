@@ -14,8 +14,30 @@ export fn crypto_sign_keypair_jazz(reg u64 _pk _sk) -> reg u64
   return r;
 }
 
-export fn crypto_sign_signature_jazz() -> reg u64 
+export fn crypto_sign_signature_jazz(reg u64 sig _sig_len m mlen _sk) -> reg u64 
 {
   reg u64 r;
+  r = ___crypto_sign_signature_(sig, _sig_len, m, mlen, _sk);
+  return r;
+}
+
+export fn crypto_sign_verify_jazz(reg u64 sig sig_len m m_len _pk) -> reg u64
+{
+  reg u64 r;
+  r = __crypto_sign_verify_(sig, sig_len, m, m_len, _pk);
+  return r;
+}
+
+export fn crypto_sign_jazz() -> reg u64
+{
+  reg u64 r;
+  r = 0;
+  return r;
+}
+
+export fn crypto_sign_open_jazz() -> reg u64
+{
+  reg u64 r;
+  r = 0;
   return r;
 }

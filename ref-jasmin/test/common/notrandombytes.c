@@ -252,7 +252,9 @@ static void print_green(const char *format, ...) {
 
 uint8_t* __jasmin_syscall_randombytes__(uint8_t* x, uint64_t xlen)
 {
-  print_green("[DEBUG from #randombytes]: ");
+  static int functionCallCounter = 0;
+
+  print_green("[DEBUG from #randombytes (%d)]: ", ++functionCallCounter);
   print_str_u8("buffer", x, xlen);
   return x;
 }

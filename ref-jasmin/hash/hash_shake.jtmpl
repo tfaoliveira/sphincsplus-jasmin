@@ -101,62 +101,12 @@ inline fn __gen_message_random(
   return R;
 }
 
-/// FIXME: DELETE THIS (ESTA FUNCAOI NAO E USADA: NAO E PRECISOU OUTLENPQ OUTLEN E SPEMRP SPX_N)
-inline fn __gen_message_random<OUTLEN>(
-  reg ptr u8[OUTLEN] R,
-  reg ptr u8[SPX_N] sk_prf,
-  reg ptr u8[SPX_N] optrand, // optional randomization value
-  reg u64 msg,
-  reg u64 msg_len
-) -> reg ptr u8[OUTLEN]
-{
-  stack u64[26] shake_state;
-  reg ptr u64[26] shake_state_p;
-
-  stack ptr u8[SPX_N] s_sk_prf, s_optrand;
-  stack ptr u8[OUTLEN] s_R;
-  stack u64 s_msg s_msg_len;
-
-  // Spill
-  s_R = R;
-  s_sk_prf = sk_prf;
-  s_optrand = optrand;
-  s_msg = msg;
-  s_msg_len = msg_len;
-
-  shake_state_p = shake_state;
-
-  shake_state_p = __shake256_inc_init_(shake_state_p);
-
-  sk_prf = s_sk_prf;
-  shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, sk_prf);
-
-  optrand = s_optrand;
-  shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, optrand);
-
-  msg = s_msg; msg_len = s_msg_len;
-  shake_state_p = _shake256_inc_absorb(shake_state_p, msg, msg_len);
-
-  shake_state_p = __shake256_inc_finalize(shake_state_p);
-
-  R = s_R;
-  R, _ = __shake256_inc_squeeze_t<OUTLEN>(R, shake_state_p);
-
-  return R;
-}//<>
-
-/**
- * Computes the message hash using R, the public key, and the message.
- * Outputs the message digest and the index of the leaf. The index is split in
- * the tree index and the leaf index, for convenient copying to an address.
- * 
- */
-inline fn __hash_message<PKLEN>( // FIXME:
+inline fn __hash_message(
   reg ptr u8[SPX_FORS_MSG_BYTES] digest,
   reg u64 tree,
   reg u32 leaf_idx,
   reg ptr u8[SPX_N] R,
-  reg ptr u8[PKLEN] pk,
+  reg ptr u8[SPX_PK_BYTES] pk,
   reg u64 msg msg_len
 ) -> reg ptr u8[SPX_FORS_MSG_BYTES], reg u64, reg u32
 {
@@ -174,7 +124,7 @@ inline fn __hash_message<PKLEN>( // FIXME:
   stack ptr u8[SPX_FORS_MSG_BYTES] s_digest;
   stack u64 s_tree s_msg s_msg_len;
   stack u32 s_leaf_idx;
-  stack ptr u8[PKLEN] s_pk;
+  stack ptr u8[SPX_PK_BYTES] s_pk;
 
   reg u64 offset;
   reg u64 t u;
@@ -197,7 +147,7 @@ inline fn __hash_message<PKLEN>( // FIXME:
   shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, R);
 
   pk = s_pk;
-  shake256_state_p = __shake256_inc_absorb_t<PKLEN>(shake256_state_p, pk);
+  shake256_state_p = __shake256_inc_absorb_t<SPX_PK_BYTES>(shake256_state_p, pk);
 
   msg = s_msg;
   msg_len = s_msg_len;
@@ -210,7 +160,7 @@ inline fn __hash_message<PKLEN>( // FIXME:
 
   offset = 0;
   digest = s_digest;
-  digest, _ = __memcpy_u8u8<SPX_FORS_MSG_BYTES, SPX_DGST_BYTES>(digest, offset, buf_p);
+  digest, _, _ = __memcpy_u8u8_2<SPX_FORS_MSG_BYTES, SPX_DGST_BYTES>(digest, offset, buf_p, 0, SPX_FORS_MSG_BYTES);
 
   tree_bytes = buf[SPX_FORS_MSG_BYTES:SPX_TREE_BYTES];
   tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, tree_bytes);
@@ -232,21 +182,21 @@ inline fn __hash_message<PKLEN>( // FIXME:
   leaf_idx &= (32u) t;
 
   return digest, tree, leaf_idx;
-}//<>
+}
 
 #[returnaddress="stack"]
-fn _hash_message<PKLEN>( // FIXME:
+fn _hash_message(
   reg ptr u8[SPX_FORS_MSG_BYTES] digest,
   reg u64 tree,
   reg u32 leaf_idx,
   reg ptr u8[SPX_N] R,
-  reg ptr u8[PKLEN] pk,
+  reg ptr u8[SPX_PK_BYTES] pk,
   reg u64 msg,
   reg u64 msg_len
 ) -> reg ptr u8[SPX_FORS_MSG_BYTES], 
      reg u64, 
      reg u32
 {
-  digest, tree, leaf_idx = __hash_message<PKLEN>(digest, tree, leaf_idx, R, pk, msg, msg_len);
+  digest, tree, leaf_idx = __hash_message(digest, tree, leaf_idx, R, pk, msg, msg_len);
   return digest, tree, leaf_idx;
-}//<>
+}

@@ -149,14 +149,14 @@ export fn hash_message_jazz(
   stack u64 s_digest s_tree s_leaf_idx;
 
   R, pk = __load_args(R, pk, args);
-  tree = [_tree];
-  leaf_idx = (u32)[_leaf_idx];
+  // tree = [_tree];              // NOTE: we only write these values, we dont read them
+  // leaf_idx = (u32)[_leaf_idx]; // NOTE: we only write these values, we dont read them
 
   s_digest = _digest;
   s_tree = _tree;
   s_leaf_idx = _leaf_idx;
 
-  digest, tree, leaf_idx = __hash_message<SPX_PK_BYTES>(digest, tree, leaf_idx, R, pk, msg, msg_len);
+  digest, tree, leaf_idx = __hash_message(digest, tree, leaf_idx, R, pk, msg, msg_len);
 
   _digest = s_digest;
   _tree = s_tree;

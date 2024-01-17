@@ -98,7 +98,6 @@ inline fn __thash_inplace(
   reg ptr u8[SPX_N] bitmask_p;
 
   stack ptr u8[SPX_N] out_s;
-  stack ptr u8[SPX_N] in_s;
 
   reg u64 i offset;
   stack u64 offset_s;

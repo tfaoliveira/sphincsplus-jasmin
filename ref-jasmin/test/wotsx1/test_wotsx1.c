@@ -52,6 +52,11 @@ int main(void) {
         crypto_sign_keypair(public_key, secret_key);
         crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
         crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+        // TODO: FIXME: Assert == 0 here fails. But the asserts in merkle related to wotsx1 work
+        // ?????????????
+        //
+        // TODO: FIXME: Also, treehash_wots is used to implement merkle, but these assert in the
+        // merkle tests also works???
     }
 
 #undef MESSAGE_LENGTH

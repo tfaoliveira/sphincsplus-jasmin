@@ -1,9 +1,9 @@
 #include <assert.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #include "api.h"
 #include "context.h"
@@ -66,22 +66,21 @@ void test_merkle_sign(void) {
 
         assert(memcmp(sig_ref, sig_jazz, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0);
         assert(memcmp(root_ref, root_jazz, SPX_N) == 0);
-        assert(memcmp(wots_addr_ref, wots_addr_jazz, 8 * sizeof(uint32_t)) == 0);  // FAILS (?)
+        assert(memcmp(wots_addr_ref, wots_addr_jazz, 8 * sizeof(uint32_t)) == 0);
         assert(memcmp(tree_addr_ref, tree_addr_jazz, 8 * sizeof(uint32_t)) == 0);
 
         merkle_sign(sig_ref, root_ref, &ctx, wots_addr_ref, tree_addr_ref, idx_leaf);
         merkle_sign_jazz(sig_jazz, root_jazz, &ctx, wots_addr_jazz, tree_addr_jazz, idx_leaf);
 
         assert(memcmp(sig_ref, sig_jazz, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0);
-        
-        
+
         if (debug && memcmp(root_ref, root_jazz, SPX_N) != 0) {
             print_str_u8("Root Ref", root_ref, SPX_N);
             print_str_u8("Root Jazz", root_jazz, SPX_N);
         }
 
         assert(memcmp(root_ref, root_jazz, SPX_N) == 0);
-        assert(memcmp(wots_addr_ref, wots_addr_jazz, 8 * sizeof(uint32_t)) == 0);  // FAILS (?)
+        assert(memcmp(wots_addr_ref, wots_addr_jazz, 8 * sizeof(uint32_t)) == 0);
         assert(memcmp(tree_addr_ref, tree_addr_jazz, 8 * sizeof(uint32_t)) == 0);
     }
 }
@@ -138,9 +137,8 @@ void test_merkle_gen_root_2(void) {
 }
 
 int main(void) {
-    // Test first with genuine input
     test_merkle_gen_root_1();  // test in sign.c (also tests merkle sign)
-    test_merkle_sign();  // This uses random bytes 
+    test_merkle_sign();        // This uses random bytes
     test_merkle_gen_root_2();  // test with randombytes
     printf("Pass merkle : { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;

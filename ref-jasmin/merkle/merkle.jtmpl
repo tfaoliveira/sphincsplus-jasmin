@@ -413,7 +413,7 @@ inline fn __merkle_sign_(
   tree_addr = s_tree_addr;
   idx_leaf = s_idx_leaf;
 
-  sig, root, tree_addr = __merkle_sign(sig, root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
+  sig, root, tree_addr = _merkle_sign(sig, root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
 
   sig = sig;
   root = root;
