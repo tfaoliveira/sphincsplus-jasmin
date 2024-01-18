@@ -1,5 +1,4 @@
 # ------------------------------------------------------------------------------
-AS       ?= as
 CC       ?= clang
 CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 	          -Wundef -Wshadow -Wcast-align -Wpointer-arith \
@@ -10,7 +9,7 @@ CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning # -wunusedvar -wduplicatevar #-lazy-regalloc
+JFLAGS       ?= -wunusedvar -wduplicatevar # -lazy-regalloc
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
@@ -56,7 +55,7 @@ $(TESTS):
 bin/test_sign_%: bin/test_sign_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
 	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
-	-DDEBUG_PRINT \
+	-DDEBUG_FORS_SIGN -DDEBUG_FORS_PK_FROM_SIG \
 -I../common -I../../ -I../../params \
 test_sign.c $< ../../hash_$(GET_HASH).c ../../merkle.c \
 ../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c \
@@ -67,7 +66,7 @@ bin/test_sign_%.out: bin/test_sign_%
 	@./$<
 
 bin/:
-	mkdir -p bin/
+	mkdir -p bin/ fors_sign_failed_tests/ fors_pk_from_sig_failed_tests/
 
 # ------------------------------------------------------------------------------
 .PHONY: clean

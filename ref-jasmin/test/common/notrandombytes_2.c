@@ -215,10 +215,19 @@ void resetrandombytes(void)
   memset(g0, 0, KEYBYTES);
 }
 
+#ifndef STUPID_RANDOMBYTES
 void randombytes(uint8_t* x, uint64_t xlen)
 {
   randombytes_internal(x,xlen,g0,r0,&pos0);
 }
+#else 
+void randombytes(uint8_t* x, uint64_t xlen)
+{
+  for (size_t i = 0; i < xlen; i++) { x[i] = 0x12; }
+}
+#endif
+
+// ////////
 
 void resetrandombytes1(void)
 {
@@ -233,8 +242,22 @@ void randombytes1(uint8_t* x, uint64_t xlen)
 
 // ////////
 
+#ifndef DEBUG_PRINT
 uint8_t* __jasmin_syscall_randombytes__(uint8_t* x, uint64_t xlen)
 {
   randombytes1(x, xlen);
   return x;
 }
+
+#else
+
+uint8_t* __jasmin_syscall_randombytes__(uint8_t* x, uint64_t xlen)
+{
+  static int functionCallCounter = 0;
+
+  print_green("[DEBUG from #randombytes (%d)]: ", ++functionCallCounter);
+  print_str_u8("buffer", x, xlen);
+  return x;
+}
+
+#endif

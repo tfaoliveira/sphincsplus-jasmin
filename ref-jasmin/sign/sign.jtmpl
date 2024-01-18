@@ -220,14 +220,9 @@ inline fn __crypto_sign_signature(
   stack u32 s_i;
 
   inline int k;
-  reg u32 t;
 
   stack u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] auth_path; // FIXME: Fazer _merkle_sign com um reg 64 em vez de reg ptr
   reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] auth_path_p;
-
-  inline int j;
-
-  stack u8[128] print_buf;
 
   ///////////// initial spills
   s_sig = sig;
@@ -279,13 +274,9 @@ inline fn __crypto_sign_signature(
   wots_addr = wots_addr_p;
   tree_addr = tree_addr_p;
 
-  inline int index; for index=0 to SPX_N { optrand[index]=0x123456; }
-  stack u64[5] debug_buffer; for index=0 to 5 { debug_buffer[index]=0; }
-
-
   // randombytes(optrand, SPX_N);
   optrand_p = optrand;
-  // optrand_p = #randombytes(optrand_p); // TODO: Uncomment this when randombytes is noit a print
+  optrand_p = #randombytes(optrand_p);
 
   // gen_message_random(sig, sk_prf, optrand, m, mlen, &ctx);
   randomness_p = randomness; // These are the first SPX_N bytes of the signature
@@ -310,7 +301,9 @@ inline fn __crypto_sign_signature(
   idx_leaf = s_idx_leaf;
   msg_len = s_msg_len;
   msg = s_msg;
-  mhash, tree, idx_leaf = _hash_message(mhash, tree, idx_leaf, randomness, pk, msg, msg_len);
+  mhash_p = mhash;
+  mhash_p, tree, idx_leaf = _hash_message(mhash_p, tree, idx_leaf, randomness_p, pk, msg, msg_len);
+  mhash = mhash_p;
   s_tree = tree;
   s_idx_leaf = s_idx_leaf;
 
@@ -333,18 +326,17 @@ inline fn __crypto_sign_signature(
   // FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME:
   // FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME:
   // fors_sign(sig, root, mhash, &ctx, wots_addr);
-  // sig = s_sig;
-  // root_p = root;
-  // mhash_p = mhash;
-  // pub_seed_p = pub_seed;
-  // sk_seed_p = sk_seed;
-  // wots_addr_p = wots_addr;
-  // wots_addr_p = #randombytes(wots_addr_p);
-  // root_p = _fors_sign(sig, root_p, mhash_p, pub_seed_p, sk_seed_p, wots_addr_p);
-  // root = root_p;
+  sig = s_sig;
+  root_p = root;
+  mhash_p = mhash;
+  pub_seed_p = pub_seed;
+  sk_seed_p = sk_seed;
+  wots_addr_p = wots_addr;
+  root_p = _fors_sign(sig, root_p, mhash_p, pub_seed_p, sk_seed_p, wots_addr_p);
+  root = root_p;
 
   // sig += SPX_FORS_BYTES;
-  // s_sig += SPX_FORS_BYTES;
+  s_sig += SPX_FORS_BYTES;
 
   ?{}, i = #set0_32();
   while (i < SPX_D)
@@ -371,8 +363,6 @@ inline fn __crypto_sign_signature(
 
     // merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf);
     // TODO: TODO: TODO: TODO: Rewrite merkle sign but with reg u64 instead of reg ptr u8
-    // TODO: TODO: TODO: TODO: Rewrite merkle sign but with reg u64 instead of reg ptr u8
-    // TODO: TODO: TODO: TODO: Rewrite merkle sign but with reg u64 instead of reg ptr u8
     sig = s_sig;
     auth_path_p = auth_path;
     auth_path_p = __load_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(auth_path_p, sig);
@@ -393,11 +383,11 @@ inline fn __crypto_sign_signature(
     // idx_leaf = (tree & ((1 << SPX_TREE_HEIGHT) - 1));
     k = (1 << SPX_TREE_HEIGHT) - 1;
     idx_leaf = s_tree;
-    t = k;
-    idx_leaf &= t;
+    idx_leaf &= k;
     s_idx_leaf = idx_leaf;
 
     // tree = tree >> SPX_TREE_HEIGHT;
+    tree = s_tree;
     ?{}, tree = #SHR(tree, SPX_TREE_HEIGHT);
     s_tree = tree;
 
@@ -492,11 +482,10 @@ inline fn __crypto_sign_verify(
   stack u8[SPX_WOTS_BYTES] wots_pk;
   reg ptr u8[SPX_WOTS_BYTES] wots_pk_p;
   
-
   reg u64 offset;
   reg ptr u8[SPX_N] buf pub_root_p;
 
-  reg u32 type addr layer;
+  reg u32 type layer;
 
   reg u64 tree;
   stack u64 s_tree;
@@ -736,6 +725,129 @@ inline fn __crypto_sign_verify_(
     pk_p, _  = _x_memcpy_u8u8p<SPX_PK_BYTES>(pk_p, offset, _pk, inlen);
 
     r = _crypto_sign_verify(sig, sig_len, m, m_len, pk_p, r);
+  }
+
+  return r;
+}
+
+inline fn __crypto_sign(
+  reg u64 sm _sm_len m mlen _sk
+) -> reg u64
+{
+  reg u64 r;
+  reg u64 sm_len;
+ 
+  stack u8[SPX_SK_BYTES] sk;
+  reg ptr u8[SPX_SK_BYTES] sk_p;
+
+  reg u64 i;
+  reg u8 t;
+
+  stack u64 s_sm_len;
+
+  stack u64 s_sm s_m s_mlen;
+
+  s_sm_len = _sm_len; // spill
+
+  sk_p = sk;
+  sk_p  = __load_u8_array<SPX_SK_BYTES>(sk_p, _sk);
+
+  s_sm = sm; s_m = m; s_mlen = mlen; // register swap
+  sm = s_sm; m = s_m; mlen = s_mlen; // register swap
+  _crypto_sign_signature(sm, m, mlen, sk_p); 
+
+  // memmove(sm + SPX_BYTES, m, mlen);
+  ?{}, i = #set0();
+  mlen = s_mlen;
+  m = s_m;
+  sm = s_sm;
+  while (i < mlen)
+  {
+    t = (u8)[m + i];
+    (u8)[sm + SPX_BYTES + i] = t;
+    i += 1;
+  }
+
+  // *smlen = siglen + mlen;
+  _sm_len = s_sm_len;
+  sm_len = SPX_BYTES;
+  sm_len += s_mlen;
+  [_sm_len] = sm_len;
+
+  ?{}, r = #set0();
+  return r;
+}
+
+inline fn __crypto_sign_open(
+  reg u64 msg,
+  reg u64 msg_len,
+  reg u64 sm,
+  reg u64 sm_len,
+  reg u64 _pk
+) -> reg u64 
+{
+  reg u64 r;
+  stack u8[SPX_PK_BYTES] pk;
+  reg ptr u8[SPX_PK_BYTES] pk_p;
+
+  reg u64 len l;
+  reg u8 val;
+  reg u64 i;
+
+  stack u64 sm_entry; // sm at the entrypoint of the program
+  stack u64 s_msg s_sm s_sm_len s_msg_len; // spill
+
+  // if (smlen < SPX_BYTES) { memset(m, 0, smlen); *mlen = 0; return -1; }
+  if (sm_len < SPX_BYTES)
+  {
+    val = 0;
+    __memset(msg, val, sm_len);
+    (u64)[msg_len] = 0;
+    r = -1;
+  } else {
+    sm_entry = sm;
+    s_sm_len = sm_len; // spill
+    s_sm = sm; // spill
+    s_msg_len = msg_len; // spill
+    s_msg = msg; // spill
+
+    pk_p = pk;
+    pk_p = __load_u8_array<SPX_PK_BYTES>(pk_p, _pk);  
+
+    // *mlen = smlen - SPX_BYTES;
+    len = sm_len;
+    len -= SPX_BYTES;
+    (u64)[msg_len] = len;
+    
+    // if (crypto_sign_verify(sm, SPX_BYTES, sm + SPX_BYTES, (size_t)*mlen, pk))
+    //     memset(m, 0, smlen); *mlen = 0; return -1;
+    len = SPX_BYTES;
+    sm += SPX_BYTES;
+    l = (u64)[msg_len];
+    r = __crypto_sign_verify(sm, len, sm, l, pk_p);
+
+    msg = s_msg; // unspill
+    msg_len = s_msg_len; // unspill
+    
+    if (r != 0) 
+    {
+      val = 0;
+      sm_len = s_sm_len;   // unspill
+      __memset(msg, val, sm_len);
+      (u64)[msg_len] = 0;
+      r = -1;
+    }
+
+    // memmove(m, sm + SPX_BYTES, *mlen);
+    sm = s_sm; // unspill
+    len = (u64)[msg_len];
+    ?{}, i = #set0();
+    while (i < len)
+    {
+      val = (u8)[sm + SPX_BYTES + i];
+      (u8)[msg + i] = val;
+      i += 1;
+    }
   }
 
   return r;

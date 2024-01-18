@@ -159,20 +159,30 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
     set_tree_addr(wots_addr, tree);
     set_keypair_addr(wots_addr, idx_leaf);
 
-    // FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME:
-    // fors_sign(sig, root, mhash, &ctx, wots_addr);
+#ifdef DEBUG_FORS_SIGN
+    extern int fors_sign_test_number;  // global variable defined in test_sign.c
+    char file_path[256];
+    sprintf(file_path, "fors_sign_failed_tests/test_%d.txt", fors_sign_test_number++);
+
+    fprint_str_u8(file_path, "sig_ref", sig, SPX_BYTES - SPX_N);
+    fprint_str_u8(file_path, "pk_ref", root, SPX_N);
+    fprint_str_u8(file_path, "mhash", mhash, SPX_FORS_MSG_BYTES);
+    fprint_str_u8(file_path, "pub_seed", ctx.pub_seed, SPX_N);
+    fprint_str_u8(file_path, "sk_seed", ctx.sk_seed, SPX_N);
+    fprint_str_u8(file_path, "addr", wots_addr, 8 * sizeof(uint32_t));
+#endif
+
+    fors_sign(sig, root, mhash, &ctx, wots_addr);
 
     sig += SPX_FORS_BYTES;
-
     for (i = 0; i < SPX_D; i++) {
         set_layer_addr(tree_addr, i);
         set_tree_addr(tree_addr, tree);
 
         copy_subtree_addr(wots_addr, tree_addr);
         set_keypair_addr(wots_addr, idx_leaf);
-        
-        // FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME:
-        merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf);
+
+        // merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf);
         sig += SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N;
 
         idx_leaf = (tree & ((1 << SPX_TREE_HEIGHT) - 1));
@@ -215,17 +225,25 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
 
     hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
 
-
     sig += SPX_N;
 
     set_tree_addr(wots_addr, tree);
     set_keypair_addr(wots_addr, idx_leaf);
 
-    // print_str_u8("mhash", mhash, SPX_FORS_MSG_BYTES); OK
-    // print_str_u8("wots_addr", wots_addr, 8 * sizeof(uint32_t)); OK
-    // print_str_u8("pub seed", ctx.pub_seed, SPX_N); OK
-    fors_pk_from_sig(root, sig, mhash, &ctx, wots_addr);
+#ifdef DEBUG_FORS_PK_FROM_SIG
+    extern int fors_pk_from_sig_test_number;  // global variable defined in test_sign.c
+    char file_path[256];
+    sprintf(file_path, "fors_pk_from_sig_failed_tests/test_%d.txt", fors_pk_from_sig_test_number++);
 
+    fprint_str_u8(file_path, "sig_ref", sig, SPX_BYTES - SPX_N);
+    fprint_str_u8(file_path, "pk_ref", root, SPX_N);
+    fprint_str_u8(file_path, "mhash", mhash, SPX_FORS_MSG_BYTES);
+    fprint_str_u8(file_path, "pub_seed", ctx.pub_seed, SPX_N);
+    fprint_str_u8(file_path, "sk_seed", ctx.sk_seed, SPX_N);
+    fprint_str_u8(file_path, "addr", wots_addr, 8 * sizeof(uint32_t));
+#endif
+
+    fors_pk_from_sig(root, sig, mhash, &ctx, wots_addr);
 
     sig += SPX_FORS_BYTES;
 

@@ -76,8 +76,6 @@ inline fn __treehash_wots(
   s_exit_outer_loop = 0;
   while (s_exit_outer_loop != 1)
   {
-    current = __zero_array_u8<2*SPX_N>(current); // FIXME: Remove this later
-
     // gen_leaf( &current[SPX_N], ctx, idx + idx_offset, info );
     buf = current[SPX_N : SPX_N];
     pub_seed = s_pub_seed;

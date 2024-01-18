@@ -1,0 +1,13 @@
+void test_fors_pk_from_sig_<TEST_NUMBER>(void)
+{
+    <VARIABLES HERE>
+    
+    uint8_t pk_jazz[SPX_FORS_PK_BYTES];
+
+    memcpy(pk_jazz, pk_ref, SPX_FORS_PK_BYTES);
+
+    fors_pk_from_sig(pk_ref, sig_ref, mhash, &ctx, addr);
+    fors_pk_from_sig_jazz(pk_jazz, sig_ref, mhash, ctx.pub_seed, addr);
+
+    assert(memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) == 0);
+}
