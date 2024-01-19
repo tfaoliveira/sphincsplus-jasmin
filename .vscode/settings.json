@@ -3,6 +3,7 @@
         "*.jtmpl": "jasmin",
         "*.jpp": "jasmin",
         "random": "c",
-        "params.h": "c"
+        "params.h": "c",
+        "hash.h": "c"
     }
 }

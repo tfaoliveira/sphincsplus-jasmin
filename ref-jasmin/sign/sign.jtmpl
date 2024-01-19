@@ -229,6 +229,7 @@ inline fn __crypto_sign_signature(
   s_msg = msg;
   s_msg_len = msg_len;
   s_sk = sk;
+  s_tree = tree;
   /////////////
 
   // const unsigned char *sk_prf = sk + SPX_N;
@@ -318,7 +319,6 @@ inline fn __crypto_sign_signature(
   // set_keypair_addr(wots_addr, idx_leaf);
   idx_leaf = s_idx_leaf;
   wots_addr_p = __set_keypair_addr(wots_addr_p, idx_leaf);
-  wots_addr = wots_addr_p;
 
   // FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME:
   // FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME: FIXME:
@@ -331,7 +331,6 @@ inline fn __crypto_sign_signature(
   mhash_p = mhash;
   pub_seed_p = pub_seed;
   sk_seed_p = sk_seed;
-  wots_addr_p = wots_addr;
   root_p = _fors_sign(sig, root_p, mhash_p, pub_seed_p, sk_seed_p, wots_addr_p);
   root = root_p;
 
@@ -509,6 +508,7 @@ inline fn __crypto_sign_verify(
   s_msg = msg;
   s_msg_len = msg_len;
   s_pk = pk;
+  s_tree = tree;
   ///
 
   // uint32_t wots_addr[8] = {0};

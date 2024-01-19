@@ -119,6 +119,82 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
     return 0;
 }
 
+#ifdef TEST_FORS
+/**
+ * Returns an array containing a detached signature.
+ */
+int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen,
+                          const uint8_t *sk) {
+    spx_ctx ctx;
+
+    const unsigned char *sk_prf = sk + SPX_N;
+    const unsigned char *pk = sk + 2 * SPX_N;
+
+    unsigned char optrand[SPX_N];
+    unsigned char mhash[SPX_FORS_MSG_BYTES];
+    unsigned char root[SPX_N];
+    uint32_t i;
+    uint64_t tree;
+    uint32_t idx_leaf;
+    uint32_t wots_addr[8] = {0};
+    uint32_t tree_addr[8] = {0};
+
+    uint8_t sig_jazz[SPX_BYTES - SPX_N];
+    uint8_t root_jazz[SPX_N];
+
+    memcpy(ctx.sk_seed, sk, SPX_N);
+    memcpy(ctx.pub_seed, pk, SPX_N);
+
+    /* This hook allows the hash function instantiation to do whatever
+       preparation or computation it needs, based on the public seed. */
+    initialize_hash_function(&ctx);
+
+    set_type(wots_addr, SPX_ADDR_TYPE_WOTS);
+
+    set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
+
+    randombytes(optrand, SPX_N);
+    gen_message_random(sig, sk_prf, optrand, m, mlen, &ctx);
+
+    hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
+
+    sig += SPX_N;
+
+    set_tree_addr(wots_addr, tree);
+    set_keypair_addr(wots_addr, idx_leaf);
+
+    // copy the state
+    memcpy(sig_jazz, sig, SPX_BYTES - SPX_N);
+    memcpy(root_jazz, root, SPX_N);
+
+    fors_sign(sig, root, mhash, &ctx, wots_addr);
+
+    fors_sign_jazz(sig_jazz, root_jazz, mhash, ctx.pub_seed, ctx.sk_seed, wots_addr);
+
+    assert(memcmp(sig, sig_jazz, SPX_BYTES - SPX_N) == 0); 
+    assert(memcmp(root, root_jazz, SPX_N) == 0); 
+
+    sig += SPX_FORS_BYTES;
+
+    for (i = 0; i < SPX_D; i++) {
+        set_layer_addr(tree_addr, i);
+        set_tree_addr(tree_addr, tree);
+
+        copy_subtree_addr(wots_addr, tree_addr);
+        set_keypair_addr(wots_addr, idx_leaf);
+
+        // merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf);
+        sig += SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N;
+
+        idx_leaf = (tree & ((1 << SPX_TREE_HEIGHT) - 1));
+        tree = tree >> SPX_TREE_HEIGHT;
+    }
+    *siglen = SPX_BYTES;
+
+    return 0;
+}
+#else
+
 /**
  * Returns an array containing a detached signature.
  */
@@ -192,6 +268,8 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
 
     return 0;
 }
+
+#endif
 
 #ifndef TEST_FORS
 

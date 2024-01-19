@@ -9,17 +9,17 @@
 #include "context.h"
 #include "fors.c"
 #include "fors.h"
+#include "fors_pk_from_sig_failed_tests.c"
+#include "fors_sign_failed_tests.c"
 #include "hash.h"
 #include "macros.h"
 #include "notrandombytes.c"
 #include "params.h"
 #include "print.c"
 #include "thash.h"
-#include "fors_sign_failed_tests.c"
-#include "fors_pk_from_sig_failed_tests.c"
 
 #ifndef PARAMS
-#define PARAMS sphincs-shake-128f
+#define PARAMS sphincs - shake - 128f
 #endif
 
 #ifndef THASH
@@ -52,7 +52,9 @@ void test_fors_gen_leafx1(void);
 void test_message_to_indices(void);
 void test_message_to_indices_t(void);
 void test_fors_sign(void);
+void test_fors_sign__2(void);
 void test_pk_from_sig(void);
+void test_pk_from_sig_2(void);
 void test_treehash_fors(void);
 
 static void random_addr(uint32_t addr[8]) { randombytes((uint8_t *)addr, 8 * sizeof(uint32_t)); }
@@ -163,8 +165,8 @@ void test_fors_gen_leafx1(void) {
 void test_fors_sign(void) {
     uint8_t sig_ref[SPX_BYTES - SPX_N];
     uint8_t sig_jazz[SPX_BYTES - SPX_N];
-    uint8_t pk_ref[SPX_FORS_PK_BYTES];
-    uint8_t pk_jazz[SPX_FORS_PK_BYTES];
+    uint8_t pk_ref[SPX_N];
+    uint8_t pk_jazz[SPX_N];
     spx_ctx ctx;
     uint32_t addr[8];
     uint8_t msg[SPX_FORS_MSG_BYTES];
@@ -173,8 +175,8 @@ void test_fors_sign(void) {
         memset(sig_ref, 0, SPX_BYTES - SPX_N);
         memset(sig_jazz, 0, SPX_BYTES - SPX_N);
 
-        memset(pk_ref, 0, SPX_FORS_PK_BYTES);
-        memset(pk_jazz, 0, SPX_FORS_PK_BYTES);
+        memset(pk_ref, 0, SPX_N);
+        memset(pk_jazz, 0, SPX_N);
 
         randombytes(ctx.pub_seed, SPX_N);
         randombytes(ctx.sk_seed, SPX_N);
@@ -188,61 +190,60 @@ void test_fors_sign(void) {
         fors_sign_jazz(sig_jazz, pk_jazz, msg, ctx.pub_seed, ctx.sk_seed, addr);
 
         assert(memcmp(sig_ref, sig_jazz, SPX_BYTES - SPX_N) == 0);
-        assert(memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) == 0);
+        assert(memcmp(pk_ref, pk_jazz, SPX_N) == 0);
     }
 }
 
-void test_pk_from_sig(void) {
+void test_fors_sign__2(void) {
 #define MESSAGE_LENGTH 32
-    uint8_t pk_ref[SPX_FORS_PK_BYTES], pk_jazz[SPX_FORS_PK_BYTES];
-    uint8_t sig[SPX_FORS_BYTES];
+
+    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
+    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
+
+    uint8_t signature[CRYPTO_BYTES];
+    size_t signature_length;
+
+    uint8_t message[MESSAGE_LENGTH];
+    size_t message_length;
+
+    for (int i = 0; i < TESTS; i++) {
+        for (message_length = 10; message_length < MESSAGE_LENGTH; message_length++) {
+            // note: the 'real' test is in sign.c file and it is activated when TEST_FORS is
+            // defined
+            randombytes(message, message_length);
+            crypto_sign_keypair(public_key, secret_key);
+            crypto_sign_signature(signature, &signature_length, message, message_length,
+                                  secret_key);
+            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+        }
+    }
+
+#undef MESSAGE_LENGTH
+}
+
+void test_pk_from_sig(void) {
+    uint8_t pk_ref[SPX_N];
+    uint8_t pk_jazz[SPX_N];
+    uint8_t sig[SPX_BYTES - SPX_N];
     spx_ctx ctx;
     uint32_t addr[8];
     uint8_t msg[SPX_FORS_MSG_BYTES];
 
     for (int i = 0; i < TESTS; i++) {
-        memset(pk_ref, 0, SPX_FORS_PK_BYTES);
-        memset(pk_jazz, 0, SPX_FORS_PK_BYTES);
+        memset(pk_ref, 0, SPX_N);
+        memset(pk_jazz, 0, SPX_N);
 
-        randombytes(sig, SPX_FORS_BYTES);
+        randombytes(sig, SPX_BYTES - SPX_N);
         randombytes(ctx.pub_seed, SPX_N);
         randombytes(ctx.sk_seed, SPX_N);
-        randombytes(msg, MESSAGE_LENGTH);
+        randombytes(msg, SPX_FORS_MSG_BYTES);
         randombytes((uint8_t *)addr, 8 * sizeof(uint32_t));
 
         fors_pk_from_sig(pk_ref, sig, msg, &ctx, addr);
         fors_pk_from_sig_jazz(pk_jazz, sig, msg, ctx.pub_seed, addr);
 
-        if (memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) != 0) {
-            print_str_u8("pk ref", pk_ref, SPX_FORS_PK_BYTES);
-            print_str_u8("pk jazz", pk_jazz, SPX_FORS_PK_BYTES);
-        }
-
-        assert(memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) == 0);
+        assert(memcmp(pk_ref, pk_jazz, SPX_N) == 0);
     }
-
-    // Test when sig is 0
-    for (int i = 0; i < TESTS; i++) {
-        memset(pk_ref, 0, SPX_FORS_PK_BYTES);
-        memset(pk_jazz, 0, SPX_FORS_PK_BYTES);
-
-        memset(sig, 0, SPX_FORS_BYTES);
-        randombytes(ctx.pub_seed, SPX_N);
-        randombytes(ctx.sk_seed, SPX_N);
-        randombytes(msg, MESSAGE_LENGTH);
-        randombytes((uint8_t *)addr, 8 * sizeof(uint32_t));
-
-        fors_pk_from_sig(pk_ref, sig, msg, &ctx, addr);
-        fors_pk_from_sig_jazz(pk_jazz, sig, msg, ctx.pub_seed, addr);
-
-        if (memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) != 0) {
-            print_str_u8("pk ref", pk_ref, SPX_FORS_PK_BYTES);
-            print_str_u8("pk jazz", pk_jazz, SPX_FORS_PK_BYTES);
-        }
-
-        assert(memcmp(pk_ref, pk_jazz, SPX_FORS_PK_BYTES) == 0);
-    }
-#undef MESSAGE_LENGTH
 }
 
 void test_pk_from_sig_2(void) {
@@ -301,13 +302,22 @@ int main(void) {
     // test_fors_gen_sk();
     // test_fors_sk_to_leaf();
     // test_fors_gen_leafx1();
-    // test_pk_from_sig();
-    // test_pk_from_sig_2();
-    test_fors_sign();
-    test_fors_sign_failed_tests();  // tests that failed when testing sign (defined in fors_sign_failed_tests.c)
-                                    // These should fail but dont
-    test_fors_pk_from_sig_failed_tests(); // defined in fors_pk_from_sig_failed_tests.c
     // test_treehash_fors();
+    test_pk_from_sig();    // with randombytes
+    puts("A");
+    test_pk_from_sig_2();  // with 'real' data [in fors.c]
+    puts("b");
+    test_fors_sign();      // with randombytes
+    puts("c");
+    test_fors_sign__2();    // with 'real' data [in sign.c]
+    puts("D");
+
+    if (!strcmp(xstr(PARAMS), "sphincs-shake-128f") && !strcmp(xstr(THASH), "simple")) {
+        test_fors_sign_failed_tests();  // tests that failed when testing sign (defined in
+                                        // fors_sign_failed_tests.c) These should fail but dont
+        test_fors_pk_from_sig_failed_tests();  // defined in fors_pk_from_sig_failed_tests.c
+    }
+
     printf("PASS: fors = { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;
 }

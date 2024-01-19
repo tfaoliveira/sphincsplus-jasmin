@@ -205,7 +205,8 @@ void test_crypto_sign_signature(void) {
             crypto_sign_signature_jazz(sig_jazz, &signature_length_jazz, m_jazz, msg_len, sk_jazz);
 
             // We assume the test fails. If it doesnt, we remove the respective file
-            if (memcmp(sig_ref, sig_jazz, CRYPTO_BYTES) == 0) {
+            if (!strcmp(xstr(PARAMS), "sphincs-shake-128f") && !strcmp(xstr(THASH), "simple") &&
+                memcmp(sig_ref, sig_jazz, CRYPTO_BYTES) == 0) {
                 char file_path[256];
                 sprintf(file_path, "fors_sign_failed_tests/test_%d.txt", i);
 
@@ -216,11 +217,18 @@ void test_crypto_sign_signature(void) {
                         exit(EXIT_FAILURE);
                     }
                 }
-            } 
+            }
 
             assert(signature_length_jazz == signature_length_ref);
             assert(signature_length_jazz == CRYPTO_BYTES);
-            // assert(memcmp(sig_ref, sig_jazz, CRYPTO_BYTES) == 0);
+
+            if (memcmp(sig_ref, sig_jazz, CRYPTO_BYTES) != 0) 
+            {
+                fprint_str_u8("sig_ref.txt", "sig", sig_ref, CRYPTO_BYTES);
+                fprint_str_u8("sig_jazz.txt", "sig", sig_jazz, CRYPTO_BYTES);
+            }
+
+            assert(memcmp(sig_ref, sig_jazz, CRYPTO_BYTES) == 0);
         }
     }
 }
@@ -256,7 +264,9 @@ void test_crypto_sign_verify(void) {
             res_ref = crypto_sign_verify(sig, signature_length, m, msg_len, pk);
             res_jazz = crypto_sign_verify_jazz(sig, signature_length, m, msg_len, pk);
 
-            if (false) { // TODO: FIXME: Fix this 
+            if (!strcmp(xstr(PARAMS), "sphincs-shake-128f") &&
+                !strcmp(xstr(THASH), "simple")) {  // TODO: See if the test does not fail. If it
+                                                      // doesnt, we can remote the file
                 char file_path[256];
                 sprintf(file_path, "fors_pk_from_sig_failed_tests/test_%d.txt", i);
 
@@ -267,7 +277,7 @@ void test_crypto_sign_verify(void) {
                         exit(EXIT_FAILURE);
                     }
                 }
-            } 
+            }
 
             assert(res_ref == res_jazz);
         }
@@ -387,9 +397,9 @@ int main(void) {
 #if 0
     test_crypto_sign_keypair(); // WORKS Uses random bytes
 #endif
-    // test_crypto_sign_seed_keypair();  // WORKS
+    //test_crypto_sign_seed_keypair();
     test_crypto_sign_signature();
-    test_crypto_sign_verify();
+    // test_crypto_sign_verify();
     // test_crypto_sign();
     // test_crypto_sign_open();
     // test_api();

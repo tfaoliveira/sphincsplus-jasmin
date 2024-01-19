@@ -54,7 +54,7 @@ $(TESTS):
 bin/test_fors_%: bin/test_fors_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
 	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
--DTEST_FORS_TREEHASH=1 -DTEST_FORS \
+-DTEST_FORS_TREEHASH -DTEST_FORS \
 -I../common -I../../ -I../../params \
 test_fors.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \
 ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \

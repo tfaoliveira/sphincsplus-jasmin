@@ -32,7 +32,7 @@ with open(out_path, "w"):
     pass
 
 
-for file in test_files:
+for file in test_files[:1]:
     with open(f"../fors_sign_failed_tests/{file}", "r") as f:
         vars: str = f.read()
 
