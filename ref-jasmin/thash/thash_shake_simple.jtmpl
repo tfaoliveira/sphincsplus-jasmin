@@ -16,11 +16,6 @@ inline fn __thash<INBLOCKS>(
   reg ptr u8[SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N] buf_p;
 
   reg u64 offset;
-  stack u64 s_offset;
-
-  stack ptr u8[INBLOCKS*SPX_N] s_in;
-  stack ptr u8[SPX_N] s_pub_seed;
-  stack ptr u32[8] s_addr;
 
   buf_p = buf;
   offset = 0;
@@ -28,9 +23,9 @@ inline fn __thash<INBLOCKS>(
   buf_p, offset = _x_memcpy_u8u8<SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N, SPX_N>(buf_p, offset, pub_seed);
   buf_p, offset = _x_memcpy_u8u32<SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N, 8>(buf_p, offset, addr);
   buf_p, offset = _x_memcpy_u8u8<SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N, INBLOCKS*SPX_N>(buf_p, offset, in);
-  s_in = in; s_addr = addr; s_pub_seed = pub_seed; s_offset = offset; // spill
+  
   out = __shake256<SPX_N,SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N>(out, buf_p);
-  in = s_in; addr = s_addr; pub_seed = s_pub_seed; // unspill
+  
   out = out;
 
   return out;
@@ -73,10 +68,6 @@ inline fn __thash_inplace(
   reg ptr u8[SPX_N + SPX_ADDR_BYTES + SPX_N] buf_p;
 
   reg u64 offset;
-  stack u64 s_offset;
-
-  stack ptr u8[SPX_N] s_pub_seed;
-  stack ptr u32[8] s_addr;
 
   buf_p = buf;
   offset = 0;
@@ -84,9 +75,9 @@ inline fn __thash_inplace(
   buf_p, offset = _x_memcpy_u8u8<SPX_N+SPX_ADDR_BYTES+SPX_N, SPX_N>(buf_p, offset, pub_seed);
   buf_p, offset = _x_memcpy_u8u32<SPX_N+SPX_ADDR_BYTES+SPX_N, 8>(buf_p, offset, addr);
   buf_p, offset = _x_memcpy_u8u8<SPX_N+SPX_ADDR_BYTES+SPX_N, SPX_N>(buf_p, offset, out);
-  s_addr = addr; s_pub_seed = pub_seed; s_offset = offset; // spill
+  
   out = __shake256<SPX_N,SPX_N+SPX_ADDR_BYTES+SPX_N>(out, buf_p);
-  addr = s_addr; pub_seed = s_pub_seed; // unspill
+  
   out = out;
 
   return out;
@@ -129,11 +120,6 @@ inline fn __thash_in_u64<INBLOCKS>(
   reg ptr u8[SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N] buf_p;
 
   reg u64 offset;
-  stack u64 s_offset;
-
-  stack u64 s_in;
-  stack ptr u8[SPX_N] s_pub_seed;
-  stack ptr u32[8] s_addr;
 
   inline u64 inlen;
 
@@ -146,11 +132,7 @@ inline fn __thash_in_u64<INBLOCKS>(
   inlen = INBLOCKS*SPX_N;
   buf_p, offset = _x_memcpy_u8u8p<SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N>(buf_p, offset, in, inlen);
   
-  s_in = in; s_addr = addr; s_pub_seed = pub_seed; s_offset = offset; // spill
-  
   out = __shake256<SPX_N,SPX_N+SPX_ADDR_BYTES+INBLOCKS*SPX_N>(out, buf_p);
-  
-  in = s_in; addr = s_addr; pub_seed = s_pub_seed; // unspill
   
   out = out;
 

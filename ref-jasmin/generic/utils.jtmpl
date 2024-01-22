@@ -6,7 +6,7 @@ inline fn __zero_array_u32<INLEN>(reg ptr u32[INLEN] a) -> reg ptr u32[INLEN]
   t = 0;
   i = 0;
   while (i < INLEN) {
-    a[(int) i] = t;
+    a[i] = t;
     i += 1;
   }
 
@@ -21,7 +21,7 @@ inline fn _zero_array_u8<INLEN>(reg ptr u8[INLEN] a) -> reg ptr u8[INLEN]
   t = 0;
   i = 0;
   while (i < INLEN) {
-    a[(int) i] = t;
+    a[i] = t;
     i += 1;
   }
 
@@ -120,7 +120,7 @@ inline fn __load_u32_array<INLEN>(
   i = 0;
   while(i < INLEN) { 
     t = (u32)[addr + 4*i];
-    in[(int) i] = t;
+    in[i] = t;
     i += 1;
   }
 
@@ -138,7 +138,7 @@ inline fn __load_u64_array<INLEN>(
   i = 0;
   while(i < INLEN) { 
     t = (u64)[addr + 8*i];
-    in[(int) i] = t;
+    in[i] = t;
     i += 1;
   }
 
@@ -156,7 +156,7 @@ inline fn __store_u8_array<INLEN>(
 
   i = 0;
   while (i < INLEN) { 
-    t = in[(int) i];
+    t = in[i];
     (u8)[addr + i] = t;
     i += 1;
   }
@@ -188,7 +188,7 @@ inline fn __store_u64_array<INLEN>(
 
   i = 0;
   while (i < INLEN) {
-    t = in[(int) i];
+    t = in[i];
     [addr + 8 * i] = t;
     i += 1;
   }

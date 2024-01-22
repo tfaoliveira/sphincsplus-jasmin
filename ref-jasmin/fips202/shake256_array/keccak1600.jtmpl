@@ -7,8 +7,7 @@ inline fn __keccak_init(reg ptr u64[25] state) -> reg ptr u64[25]
   reg u64 t;
 
   ?{}, t = #set0();
-  for i=0 to 25
-  { state[i] = t; }
+  for i=0 to 25 { state[i] = t; }
 
   return state;
 }
@@ -27,8 +26,8 @@ inline fn __add_full_block<INLEN>(
   i = 0;
   while ( i < rate64 )
   {
-    t = in[u64 (int)offset]; //
-    state[(int)i] ^= t;
+    t = in[u64 offset];
+    state[i] ^= t;
     i += 1;
     offset += 1;
   }
@@ -55,8 +54,8 @@ inline fn __add_final_block<INLEN>(
   i = 0;
   while ( i < inlen64 )
   {
-    t = in[u64 (int)offset]; //
-    state[(int)i] ^= t;
+    t = in[u64 offset];
+    state[i] ^= t;
     i += 1;
     offset += 1;
   }
@@ -66,17 +65,17 @@ inline fn __add_final_block<INLEN>(
   inlen8 = INLEN;
   while ( offset < inlen8 )
   {
-    c = in[(int) offset];
-    state[u8 (int)i] ^= c;
+    c = in[offset];
+    state[u8 i] ^= c;
     i += 1;
     offset += 1;
   }
 
-  state[u8 (int)i] ^= trail_byte;
+  state[u8 i] ^= trail_byte;
 
   i = rate;
   i -= 1;
-  state[u8 (int)i] ^= 0x80;
+  state[u8 i] ^= 0x80;
 
   return state;
 }//<>
@@ -138,8 +137,8 @@ inline fn __xtr_full_block<OUTLEN>(
   i = 0;
   while ( i < rate64 )
   {
-    t = state[(int)i];
-    out[u64 (int) offset] = t;
+    t = state[i];
+    out[u64  offset] = t;
     i += 1;
     offset += 1;
   }
@@ -165,8 +164,8 @@ inline fn __xtr_bytes<OUTLEN>(
   i = 0;
   while ( i < outlen64 )
   {
-    t = state[(int)i];
-    out[u64 (int) offset] = t;
+    t = state[i];
+    out[u64 offset] = t;
     i += 1;
     offset += 1;
   }
@@ -176,8 +175,8 @@ inline fn __xtr_bytes<OUTLEN>(
   outlen8 = OUTLEN;
   while ( offset < outlen8 )
   {
-    c = state[u8 (int)i];
-    out[(int)offset] = c;
+    c = state[u8 i];
+    out[offset] = c;
     i += 1;
     offset += 1;
   }

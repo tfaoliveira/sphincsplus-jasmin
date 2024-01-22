@@ -19,8 +19,8 @@ inline fn __memcmp<INLEN>(
   i = 0;
   while (i < INLEN)
   {
-    t = a[(int) i];
-    t ^= b[(int) i];
+    t = a[i];
+    t ^= b[i];
     acc |= t;
     i += 1;
   }

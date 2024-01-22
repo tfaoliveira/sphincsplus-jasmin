@@ -179,12 +179,12 @@ inline fn __keccakf1600(reg ptr u64[25] a) -> reg ptr u64[25]
     s_c = c;
 
     RC = s_RC;
-    rc = RC[(int) c];
+    rc = RC[c];
     s_rc = rc;
     e = __round(e, a, s_rc);
 
     RC = s_RC;
-    rc = RC[(int) c + 1];
+    rc = RC[c + 1];
     s_rc = rc;
     a = __round(a, e, s_rc);
 

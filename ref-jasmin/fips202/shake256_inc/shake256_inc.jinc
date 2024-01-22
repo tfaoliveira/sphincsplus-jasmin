@@ -76,7 +76,7 @@ inline fn __keccak_inc_absorb(
       v = (64u) (u8) [z];
       v <<= (u & 63);
 
-      state[(int) t] ^= v;
+      state[t] ^= v;
 
       // t : (state[25] + i) >> 3
       // u : 8 * ((state[25] + i) & 0x07)
@@ -144,7 +144,7 @@ inline fn __keccak_inc_absorb(
     v = (64u) (u8) [z];
     v <<= (u & 63);
 
-    state[(int) t] ^= v;
+    state[t] ^= v;
 
     // t : (state[25] + i) >> 3
     // u : 8 * ((state[25] + i) & 0x07)
@@ -210,10 +210,10 @@ inline fn __keccak_inc_finalize(
     // s_inc[25] = 0;
 
   index = state[25];
-  state[u8 (int) index] ^= trail_byte;
+  state[u8 index] ^= trail_byte;
 
   index = rate - 1; // register renaming
-  state[u8 (int) index] ^= 0x80;
+  state[u8 index] ^= 0x80;
 
   state[25] = 0;
 
@@ -254,7 +254,7 @@ inline fn __keccak_inc_squeeze_copy_from_state(
   i = 0;
   while { cond = __cond_u64_a_below_b_and_a_below_c(i, outlen, limit); } (cond)
   {
-    value = state[u8 (int) offset];
+    value = state[u8 offset];
     (u8)[out + i] = value;
     offset += 1;
     i += 1;
@@ -376,10 +376,10 @@ inline fn __keccak_inc_absorb_t<INLEN>(
       z = offset_in;
       z += i;
 
-      v = (64u) in[(int) z];
+      v = (64u) in[z];
       v <<= (u & 63);
 
-      state[(int) t] ^= v;
+      state[ t] ^= v;
 
       // t : (state[25] + i) >> 3
       // u : 8 * ((state[25] + i) & 0x07)
@@ -446,10 +446,10 @@ inline fn __keccak_inc_absorb_t<INLEN>(
     z = offset_in;
     z += i;
 
-    v = (64u) in[(int) z];
+    v = (64u) in[z];
     v <<= (u & 63);
 
-    state[(int) t] ^= v;
+    state[ t] ^= v;
 
     // t : (state[25] + i) >> 3
     // u : 8 * ((state[25] + i) & 0x07)
@@ -515,11 +515,11 @@ inline fn __keccak_inc_squeeze_copy_from_state_t<OUTLEN>(
   i = 0;
   while { cond = __cond_u64_a_below_b_and_a_below_c(i, outlen, limit); } (cond)
   {
-    value = state[u8 (int) offset_state];
+    value = state[u8 offset_state];
 
     z = offset_out;
     z += i;
-    out[(int) z] = value;
+    out[z] = value;
     offset_state += 1;
     i += 1;
   }

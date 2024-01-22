@@ -17,7 +17,7 @@ inline fn __xtr_full_block_out_u64(
   i = 0;
   while ( i < rate64 )
   {
-    t = state[(int)i];
+    t = state[i];
     [out + 8*i] = t;
     i += 1;
   }
@@ -41,7 +41,7 @@ inline fn __xtr_bytes_out_u64(
   i = 0;
   while ( i < outlen8 )
   {
-    t = state[(int)i];
+    t = state[i];
     [out + 8*i] = t;
     i += 1;
   }
@@ -49,7 +49,7 @@ inline fn __xtr_bytes_out_u64(
 
   while ( i < outlen )
   {
-    c = state[u8 (int)i];
+    c = state[u8 i];
     (u8)[out + i] = c;
     i += 1;
   }

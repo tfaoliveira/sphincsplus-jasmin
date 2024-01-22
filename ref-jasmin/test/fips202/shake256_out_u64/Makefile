@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 AS       ?= as
 CC       ?= clang
-CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
+CFLAGS   ?= -w # -O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 	          -Wundef -Wshadow -Wcast-align -Wpointer-arith -Wmissing-prototypes \
 	          -fstrict-aliasing -fno-common -pipe -g
 

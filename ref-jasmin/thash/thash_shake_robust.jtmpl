@@ -43,9 +43,9 @@ inline fn __thash<INBLOCKS>(
   i = 0;
   offset = offset_s;
   while(i < INBLOCKS*SPX_N)
-  { b  = in[(int) i];
-    b ^= bitmask_p[(int) i];
-    buf[(int) offset] = b;
+  { b  = in[i];
+    b ^= bitmask_p[i];
+    buf[offset] = b;
     offset += 1;
     i += 1;
   }
@@ -97,13 +97,10 @@ inline fn __thash_inplace(
   stack   u8[SPX_N] bitmask;
   reg ptr u8[SPX_N] bitmask_p;
 
-  stack ptr u8[SPX_N] out_s;
-
   reg u64 i offset;
-  stack u64 offset_s;
   reg u8 b;
 
-  out_s = out;
+  () = #spill(out);
   buf_p = buf;
   offset = 0;
 
@@ -111,20 +108,20 @@ inline fn __thash_inplace(
   buf_p, offset = _x_memcpy_u8u32<SPX_N + SPX_ADDR_BYTES + SPX_N, 8>(buf_p, offset, addr);
 
   buf = buf_p;
-  offset_s = offset;
+  () = #spill(offset);
 
   bitmask_p = bitmask;
   buf_ps = buf[0:(SPX_N + SPX_ADDR_BYTES)];
   bitmask_p = __shake256<SPX_N,SPX_N + SPX_ADDR_BYTES>(bitmask_p, buf_ps);
 
   // TODO: optimize
-  out = out_s;
+  () = #unspill(out);
   i = 0;
-  offset = offset_s;
+  () = #unspill(offset);
   while(i < SPX_N)
-  { b  = out[(int) i];
-    b ^= bitmask_p[(int) i];
-    buf[(int) offset] = b;
+  { b  = out[i];
+    b ^= bitmask_p[i];
+    buf[offset] = b;
     offset += 1;
     i += 1;
   }
@@ -174,15 +171,10 @@ inline fn __thash_in_u64<INBLOCKS>(
   stack   u8[INBLOCKS*SPX_N] bitmask;
   reg ptr u8[INBLOCKS*SPX_N] bitmask_p;
 
-  stack ptr u8[SPX_N] out_s;
-  stack u64 in_s;
-
   reg u64 i offset;
-  stack u64 offset_s;
   reg u8 b;
 
-  out_s = out;
-  in_s = in;
+  () = #spill(in, out);
   buf_p = buf;
   offset = 0;
 
@@ -190,25 +182,24 @@ inline fn __thash_in_u64<INBLOCKS>(
   buf_p, offset = _x_memcpy_u8u32<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, 8>(buf_p, offset, addr);
 
   buf = buf_p;
-  offset_s = offset;
+  () = #spill(offset);
 
   bitmask_p = bitmask;
   buf_ps = buf[0:(SPX_N + SPX_ADDR_BYTES)];
   bitmask_p = __shake256<INBLOCKS*SPX_N,SPX_N + SPX_ADDR_BYTES>(bitmask_p, buf_ps);
 
   // TODO: optimize
-  in = in_s;
+  () = #unspill(in, offset);
   i = 0;
-  offset = offset_s;
   while(i < INBLOCKS*SPX_N)
   { b  = (u8)[in + i];
-    b ^= bitmask_p[(int) i];
-    buf[(int) offset] = b;
+    b ^= bitmask_p[i];
+    buf[offset] = b;
     offset += 1;
     i += 1;
   }
 
-  out = out_s;
+  () = #unspill(out);
   buf_p = buf;
   out = __shake256<SPX_N, SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N>(out, buf_p);
 

@@ -8,6 +8,7 @@ CFLAGS   ?= -O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
+JFLAGS       ?= -nowarning
 JPP          ?= ../../scripts/jpp
 PREPROCESSOR ?= ../../scripts/preprocessor
 
@@ -45,7 +46,7 @@ bin/test_fips202_%.jpp: | bin/
 
 .PRECIOUS: bin/test_fips202_%.s
 bin/test_fips202_%.s: bin/test_fips202_%.jpp
-	$(JASMIN) -nowarning $< -o $@
+	$(JASMIN) $(JFLAGS) $< -o $@
 
 $(TESTS):
 bin/test_fips202_%: bin/test_fips202_%.s | bin/

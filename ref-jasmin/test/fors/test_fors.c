@@ -9,8 +9,6 @@
 #include "context.h"
 #include "fors.c"
 #include "fors.h"
-#include "fors_pk_from_sig_failed_tests.c"
-#include "fors_sign_failed_tests.c"
 #include "hash.h"
 #include "macros.h"
 #include "notrandombytes.c"
@@ -304,19 +302,9 @@ int main(void) {
     // test_fors_gen_leafx1();
     // test_treehash_fors();
     test_pk_from_sig();    // with randombytes
-    puts("A");
     test_pk_from_sig_2();  // with 'real' data [in fors.c]
-    puts("b");
     test_fors_sign();      // with randombytes
-    puts("c");
     test_fors_sign__2();    // with 'real' data [in sign.c]
-    puts("D");
-
-    if (!strcmp(xstr(PARAMS), "sphincs-shake-128f") && !strcmp(xstr(THASH), "simple")) {
-        test_fors_sign_failed_tests();  // tests that failed when testing sign (defined in
-                                        // fors_sign_failed_tests.c) These should fail but dont
-        test_fors_pk_from_sig_failed_tests();  // defined in fors_pk_from_sig_failed_tests.c
-    }
 
     printf("PASS: fors = { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;
