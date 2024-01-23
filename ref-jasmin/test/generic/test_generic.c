@@ -45,8 +45,8 @@ void test_cond_u64_a_below_b_and_a_below_c(void);
 void test_cond_u64_a_dif_b_and_a_dif_c(void);
 void test_cond_u64_a_dif_b_and_c_dif_d(void);
 
-void test_ull_to_bytes(
-    void);  // TODO: FIXME: remove this. This is the particular case when OUTLEN=8
+void test_ull_to_bytes(void);  // TODO: FIXME: remove this. This is the
+                               // particular case when OUTLEN=8
 void test_ull_to_bytes_t(void);
 void test_bytes_to_ull(void);
 void test_zero_array_u32(void);
@@ -228,15 +228,49 @@ static unsigned long long bytes_to_ull(const unsigned char *in, unsigned int inl
 }
 
 void test_bytes_to_ull(void) {
-    uint64_t out0, out1;
-    uint8_t in[8];
+#define MAX_LEN 8 // 8*8 = 64 (um uint64_t = um array de 8 uint8_t)
+    uint64_t out_ref, out_jazz;
+    uint8_t in[8] = {0};
+
+    size_t len;
 
     for (int i = 0; i < TESTS; i++) {
-        randombytes1(in, 8);
-        out0 = bytes_to_ull(in, 8);
-        out1 = bytes_to_ull_jazz(in);
-        assert(out0 == out1);
+        for (size_t len = 0; len < MAX_LEN; len++) {
+            randombytes(in, len);
+            out_ref = bytes_to_ull(in, len);
+
+            switch (len) {
+                case 1:
+                    out_jazz = bytes_to_ull_jazz_1(in);
+                    break;
+                case 2:
+                    out_jazz = bytes_to_ull_jazz_2(in);
+                    break;
+                case 3:
+                    out_jazz = bytes_to_ull_jazz_3(in);
+                    break;
+                case 4:
+                    out_jazz = bytes_to_ull_jazz_4(in);
+                    break;
+                case 5:
+                    out_jazz = bytes_to_ull_jazz_5(in);
+                    break;
+                case 6:
+                    out_jazz = bytes_to_ull_jazz_6(in);
+                    break;
+                case 7:
+                    out_jazz = bytes_to_ull_jazz_7(in);
+                    break;
+                case 8:
+                    out_jazz = bytes_to_ull_jazz_8(in);
+                    break;
+            }
+
+            assert(out_ref == out_jazz);
+        }
     }
+
+#undef MAX_LEN
 }
 
 void test_zero_array_u32(void) {

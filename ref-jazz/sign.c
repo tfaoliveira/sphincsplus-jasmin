@@ -5,20 +5,32 @@
 #include "api.h"
 #include "params.h"
 #include "wots.h"
-#include "fors.h"
 #include "hash.h"
-#include "thash.h"
 #include "address.h"
 #include "randombytes.h"
 #include "utils.h"
 #include "merkle.h"
 
+// Address
 extern void copy_subtree_addr_jazz(uint32_t out_addr[8], uint32_t in_addr[8]);
 extern void copy_keypair_addr_jazz(uint32_t addr[8], uint32_t in_addr[8]);
 extern void set_keypair_addr_jazz(uint32_t addr[8], uint32_t type);
 extern void set_layer_addr_jazz(uint32_t addr[8], uint32_t layer);
 extern void set_tree_addr_jazz(uint32_t addr[8], uint64_t tree);
 extern void set_type_jazz(uint32_t addr[8], uint32_t type);
+
+// Thash
+extern void thash_33(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
+
+// Hash
+extern void gen_message_random_jazz(uint8_t *R, const uint8_t *sk_prf, const uint8_t *optrand,
+                                    const uint8_t *msg, size_t msg_len);
+
+// Fors
+extern void fors_sign_jazz(uint8_t *sig, uint8_t *pk, const uint8_t *m, const uint8_t *pub_seed,
+                           const uint8_t *sk_seed, const uint32_t fors_addr[8]);
+extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m,
+                                  const uint8_t *pub_seed, const uint32_t fors_addr[8]);
 
 /*
  * Returns the length of a secret key, in bytes
@@ -131,7 +143,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen,
        getting a large number of traces when the signer uses the same nodes. */
     randombytes(optrand, SPX_N);
     /* Compute the digest randomization value. */
-    gen_message_random(sig, sk_prf, optrand, m, mlen, &ctx);
+    gen_message_random_jazz(sig, sk_prf, optrand, m, mlen);
 
     /* Derive the message digest and leaf index from R, PK and M. */
     hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
@@ -141,7 +153,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen,
     set_keypair_addr_jazz(wots_addr, idx_leaf);
 
     /* Sign the message hash using FORS. */
-    fors_sign(sig, root, mhash, &ctx, wots_addr);
+    fors_sign_jazz(sig, root, mhash, ctx.pub_seed, ctx.sk_seed, wots_addr);
     sig += SPX_FORS_BYTES;
 
     for (i = 0; i < SPX_D; i++) {
@@ -206,7 +218,7 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen,
     set_tree_addr_jazz(wots_addr, tree);
     set_keypair_addr_jazz(wots_addr, idx_leaf);
 
-    fors_pk_from_sig(root, sig, mhash, &ctx, wots_addr);
+    fors_pk_from_sig_jazz(root, sig, mhash, ctx.pub_seed, wots_addr);
     sig += SPX_FORS_BYTES;
 
     /* For each subtree.. */
@@ -226,7 +238,7 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen,
         sig += SPX_WOTS_BYTES;
 
         /* Compute the leaf node using the WOTS public key. */
-        thash(leaf, wots_pk, SPX_WOTS_LEN, &ctx, wots_pk_addr);
+        thash_35(leaf, wots_pk, ctx.pub_seed, wots_pk_addr);
 
         /* Compute the root node of this subtree. */
         compute_root(root, leaf, idx_leaf, 0, sig, SPX_TREE_HEIGHT,

@@ -71,31 +71,26 @@ inline fn __gen_message_random(
   reg ptr u64[26] shake_state_p;
 
   stack ptr u8[SPX_N] s_R, s_sk_prf, s_optrand;
-  stack u64 s_msg s_msg_len;
 
   // Spill
-  s_R = R;
-  s_sk_prf = sk_prf;
-  s_optrand = optrand;
-  s_msg = msg;
-  s_msg_len = msg_len;
+  () = #spill(R, sk_prf, optrand, msg, msg_len);
 
   shake_state_p = shake_state;
 
   shake_state_p = __shake256_inc_init_(shake_state_p);
 
-  sk_prf = s_sk_prf;
+  () = #unspill(sk_prf);
   shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, sk_prf);
 
-  optrand = s_optrand;
+  () = #unspill(optrand);
   shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, optrand);
 
-  msg = s_msg; msg_len = s_msg_len;
+  () = #unspill(msg, msg_len);
   shake_state_p = _shake256_inc_absorb(shake_state_p, msg, msg_len);
 
   shake_state_p = __shake256_inc_finalize(shake_state_p);
 
-  R = s_R;
+  () = #unspill(R);
   R, _ = __shake256_inc_squeeze_t<SPX_N>(R, shake_state_p);
 
   return R;
@@ -121,11 +116,6 @@ inline fn __hash_message(
   stack u64[26] shake256_state;
   reg ptr u64[26] shake256_state_p; 
 
-  stack ptr u8[SPX_FORS_MSG_BYTES] s_digest;
-  stack u64 s_tree s_msg s_msg_len;
-  stack u32 s_leaf_idx;
-  stack ptr u8[SPX_PK_BYTES] s_pk;
-
   reg u64 offset;
   reg u64 t u;
 
@@ -137,20 +127,14 @@ inline fn __hash_message(
   shake256_state_p = __shake256_inc_init_(shake256_state_p);
 
   // Spill
-  s_digest = digest; 
-  s_tree = tree; 
-  s_leaf_idx = leaf_idx; 
-  s_pk = pk; 
-  s_msg = msg;
-  s_msg_len = msg_len;
+  () = #spill(digest, pk, msg, msg_len);
 
   shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, R);
 
-  pk = s_pk;
+  () = #unspill(pk);
   shake256_state_p = __shake256_inc_absorb_t<SPX_PK_BYTES>(shake256_state_p, pk);
 
-  msg = s_msg;
-  msg_len = s_msg_len;
+  () = #unspill(msg, msg_len);
   shake256_state_p = _shake256_inc_absorb(shake256_state_p, msg, msg_len);
 
   shake256_state_p = __shake256_inc_finalize(shake256_state_p);
@@ -159,7 +143,7 @@ inline fn __hash_message(
   buf_p, _ = __shake256_inc_squeeze_t<SPX_DGST_BYTES>(buf_p, shake256_state_p);
 
   offset = 0;
-  digest = s_digest;
+  () = #unspill(digest); 
   digest, _, _ = __memcpy_u8u8_2<SPX_FORS_MSG_BYTES, SPX_DGST_BYTES>(digest, offset, buf_p, 0, SPX_FORS_MSG_BYTES);
 
   tree_bytes = buf[SPX_FORS_MSG_BYTES:SPX_TREE_BYTES];

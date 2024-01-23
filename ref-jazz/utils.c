@@ -3,10 +3,11 @@
 #include "utils.h"
 #include "params.h"
 #include "hash.h"
-#include "thash.h"
 
 extern void set_tree_height_jazz(uint32_t addr[8], uint32_t tree_height);
 extern void set_tree_index_jazz(uint32_t addr[8], uint32_t tree_index);
+
+extern void thash_2(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
 
 /**
  * Converts the value of 'in' to 'outlen' bytes in big-endian byte order.
@@ -78,11 +79,11 @@ void compute_root(unsigned char *root, const unsigned char *leaf,
 
         /* Pick the right or left neighbor, depending on parity of the node. */
         if (leaf_idx & 1) {
-            thash(buffer + SPX_N, buffer, 2, ctx, addr);
+            thash_2(buffer + SPX_N, buffer, ctx->pub_seed, addr);
             memcpy(buffer, auth_path, SPX_N);
         }
         else {
-            thash(buffer, buffer, 2, ctx, addr);
+            thash_2(buffer, buffer, ctx->pub_seed, addr);
             memcpy(buffer + SPX_N, auth_path, SPX_N);
         }
         auth_path += SPX_N;
@@ -93,7 +94,7 @@ void compute_root(unsigned char *root, const unsigned char *leaf,
     idx_offset >>= 1;
     set_tree_height_jazz(addr, tree_height);
     set_tree_index_jazz(addr, leaf_idx + idx_offset);
-    thash(root, buffer, 2, ctx, addr);
+    thash_2(root, buffer, ctx->pub_seed, addr);
 }
 
 /**
@@ -139,8 +140,8 @@ void treehash(unsigned char *root, unsigned char *auth_path, const spx_ctx* ctx,
             set_tree_index_jazz(tree_addr,
                            tree_idx + (idx_offset >> (heights[offset-1] + 1)));
             /* Hash the top-most nodes from the stack together. */
-            thash(stack + (offset - 2)*SPX_N,
-                  stack + (offset - 2)*SPX_N, 2, ctx, tree_addr);
+            thash_2(stack + (offset - 2)*SPX_N,
+                  stack + (offset - 2)*SPX_N, ctx->pub_seed, tree_addr);
             offset--;
             /* Note that the top-most node is now one layer higher. */
             heights[offset - 1]++;

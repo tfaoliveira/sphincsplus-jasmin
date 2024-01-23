@@ -70,6 +70,7 @@ export fn thash<INBLOCKS>(reg u64 _out _in _pub_seed _addr)
   }
 }//<>
 
+/*
 export fn thash_inplace_jazz(
   reg u64 _out _pub_seed _addr
 )
@@ -123,3 +124,4 @@ export fn thash_in_u64_jazz<INBLOCKS>(reg u64 _out in _pub_seed _addr)
   _out = s_out;
   __store_u8_array<SPX_N>(out, _out);
 }//<>
+*/

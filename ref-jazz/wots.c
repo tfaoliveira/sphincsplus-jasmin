@@ -4,13 +4,14 @@
 #include "utils.h"
 #include "utilsx1.h"
 #include "hash.h"
-#include "thash.h"
 #include "wots.h"
 #include "wotsx1.h"
 #include "params.h"
 
 extern void set_chain_addr_jazz(uint32_t addr[8], uint32_t chain);
 extern void set_hash_addr_jazz(uint32_t addr[8], uint32_t hash);
+
+extern void thash_1(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
 
 // TODO clarify address expectations, and make them more uniform.
 // TODO i.e. do we expect types to be set already?
@@ -35,7 +36,7 @@ static void gen_chain(unsigned char *out, const unsigned char *in,
     /* Iterate 'steps' calls to the hash function. */
     for (i = start; i < (start+steps) && i < SPX_WOTS_W; i++) {
         set_hash_addr_jazz(addr, i);
-        thash(out, out, 1, ctx, addr);
+        thash_1(out, out, ctx->pub_seed, addr);
     }
 }
 

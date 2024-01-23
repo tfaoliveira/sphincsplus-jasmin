@@ -3,11 +3,12 @@
 #include "utils.h"
 #include "utilsx1.h"
 #include "params.h"
-#include "thash.h"
 #include "address.h"
 
 extern void set_tree_height_jazz(uint32_t addr[8], uint32_t tree_height);
 extern void set_tree_index_jazz(uint32_t addr[8], uint32_t tree_index);
+
+extern void thash_2(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
 
 /*
  * Generate the entire Merkle tree, computing the authentication path for
@@ -91,9 +92,9 @@ void treehashx1(unsigned char *root, unsigned char *auth_path,
 
             unsigned char *left = &stack[h * SPX_N];
             memcpy( &current[0], left, SPX_N );
-            thash( &current[1 * SPX_N],
+            thash_2( &current[1 * SPX_N],
                    &current[0 * SPX_N],
-                   2, ctx, tree_addr);
+                   ctx->pub_seed, tree_addr);
         }
 
         /* We've hit a left child; save the current for when we get the */

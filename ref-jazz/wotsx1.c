@@ -3,7 +3,6 @@
 
 #include "utils.h"
 #include "hash.h"
-#include "thash.h"
 #include "wots.h"
 #include "wotsx1.h"
 #include "address.h"
@@ -15,6 +14,12 @@ extern void set_chain_addr_jazz(uint32_t addr[8], uint32_t chain);
 extern void set_hash_addr_jazz(uint32_t addr[8], uint32_t hash);
 extern void set_keypair_addr_jazz(uint32_t addr[8], uint32_t type);
 extern void set_type_jazz(uint32_t addr[8], uint32_t type);
+
+extern void thash_1(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
+extern void thash_35(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
+
+extern void prf_addr_jazz(uint8_t *out, const unsigned char *pub_seed, const unsigned char *sk_seed,
+                          const uint32_t add[8]);
 
 /*
  * This generates a WOTS public key
@@ -53,7 +58,7 @@ void wots_gen_leafx1(unsigned char *dest,
         set_hash_addr_jazz(leaf_addr, 0);
         set_type_jazz(leaf_addr, SPX_ADDR_TYPE_WOTSPRF);
 
-        prf_addr(buffer, ctx, leaf_addr);
+        prf_addr_jazz(buffer, ctx->pub_seed, ctx->sk_seed, leaf_addr);
 
         set_type_jazz(leaf_addr, SPX_ADDR_TYPE_WOTS);
 
@@ -71,10 +76,10 @@ void wots_gen_leafx1(unsigned char *dest,
             /* Iterate one step on the chain */
             set_hash_addr_jazz(leaf_addr, k);
 
-            thash(buffer, buffer, 1, ctx, leaf_addr);
+            thash_1(buffer, buffer, ctx->pub_seed, leaf_addr);
         }
     }
 
     /* Do the final thash to generate the public keys */
-    thash(dest, pk_buffer, SPX_WOTS_LEN, ctx, pk_addr);
+    thash_35(dest, pk_buffer, ctx->pub_seed, pk_addr);
 }

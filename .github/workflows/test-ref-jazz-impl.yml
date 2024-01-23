@@ -11,10 +11,7 @@ jobs:
     runs-on: [self-hosted, linux, X64, amd64-main]
     steps:
       - uses: actions/checkout@v1
-      - name: Compile assembly files
-        run:
-          JASMIN=$(which_jasminc) make -C ref-jazz/ asm/
-      - name: Compile tests
+      - name: Compile jasmin & tests
         run:
           JASMIN=$(which_jasminc) make -C ref-jazz/
       - name: Run tests
