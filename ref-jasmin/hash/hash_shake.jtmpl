@@ -118,7 +118,7 @@ inline fn __hash_message(
 
   reg u32 w;
   
-  inline u64 u;
+  inline u64 shift_amount;
 
   reg ptr u8[SPX_TREE_BYTES] tree_bytes;
   reg ptr u8[SPX_LEAF_BYTES] leaf_bytes;
@@ -163,22 +163,23 @@ inline fn __hash_message(
   // *tree &= (~(uint64_t)0) >> (64 - SPX_TREE_BITS);
   ?{}, t = #set0(); 
   t = #NOT_64(t);
-  u = 64 - SPX_TREE_BITS;
-  ?{}, t = #SHR(t, u);
+  shift_amount = 64 - SPX_TREE_BITS;
+  ?{}, t = #SHR(t, shift_amount);
   tree &= t;
   
   // bufp += SPX_TREE_BYTES;
-  leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES];
+  // leaf_bytes = buf[SPX_FORS_MSG_BYTES + 8 : SPX_LEAF_BYTES];
 
   // *leaf_idx = (uint32_t)bytes_to_ull(bufp, SPX_LEAF_BYTES);
-  t = __bytes_to_ull<SPX_LEAF_BYTES>(t, leaf_bytes);
+  // t = __bytes_to_ull__1_(t, leaf_bytes);
+  t = (64u) buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES]; // FIXME: only works for INLEN = 1
+  leaf_idx = (32u) t;
 
   // *leaf_idx &= (~(uint32_t)0) >> (32 - SPX_LEAF_BITS);
-  leaf_idx = (32u) t;
-  ?{}, w = #set0_32();
-  w = #NOT_32(w);
-  u = 32 - SPX_LEAF_BITS;
-  ?{}, w = #SHR_32(w, u);
+  // ?{}, w = #set0_32(); w = #NOT_32(w);
+  shift_amount = 32 - SPX_LEAF_BITS;
+  w = 0xffffffff;
+  ?{}, w = #SHR_32(w, shift_amount);
   leaf_idx &= w;
 
   return digest, tree, leaf_idx;

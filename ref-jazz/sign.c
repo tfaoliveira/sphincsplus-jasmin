@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -7,6 +8,7 @@
 #include "hash.h"
 #include "merkle.h"
 #include "params.h"
+#include "print.h"
 #include "randombytes.h"
 #include "utils.h"
 #include "wots.h"
@@ -23,14 +25,22 @@ extern void set_type_jazz(uint32_t addr[8], uint32_t type);
 extern void thash_33(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
 
 // Hash
-extern void gen_message_random_jazz(uint8_t *R, const uint8_t *sk_prf, const uint8_t *optrand,
-                                    const uint8_t *msg, size_t msg_len);
+extern void gen_message_random_jazz(uint8_t *R, const uint8_t *sk_prf, const uint8_t *optrand, const uint8_t *msg,
+                                    size_t msg_len);
+
+typedef struct {
+    uint8_t R[SPX_N];
+    uint8_t pk[SPX_PK_BYTES];
+} args;
+
+extern void hash_message_jazz(uint8_t *digest, uint64_t *tree, uint32_t *leaf_idx, const args *_args,
+                              const uint8_t *msg, size_t msg_len);
 
 // Fors
-extern void fors_sign_jazz(uint8_t *sig, uint8_t *pk, const uint8_t *m, const uint8_t *pub_seed,
-                           const uint8_t *sk_seed, const uint32_t fors_addr[8]);
-extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m,
-                                  const uint8_t *pub_seed, const uint32_t fors_addr[8]);
+extern void fors_sign_jazz(uint8_t *sig, uint8_t *pk, const uint8_t *m, const uint8_t *pub_seed, const uint8_t *sk_seed,
+                           const uint32_t fors_addr[8]);
+extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m, const uint8_t *pub_seed,
+                                  const uint32_t fors_addr[8]);
 
 /*
  * Returns the length of a secret key, in bytes
@@ -96,8 +106,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
 /**
  * Returns an array containing a detached signature.
  */
-int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen,
-                          const uint8_t *sk) {
+int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk) {
     spx_ctx ctx;
 
     const unsigned char *sk_prf = sk + SPX_N;
@@ -130,7 +139,38 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
     gen_message_random_jazz(sig, sk_prf, optrand, m, mlen);
 
     /* Derive the message digest and leaf index from R, PK and M. */
-    hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
+    // hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);  // ref
+    args _args;
+    memcpy(_args.R, sig, SPX_N);  // randomness
+    memcpy(_args.pk, pk, SPX_PK_BYTES);
+    hash_message_jazz(mhash, &tree, &idx_leaf, &_args, m, mlen);  // jasmin impl
+    
+#ifdef DEBUG
+    puts("Debug is def");
+    uint32_t idx_leaf_jazz;
+    uint64_t tree_jazz;
+    unsigned char mhash_jazz[SPX_FORS_MSG_BYTES];
+
+    args _args;
+    memcpy(_args.R, sig, SPX_N);  // randomness
+    memcpy(_args.pk, pk, SPX_PK_BYTES);
+    hash_message_jazz(mhash_jazz, &tree_jazz, &idx_leaf_jazz, &_args, m, mlen);  // jasmin impl
+
+    assert(memcmp(mhash_jazz, mhash, SPX_FORS_MSG_BYTES * sizeof(unsigned char)) == 0);
+    assert(memcmp(&tree_jazz, &tree, sizeof(uint64_t)) == 0);
+    assert(tree_jazz == tree);
+    // assert(memcmp(&idx_leaf_jazz, &idx_leaf, sizeof(uint32_t)) == 0);
+    // assert(idx_leaf_jazz == idx_leaf);
+
+    if (idx_leaf_jazz != idx_leaf) {
+        print_str_u8("ref", (uint8_t *)&idx_leaf, sizeof(uint32_t));
+        print_str_u8("jazz", (uint8_t *)&idx_leaf_jazz, sizeof(uint32_t));
+    }
+
+    assert(idx_leaf_jazz == idx_leaf);
+
+#endif
+
     sig += SPX_N;
 
     set_tree_addr_jazz(wots_addr, tree);
@@ -163,8 +203,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
 /**
  * Verifies a detached signature and message under a given public key.
  */
-int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen,
-                       const uint8_t *pk) {
+int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, const uint8_t *pk) {
     spx_ctx ctx;
     const unsigned char *pub_root = pk + SPX_N;
     unsigned char mhash[SPX_FORS_MSG_BYTES];
@@ -243,8 +282,8 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
 /**
  * Returns an array containing the signature followed by the message.
  */
-int crypto_sign(unsigned char *sm, unsigned long long *smlen, const unsigned char *m,
-                unsigned long long mlen, const unsigned char *sk) {
+int crypto_sign(unsigned char *sm, unsigned long long *smlen, const unsigned char *m, unsigned long long mlen,
+                const unsigned char *sk) {
     size_t siglen;
 
     crypto_sign_signature(sm, &siglen, m, (size_t)mlen, sk);
@@ -258,8 +297,8 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen, const unsigned cha
 /**
  * Verifies a given signature-message pair under a given public key.
  */
-int crypto_sign_open(unsigned char *m, unsigned long long *mlen, const unsigned char *sm,
-                     unsigned long long smlen, const unsigned char *pk) {
+int crypto_sign_open(unsigned char *m, unsigned long long *mlen, const unsigned char *sm, unsigned long long smlen,
+                     const unsigned char *pk) {
     /* The API caller does not necessarily know what size a signature should be
        but SPHINCS+ signatures are always exactly SPX_BYTES. */
     if (smlen < SPX_BYTES) {

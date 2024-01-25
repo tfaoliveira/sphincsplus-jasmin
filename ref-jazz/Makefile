@@ -30,7 +30,7 @@ bin/test_sign_%: bin/ asm/
 	$(CC) $(CFLAGS) -o $@ \
 	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
 	-I . -I common -I params \
-	$(ASM_FILES) $(C_FILES) $(HEADER_FILES) 
+	$(ASM_FILES) $(C_FILES) $(HEADER_FILES)
 
 bin/test_sign_%.out: bin/test_sign_%
 	@./$<

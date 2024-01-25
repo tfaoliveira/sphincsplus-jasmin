@@ -36,7 +36,8 @@ extern uint64_t bytes_to_ull_jazz(const uint8_t *a);
 #define zero_array_u32_jazz NAMESPACE1(zero_array_u32_jazz, INLEN)
 extern void zero_array_u32_jazz(uint32_t *);
 
-extern uint64_t bytes_to_ull__8_jazz(const uint8_t a[8]);
+extern uint64_t bytes_to_ull__8_jazz(const uint8_t *);  // 8 elements
+extern uint64_t bytes_to_ull__1_jazz(const uint8_t *);  // 1 element
 
 // u32
 void test_cond_u32_a_below_b_and_a_below_c(void);
@@ -292,7 +293,8 @@ void test_bytes_to_ull(void) {
     // FIXME: TODO:; Doesnt work for 4, 5, 6, 7 (these values arent used so I will fix this
     // later)
 
-    // To see the lengths we need to support: cat ../../params/params-sphincs-shake-*.jinc | grep -oE "param int (SPX_LEAF_BYTES|SPX_TREE_BYTES) = [0-9]+" | cut -d'=' -f2 | sort -u
+    // To see the lengths we need to support: cat ../../params/params-sphincs-shake-*.jinc | grep
+    // -oE "param int (SPX_LEAF_BYTES|SPX_TREE_BYTES) = [0-9]+" | cut -d'=' -f2 | sort -u
     //  { 1 2 7 8 }
     // For sphincs-shake-128f we only need 1 (trivial) and 8
 
@@ -307,7 +309,8 @@ void test_bytes_to_ull(void) {
 
             switch (len) {
                 case 1:
-                    out_jazz = bytes_to_ull_jazz_1(in);
+                    // out_jazz = bytes_to_ull_jazz_1(in);
+                    out_jazz = bytes_to_ull__1_jazz(in);
                     break;
                 case 2:
                     // out_jazz = bytes_to_ull_jazz_2(in);
@@ -343,7 +346,6 @@ void test_bytes_to_ull(void) {
             // lengths fail
 
             if (out_ref != out_jazz) {
-                printf("Len : %ld [ Expected : %d ; Got : %d ]\n\n", len, out_ref, out_jazz);
                 printf("Ref  = %d\n", out_ref);
                 printf("Jazz = %d\n\n", out_jazz);
                 print_str_u8("out_ref", (uint8_t *)&out_ref, sizeof(uint64_t));
@@ -351,8 +353,8 @@ void test_bytes_to_ull(void) {
                 print_str_u8("out_jazz", (uint8_t *)&out_jazz, sizeof(uint64_t));
             }
 
-            // assert(out_ref == out_jazz);
-            // assert(memcmp(&out_ref, &out_jazz, sizeof(uint64_t)) == 0);
+            assert(out_ref == out_jazz);
+            assert(memcmp(&out_ref, &out_jazz, sizeof(uint64_t)) == 0);
         }
     }
 
@@ -371,15 +373,15 @@ void test_zero_array_u32(void) {
 }
 
 int main(void) {
-    // test_cond_u32_a_below_b_and_a_below_c();
-    // test_cond_u32_a_eq_b_and_c_below_d();
-    // test_cond_u64_a_below_b_and_a_below_c();
-    // test_cond_u64_a_dif_b_and_a_dif_c();
-    // test_cond_u64_a_dif_b_and_c_dif_d();
-    // test_ull_to_bytes();
-    // test_ull_to_bytes_t();
+    test_cond_u32_a_below_b_and_a_below_c();
+    test_cond_u32_a_eq_b_and_c_below_d();
+    test_cond_u64_a_below_b_and_a_below_c();
+    test_cond_u64_a_dif_b_and_a_dif_c();
+    test_cond_u64_a_dif_b_and_c_dif_d();
+    test_ull_to_bytes();
+    test_ull_to_bytes_t();
     test_bytes_to_ull();
-    // test_zero_array_u32();
-    puts("PASS: generic");
+    test_zero_array_u32();
+    printf("PASS: generic { inlen : %d }\n", INLEN);
     return 0;
 }

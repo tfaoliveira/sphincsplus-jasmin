@@ -92,8 +92,9 @@ inline fn __bytes_to_ull<INLEN>(reg u64 out, reg ptr u8[INLEN] in) -> reg u64 {
   return out;
 }//<>
 
+/////////////////////////// FIXME: TODO: FIXME: ISTO TA TUDO MARTELADO /////////////////////////////////////////////////
+
 inline fn __bytes_to_ull__8_(reg u64 result, reg ptr u8[8] in) -> reg u64 {
-  inline int i;
   inline u64 shift_amount;
   reg u64 t;
 
@@ -141,6 +142,18 @@ inline fn __bytes_to_ull__8_(reg u64 result, reg ptr u8[8] in) -> reg u64 {
 
   return result;
 }
+
+inline fn __bytes_to_ull__1_(reg u64 result, reg ptr u8[1] in) -> reg u64 {
+  inline u64 shift_amount;
+  reg u64 t;
+
+  // uint64_t result = 0;
+  result = (64u) in[0];
+
+  return result;
+}
+
+/////////////////////////// FIXME: TODO: FIXME: ISTO TA TUDO MARTELADO /////////////////////////////////////////////////
 
 //// TODO: The following functions are only used in tests (maybe they shouldnt be in this file)
 inline fn __load_u8_array<INLEN>(

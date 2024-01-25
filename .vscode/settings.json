@@ -4,6 +4,7 @@
         "*.jpp": "jasmin",
         "random": "c",
         "params.h": "c",
-        "hash.h": "c"
+        "hash.h": "c",
+        "randombytes.h": "c"
     }
 }

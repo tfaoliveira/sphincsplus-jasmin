@@ -11,7 +11,7 @@
 #include "macros.h"
 #include "merkle.h"
 #include "params.h"
-#include "print.h"
+#include "print.c"
 #include "randombytes.h"
 
 #ifndef TESTS
@@ -23,6 +23,9 @@
 #endif
 
 int main(void) {
+    uint32_t not_zero = (~(uint32_t)0);
+    print_str_u8("", (uint8_t*)&not_zero, sizeof(uint32_t));
+
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
     uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
 

@@ -144,6 +144,10 @@ void test_hash_message(void) {
         for (size_t msg_len = 1; msg_len < MAX_MSG_LEN; msg_len++) {
             memset(digest_ref, 0, SPX_FORS_MSG_BYTES);
             memset(digest_jazz, 0, SPX_FORS_MSG_BYTES);
+            tree_ref = 0;
+            tree_jazz = 0;
+            leaf_idx_ref = 0;
+            leaf_idx_jazz = 0;
 
             randombytes(R, SPX_N);
             randombytes(pk, SPX_PK_BYTES);
@@ -158,10 +162,11 @@ void test_hash_message(void) {
             hash_message_jazz(digest_jazz, &tree_jazz, &leaf_idx_jazz, &_args, msg, msg_len);
 
             assert(memcmp(digest_ref, digest_jazz, SPX_FORS_MSG_BYTES) == 0);
-            // assert(tree_ref == tree_jazz);
+            
+            assert(tree_ref == tree_jazz);
             assert(memcmp(&tree_ref, &tree_jazz, sizeof(uint64_t)) == 0);
 
-            // assert(leaf_idx_ref == leaf_idx_ref);
+            assert(leaf_idx_ref == leaf_idx_ref);
             assert(memcmp(&leaf_idx_ref, &leaf_idx_ref, sizeof(uint32_t)) == 0);
         }
     }
