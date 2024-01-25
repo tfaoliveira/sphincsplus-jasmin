@@ -213,3 +213,16 @@ export fn bytes_to_ull_jazz_8(reg u64 _in) -> reg u64 {
     
     return res; 
 }
+
+export fn bytes_to_ull__8_jazz(reg u64 _in) -> reg u64 { 
+    reg u64 res; 
+    stack u8[8] in; 
+    reg ptr u8[8] in_p; 
+    
+    in_p = in; 
+    in_p = __load_u8_array<8>(in_p, _in); 
+    res = __bytes_to_ull__8_(res, in_p); 
+    in = in_p; 
+    
+    return res; 
+}

@@ -70,9 +70,6 @@ inline fn __gen_message_random(
   stack u64[26] shake_state;
   reg ptr u64[26] shake_state_p;
 
-  stack ptr u8[SPX_N] s_R, s_sk_prf, s_optrand;
-
-  // Spill
   () = #spill(R, sk_prf, optrand, msg, msg_len);
 
   shake_state_p = shake_state;
@@ -117,53 +114,72 @@ inline fn __hash_message(
   reg ptr u64[26] shake256_state_p; 
 
   reg u64 offset;
-  reg u64 t u;
+  reg u64 t;
+
+  reg u32 w;
+  
+  inline u64 u;
 
   reg ptr u8[SPX_TREE_BYTES] tree_bytes;
   reg ptr u8[SPX_LEAF_BYTES] leaf_bytes;
  
   shake256_state_p = shake256_state;
 
+  // shake256_inc_init(s_inc);
   shake256_state_p = __shake256_inc_init_(shake256_state_p);
 
-  // Spill
+  // shake256_inc_absorb(s_inc, R, SPX_N);
   () = #spill(digest, pk, msg, msg_len);
-
   shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, R);
 
+  // shake256_inc_absorb(s_inc, pk, SPX_PK_BYTES);
   () = #unspill(pk);
   shake256_state_p = __shake256_inc_absorb_t<SPX_PK_BYTES>(shake256_state_p, pk);
 
+  // shake256_inc_absorb(s_inc, m, mlen);
   () = #unspill(msg, msg_len);
   shake256_state_p = _shake256_inc_absorb(shake256_state_p, msg, msg_len);
 
+  // shake256_inc_finalize(s_inc);
   shake256_state_p = __shake256_inc_finalize(shake256_state_p);
 
+  // shake256_inc_squeeze(buf, SPX_DGST_BYTES, s_inc);
   buf_p = buf;
   buf_p, _ = __shake256_inc_squeeze_t<SPX_DGST_BYTES>(buf_p, shake256_state_p);
 
+  // memcpy(digest, bufp, SPX_FORS_MSG_BYTES);
   offset = 0;
   () = #unspill(digest); 
   digest, _, _ = __memcpy_u8u8_2<SPX_FORS_MSG_BYTES, SPX_DGST_BYTES>(digest, offset, buf_p, 0, SPX_FORS_MSG_BYTES);
+  buf = buf_p;
 
+  // bufp += SPX_FORS_MSG_BYTES;
   tree_bytes = buf[SPX_FORS_MSG_BYTES:SPX_TREE_BYTES];
-  tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, tree_bytes);
+
+  // *tree = bytes_to_ull(bufp, SPX_TREE_BYTES);
+  // tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, tree_bytes);
+  tree = __bytes_to_ull__8_(tree, tree_bytes);
+
+  // *tree &= (~(uint64_t)0) >> (64 - SPX_TREE_BITS);
   ?{}, t = #set0(); 
   t = #NOT_64(t);
-  u = 64;
-  u -= SPX_TREE_BITS;
+  u = 64 - SPX_TREE_BITS;
   ?{}, t = #SHR(t, u);
   tree &= t;
   
+  // bufp += SPX_TREE_BYTES;
   leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES];
+
+  // *leaf_idx = (uint32_t)bytes_to_ull(bufp, SPX_LEAF_BYTES);
   t = __bytes_to_ull<SPX_LEAF_BYTES>(t, leaf_bytes);
+
+  // *leaf_idx &= (~(uint32_t)0) >> (32 - SPX_LEAF_BITS);
   leaf_idx = (32u) t;
-  t = 0; 
-  t = #NOT_64(t);
-  u = 32;
-  u -= SPX_LEAF_BITS;
-  ?{}, t = #SHR(t, u);
-  leaf_idx &= (32u) t;
+  ?{}, w = #set0_32();
+  w = #NOT_32(w);
+  u = 32 - SPX_LEAF_BITS;
+  ?{}, w = #SHR_32(w, u);
+  leaf_idx &= w;
 
   return digest, tree, leaf_idx;
 }

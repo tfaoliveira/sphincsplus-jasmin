@@ -297,10 +297,10 @@ void test_treehash_fors(void) {
 }
 
 int main(void) {
-    // test_fors_gen_sk();
-    // test_fors_sk_to_leaf();
-    // test_fors_gen_leafx1();
-    // test_treehash_fors();
+    test_fors_gen_sk();
+    test_fors_sk_to_leaf();
+    test_fors_gen_leafx1();
+    test_treehash_fors();
     test_pk_from_sig();    // with randombytes
     test_pk_from_sig_2();  // with 'real' data [in fors.c]
     test_fors_sign();      // with randombytes

@@ -6,10 +6,7 @@ inline fn __load_addr(reg ptr u32[8] addr, reg u64 p) -> reg ptr u32[8]
   inline int i;
   reg u32 t;
 
-  for i=0 to 8
-  { t = (u32)[p + 4*i];
-    addr[i] = t;
-  }
+  for i=0 to 8 { t = (u32)[p + 4*i]; addr[i] = t; }
 
   return addr;
 }
@@ -41,7 +38,8 @@ inline fn __load_args(
   return R, pk;
 }
 
-export fn prf_addr_jazz(reg u64 _out _pub_seed _sk_seed _addr) {
+export fn prf_addr_jazz(reg u64 _out _pub_seed _sk_seed _addr) 
+{
   stack u8[32] addr;
   reg ptr u8[32] addr_p;
 
@@ -53,8 +51,6 @@ export fn prf_addr_jazz(reg u64 _out _pub_seed _sk_seed _addr) {
 
   stack u8[SPX_N] out;
   reg ptr u8[SPX_N] out_p;
-
-  stack u64 s_out s_pub_seed s_sk_seed s_addr;
 
   inline int i;
   reg u8 t;
@@ -70,7 +66,7 @@ export fn prf_addr_jazz(reg u64 _out _pub_seed _sk_seed _addr) {
     sk_seed[i] = t;
   }
 
-  s_out = _out; s_pub_seed = _pub_seed; s_sk_seed = _sk_seed; s_addr = _addr; // spill
+  () = #spill(_out);
 
   out_p = out;
   pub_seed_p = pub_seed;
@@ -79,12 +75,9 @@ export fn prf_addr_jazz(reg u64 _out _pub_seed _sk_seed _addr) {
   out_p = __prf_addr(out_p, pub_seed_p, sk_seed_p, addr_p);
   out = out_p;
 
-  _out = s_out; // unspill
+  () = #unspill(_out);
 
-  for i = 0 to SPX_N {
-    t = out[i];
-    (u8)[_out + i] = t;
-  }
+  for i = 0 to SPX_N { t = out[i]; (u8)[_out + i] = t; }
 }
 
 export fn prf_addr_out_u64_jazz(reg u64 out _pub_seed _sk_seed _addr)
@@ -93,11 +86,10 @@ export fn prf_addr_out_u64_jazz(reg u64 out _pub_seed _sk_seed _addr)
   stack u8[SPX_N] pub_seed;
   stack u8[SPX_N] sk_seed;
 
-  stack u64 s_out s_pub_seed s_sk_seed s_addr;
-
   addr = __load_u32_array<8>(addr, _addr);
   pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
   sk_seed = __load_u8_array<SPX_N>(sk_seed, _sk_seed);
+
   __prf_addr_out_u64(out, pub_seed, sk_seed, addr);
 }
 
@@ -113,8 +105,6 @@ export fn gen_message_random_jazz(
   reg ptr u8[SPX_N] sk_prf_p;
   reg ptr u8[SPX_N] optrand_p;
 
-  stack u64 s_R s_sk_prf s_optrand s_m;
-
   R_p = R; 
   
   sk_prf_p = sk_prf; 
@@ -123,11 +113,11 @@ export fn gen_message_random_jazz(
   optrand_p = optrand; 
   optrand_p = __load_u8_array<SPX_N>(optrand_p, _optrand);
 
-  s_R = _R;
+  () = #spill(_R);
 
   R_p = __gen_message_random(R_p, sk_prf_p, optrand_p, msg, msg_len);
   
-  _R = s_R; // unspill
+  () = #unspill(_R);
   
   __store_u8_array<SPX_N>(R_p, _R);
 }
@@ -146,21 +136,15 @@ export fn hash_message_jazz(
   reg u64 tree;
   reg u32 leaf_idx;
 
-  stack u64 s_digest s_tree s_leaf_idx;
-
   R, pk = __load_args(R, pk, args);
   // tree = [_tree];              // NOTE: we only write these values, we dont read them
   // leaf_idx = (u32)[_leaf_idx]; // NOTE: we only write these values, we dont read them
 
-  s_digest = _digest;
-  s_tree = _tree;
-  s_leaf_idx = _leaf_idx;
+  () = #spill(_digest, _tree, _leaf_idx);
 
   digest, tree, leaf_idx = __hash_message(digest, tree, leaf_idx, R, pk, msg, msg_len);
 
-  _digest = s_digest;
-  _tree = s_tree;
-  _leaf_idx = s_leaf_idx;
+  () = #unspill(_digest, _tree, _leaf_idx);
   
   [_tree] = tree;
   (u32)[_leaf_idx] = leaf_idx;

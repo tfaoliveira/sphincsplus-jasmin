@@ -11,6 +11,7 @@
 #include "macros.h"
 #include "merkle.h"
 #include "params.h"
+#include "print.h"
 #include "randombytes.h"
 
 #ifndef TESTS
@@ -32,8 +33,8 @@ int main(void) {
     size_t message_length;
 
     for (int i = 0; i < TESTS; i++) {
-        printf("Test %d\n", i);
         for (message_length = 1; message_length < MAX_MLEN; message_length++) {
+            printf("[Test %d] Msg Len: %ld/%d\n", i, message_length, MAX_MLEN);
             randombytes(message, message_length);
             crypto_sign_keypair(public_key, secret_key);
             crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
