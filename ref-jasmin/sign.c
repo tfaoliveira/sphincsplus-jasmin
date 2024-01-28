@@ -123,8 +123,7 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {
 /**
  * Returns an array containing a detached signature.
  */
-int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen,
-                          const uint8_t *sk) {
+int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk) {
     spx_ctx ctx;
 
     const unsigned char *sk_prf = sk + SPX_N;
@@ -171,8 +170,8 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
 
     fors_sign_jazz(sig_jazz, root_jazz, mhash, ctx.pub_seed, ctx.sk_seed, wots_addr);
 
-    assert(memcmp(sig, sig_jazz, SPX_BYTES - SPX_N) == 0); 
-    assert(memcmp(root, root_jazz, SPX_N) == 0); 
+    assert(memcmp(sig, sig_jazz, SPX_BYTES - SPX_N) == 0);
+    assert(memcmp(root, root_jazz, SPX_N) == 0);
 
     sig += SPX_FORS_BYTES;
 
@@ -198,8 +197,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
 /**
  * Returns an array containing a detached signature.
  */
-int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen,
-                          const uint8_t *sk) {
+int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk) {
     spx_ctx ctx;
 
     const unsigned char *sk_prf = sk + SPX_N;
@@ -276,8 +274,7 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
 /**
  * Verifies a detached signature and message under a given public key.
  */
-int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen,
-                       const uint8_t *pk) {
+int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, const uint8_t *pk) {
     spx_ctx ctx;
     const unsigned char *pub_root = pk + SPX_N;
     unsigned char mhash[SPX_FORS_MSG_BYTES];
@@ -301,25 +298,39 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
     set_type(tree_addr, SPX_ADDR_TYPE_HASHTREE);
     set_type(wots_pk_addr, SPX_ADDR_TYPE_WOTSPK);
 
+#ifdef TEST_HASH_MESSAGE
+    unsigned char mhash_jazz[SPX_FORS_MSG_BYTES];
+    uint64_t tree_jazz;
+    uint32_t idx_leaf_jazz;
+
+    typedef struct {
+        uint8_t R[SPX_N];
+        uint8_t pk[SPX_PK_BYTES];
+    } args;
+
+    // Copy state
+    args _args;
+    memcpy(_args.R, sig, SPX_N);  // randomness
+    memcpy(_args.pk, pk, SPX_PK_BYTES);
+
+    assert(memcmp(sig, _args.R, SPX_N) == 0);
+    assert(memcmp(pk, _args.pk, SPX_PK_BYTES) == 0);
+
     hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
+    hash_message_jazz(mhash_jazz, &tree_jazz, &idx_leaf_jazz, &_args, m, mlen);  // jasmin impl
+
+    assert(memcmp(mhash_jazz, mhash, SPX_FORS_MSG_BYTES * sizeof(unsigned char)) == 0);
+    assert(tree_jazz == tree);
+    assert(idx_leaf_jazz == idx_leaf);
+
+#else
+    hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
+#endif
 
     sig += SPX_N;
 
     set_tree_addr(wots_addr, tree);
     set_keypair_addr(wots_addr, idx_leaf);
-
-#ifdef DEBUG_FORS_PK_FROM_SIG
-    extern int fors_pk_from_sig_test_number;  // global variable defined in test_sign.c
-    char file_path[256];
-    sprintf(file_path, "fors_pk_from_sig_failed_tests/test_%d.txt", fors_pk_from_sig_test_number++);
-
-    fprint_str_u8(file_path, "sig_ref", sig, SPX_BYTES - SPX_N);
-    fprint_str_u8(file_path, "pk_ref", root, SPX_N);
-    fprint_str_u8(file_path, "mhash", mhash, SPX_FORS_MSG_BYTES);
-    fprint_str_u8(file_path, "pub_seed", ctx.pub_seed, SPX_N);
-    fprint_str_u8(file_path, "sk_seed", ctx.sk_seed, SPX_N);
-    fprint_str_u8(file_path, "addr", wots_addr, 8 * sizeof(uint32_t));
-#endif
 
     fors_pk_from_sig(root, sig, mhash, &ctx, wots_addr);
 
@@ -353,8 +364,7 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
 
 #else
 
-int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen,
-                       const uint8_t *pk) {
+int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, const uint8_t *pk) {
     spx_ctx ctx;
     const unsigned char *pub_root = pk + SPX_N;
     unsigned char mhash[SPX_FORS_MSG_BYTES];
@@ -444,8 +454,8 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
 /**
  * Returns an array containing the signature followed by the message.
  */
-int crypto_sign(unsigned char *sm, unsigned long long *smlen, const unsigned char *m,
-                unsigned long long mlen, const unsigned char *sk) {
+int crypto_sign(unsigned char *sm, unsigned long long *smlen, const unsigned char *m, unsigned long long mlen,
+                const unsigned char *sk) {
     size_t siglen;
 
     crypto_sign_signature(sm, &siglen, m, (size_t)mlen, sk);
@@ -459,8 +469,8 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen, const unsigned cha
 /**
  * Verifies a given signature-message pair under a given public key.
  */
-int crypto_sign_open(unsigned char *m, unsigned long long *mlen, const unsigned char *sm,
-                     unsigned long long smlen, const unsigned char *pk) {
+int crypto_sign_open(unsigned char *m, unsigned long long *mlen, const unsigned char *sm, unsigned long long smlen,
+                     const unsigned char *pk) {
     /* The API caller does not necessarily know what size a signature should be
        but SPHINCS+ signatures are always exactly SPX_BYTES. */
     if (smlen < SPX_BYTES) {

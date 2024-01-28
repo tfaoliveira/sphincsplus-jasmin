@@ -23,8 +23,10 @@
 #endif
 
 int main(void) {
-    uint32_t not_zero = (~(uint32_t)0);
-    print_str_u8("", (uint8_t*)&not_zero, sizeof(uint32_t));
+    // uint32_t not_zero = (~(uint32_t)0);
+    // uint64_t not_zero_64 = (~(uint64_t)0);
+    // print_str_u8("", (uint8_t*)&not_zero, sizeof(uint32_t));
+    // print_str_u8("", (uint8_t*)&not_zero_64, sizeof(uint64_t));
 
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
     uint8_t public_key[CRYPTO_PUBLICKEYBYTES];

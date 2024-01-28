@@ -4,9 +4,6 @@ from Sphincs require "fips202/shake256_out_u64/shake256_out_u64.jtmpl"
 from Sphincs require "memcpy/memcpy.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
 
-/*
- * Computes PRF(pk_seed, sk_seed, addr)
- */
 inline fn __prf_addr(
   reg ptr u8[SPX_N] out,
   reg ptr u8[SPX_N] pub_seed,
@@ -29,7 +26,6 @@ inline fn __prf_addr(
   out = __shake256<SPX_N, 2*SPX_N + SPX_ADDR_BYTES>(out, buf_p);
   return out;
 }
-
 
 //// PRF [out is a reg u64 instead of reg ptr u8]
 inline fn __prf_addr_out_u64(
@@ -57,21 +53,18 @@ inline fn __prf_addr_out_u64(
   __shake256_out_u64<2*SPX_N + SPX_ADDR_BYTES>(out, outlen, buf_p);
 }
 
-////
-
 inline fn __gen_message_random(
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_N] sk_prf,
-  reg ptr u8[SPX_N] optrand, // optional randomization value
+  reg ptr u8[SPX_N] optrand,
   reg u64 msg,
   reg u64 msg_len
 ) -> reg ptr u8[SPX_N]
 {
-  stack u64[26] shake_state;
+  stack   u64[26] shake_state;
   reg ptr u64[26] shake_state_p;
 
   () = #spill(R, sk_prf, optrand, msg, msg_len);
-
   shake_state_p = shake_state;
 
   shake_state_p = __shake256_inc_init_(shake_state_p);
@@ -102,11 +95,8 @@ inline fn __hash_message(
   reg u64 msg msg_len
 ) -> reg ptr u8[SPX_FORS_MSG_BYTES], reg u64, reg u32
 {
-  /*
-   * buf_p = [ FORS MSG BYTES | TREE BYTES  | LEAF BYTES]
-   * 
-   */
-  
+  // buf_p = [ FORS MSG BYTES | TREE BYTES  | LEAF BYTES]
+
   stack u8[SPX_DGST_BYTES] buf;
   reg ptr u8[SPX_DGST_BYTES] buf_p;
 
@@ -154,33 +144,25 @@ inline fn __hash_message(
   buf = buf_p;
 
   // bufp += SPX_FORS_MSG_BYTES;
-  tree_bytes = buf[SPX_FORS_MSG_BYTES:SPX_TREE_BYTES];
+  tree_bytes = buf[SPX_FORS_MSG_BYTES : SPX_TREE_BYTES];
 
   // *tree = bytes_to_ull(bufp, SPX_TREE_BYTES);
   // tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, tree_bytes);
   tree = __bytes_to_ull__8_(tree, tree_bytes);
 
   // *tree &= (~(uint64_t)0) >> (64 - SPX_TREE_BITS);
-  ?{}, t = #set0(); 
-  t = #NOT_64(t);
-  shift_amount = 64 - SPX_TREE_BITS;
-  ?{}, t = #SHR(t, shift_amount);
-  tree &= t;
+  tree &= (0xffffffffffffffff >> (64 - SPX_TREE_BITS)); // the expression after &= can be evaluated at compile time
   
   // bufp += SPX_TREE_BYTES;
-  // leaf_bytes = buf[SPX_FORS_MSG_BYTES + 8 : SPX_LEAF_BYTES];
+  leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES];
 
   // *leaf_idx = (uint32_t)bytes_to_ull(bufp, SPX_LEAF_BYTES);
-  // t = __bytes_to_ull__1_(t, leaf_bytes);
-  t = (64u) buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES]; // FIXME: only works for INLEN = 1
+  t = (64u) buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES]; // FIXME: This only works for INLEN = 1
+                                                      // should be leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES]; and then call bytes_to_ull<SPX_LEAF_BYTES>
   leaf_idx = (32u) t;
 
   // *leaf_idx &= (~(uint32_t)0) >> (32 - SPX_LEAF_BITS);
-  // ?{}, w = #set0_32(); w = #NOT_32(w);
-  shift_amount = 32 - SPX_LEAF_BITS;
-  w = 0xffffffff;
-  ?{}, w = #SHR_32(w, shift_amount);
-  leaf_idx &= w;
+  leaf_idx &= (0xffffffff >> (32 - SPX_LEAF_BITS)); // the expression after &= can be evaluated at compile time
 
   return digest, tree, leaf_idx;
 }

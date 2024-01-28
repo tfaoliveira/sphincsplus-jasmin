@@ -50,9 +50,11 @@ bin/test_hash_%.s: bin/test_hash_%.jpp
 
 $(TESTS):
 bin/test_hash_%: bin/test_hash_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTEST_HASH_MESSAGE \
 -I../common -I../../ -I../../params \
-test_hash.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c
+test_hash.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \
+../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../wots.c \
+../../merkle.c ../../fors.c ../../utilsx1.c ../../wotsx1.c ../../sign.c
 
 bin/test_hash_%.out: bin/test_hash_%
 	@./$<

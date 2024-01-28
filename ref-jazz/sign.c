@@ -78,10 +78,6 @@ int crypto_sign_seed_keypair(unsigned char *pk, unsigned char *sk, const unsigne
     memcpy(ctx.pub_seed, pk, SPX_N);
     memcpy(ctx.sk_seed, sk, SPX_N);
 
-    /* This hook allows the hash function instantiation to do whatever
-       preparation or computation it needs, based on the public seed. */
-    initialize_hash_function(&ctx);
-
     /* Compute root node of the top-most subtree. */
     merkle_gen_root(sk + 3 * SPX_N, &ctx);
 
@@ -124,10 +120,6 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
     memcpy(ctx.sk_seed, sk, SPX_N);
     memcpy(ctx.pub_seed, pk, SPX_N);
 
-    /* This hook allows the hash function instantiation to do whatever
-       preparation or computation it needs, based on the public seed. */
-    initialize_hash_function(&ctx);
-
     set_type_jazz(wots_addr, SPX_ADDR_TYPE_WOTS);
     set_type_jazz(tree_addr, SPX_ADDR_TYPE_HASHTREE);
 
@@ -144,32 +136,6 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
     memcpy(_args.R, sig, SPX_N);  // randomness
     memcpy(_args.pk, pk, SPX_PK_BYTES);
     hash_message_jazz(mhash, &tree, &idx_leaf, &_args, m, mlen);  // jasmin impl
-    
-#ifdef DEBUG
-    puts("Debug is def");
-    uint32_t idx_leaf_jazz;
-    uint64_t tree_jazz;
-    unsigned char mhash_jazz[SPX_FORS_MSG_BYTES];
-
-    args _args;
-    memcpy(_args.R, sig, SPX_N);  // randomness
-    memcpy(_args.pk, pk, SPX_PK_BYTES);
-    hash_message_jazz(mhash_jazz, &tree_jazz, &idx_leaf_jazz, &_args, m, mlen);  // jasmin impl
-
-    assert(memcmp(mhash_jazz, mhash, SPX_FORS_MSG_BYTES * sizeof(unsigned char)) == 0);
-    assert(memcmp(&tree_jazz, &tree, sizeof(uint64_t)) == 0);
-    assert(tree_jazz == tree);
-    // assert(memcmp(&idx_leaf_jazz, &idx_leaf, sizeof(uint32_t)) == 0);
-    // assert(idx_leaf_jazz == idx_leaf);
-
-    if (idx_leaf_jazz != idx_leaf) {
-        print_str_u8("ref", (uint8_t *)&idx_leaf, sizeof(uint32_t));
-        print_str_u8("jazz", (uint8_t *)&idx_leaf_jazz, sizeof(uint32_t));
-    }
-
-    assert(idx_leaf_jazz == idx_leaf);
-
-#endif
 
     sig += SPX_N;
 
@@ -223,17 +189,18 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
 
     memcpy(ctx.pub_seed, pk, SPX_N);
 
-    /* This hook allows the hash function instantiation to do whatever
-       preparation or computation it needs, based on the public seed. */
-    initialize_hash_function(&ctx);
-
     set_type_jazz(wots_addr, SPX_ADDR_TYPE_WOTS);
     set_type_jazz(tree_addr, SPX_ADDR_TYPE_HASHTREE);
     set_type_jazz(wots_pk_addr, SPX_ADDR_TYPE_WOTSPK);
 
     /* Derive the message digest and leaf index from R || PK || M. */
     /* The additional SPX_N is a result of the hash domain separator. */
-    hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
+    // hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
+    args _args;
+    memcpy(_args.R, sig, SPX_N);  // randomness
+    memcpy(_args.pk, pk, SPX_PK_BYTES);
+    hash_message_jazz(mhash, &tree, &idx_leaf, &_args, m, mlen);  // jasmin impl
+    
     sig += SPX_N;
 
     /* Layer correctly defaults to 0, so no need to set_layer_addr */

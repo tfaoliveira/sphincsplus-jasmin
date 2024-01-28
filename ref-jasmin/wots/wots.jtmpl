@@ -13,12 +13,8 @@ inline fn __gen_chain(
 ) -> reg ptr u8[SPX_N], 
      reg ptr u32[8]
 {
-  stack ptr u8[SPX_N] s_pub_seed;
-  stack ptr u32[8] s_addr;
-
   reg bool cond;
   reg u32 i t z;
-  stack u32 s_i s_t;
 
   reg u64 offset inlen;
 
@@ -27,12 +23,12 @@ inline fn __gen_chain(
   inlen = SPX_N;
   out, _ = _x_memcpy_u8u8p<SPX_N>(out, offset, in, inlen);
 
-  s_pub_seed = pub_seed;
-  s_addr = addr;
+  () = #spill(pub_seed, addr);
 
   i = start;
   t = start;
   t += steps; // From now on, start & steps are no longer live
+  
   // for (i = start; i < (start+steps) && i < SPX_WOTS_W; i++)
   z = SPX_WOTS_W;
   while {
@@ -40,25 +36,22 @@ inline fn __gen_chain(
     cond = __cond_u32_a_below_b_and_a_below_c(i, t, z);
   } (cond)
   {
-    s_i = i;
-    s_t = t;
+    () = #spill(i, t);
 
     // set_hash_addr(addr, i);
-    s_addr = addr;
     addr = __set_hash_addr(addr, i);
-    s_addr = addr;
+    () = #spill(addr);
 
     // thash(out, out, 1, ctx, addr);
-    pub_seed = s_pub_seed;
+    () = #unspill(pub_seed);
     out = __thash_inplace(out, pub_seed, addr);
 
-    i = s_i;
-    t = s_t;
+    () = #unspill(i, t);
     z = SPX_WOTS_W;
     i += 1;
   }
 
-  addr = s_addr;
+  () = #unspill(addr);
 
   return out, addr;
 }//<>
@@ -86,20 +79,9 @@ inline fn __gen_chain_(
   reg ptr u32[8] addr
 ) -> reg ptr u8[SPX_N], reg ptr u32[8]
 {
-  stack ptr u8[SPX_N] s_out;
-  stack u64 s_in;
-  stack u32 s_start;
-  stack u32 s_steps;
-  stack ptr u8[SPX_N] s_pub_seed;
-  stack ptr u32[8] s_addr;
-
-  // Allow for full register swap
-  s_out = out; s_in = in; s_start = start; s_steps = steps; s_pub_seed = pub_seed; s_addr = addr;
-
-  out = s_out; in = s_in; start = s_start; steps = s_steps; pub_seed = s_pub_seed; addr = s_addr;
-
+  () = #spill(out, in, start, steps, pub_seed, addr);   // Allow for full register swap  
+  () = #unspill(out, in, start, steps, pub_seed, addr); // Allow for full register swap
   out, addr = _gen_chain(out, in, start, steps, pub_seed, addr);
-
   return out, addr;
 }//<>
 
@@ -109,45 +91,41 @@ inline fn __base_w<OUTLEN,INLEN>(
 ) -> reg ptr u32[OUTLEN]
 {
   reg u64 in out;
-  reg u8 total;
-  reg u8 t u;
-  reg u32 z;
+  reg u32 total;
   reg u64 bits consumed;
-
-  reg u64 x64;
 
   in   = 0;
   out  = 0;
   bits = 0;
+
+  // for (consumed = 0; consumed < out_len; consumed++) 
   consumed = 0;
   while (consumed < OUTLEN)
   {
+    // if (bits == 0) { total = input[in]; in++; bits += 8; }
     if (bits == 0) 
     {
-      total = input[(int) in];
+      total = (32u) input[(int) in];
       in += 1;
       bits += 8;
     }
+
+    // bits -= SPX_WOTS_LOGW;
     bits -= SPX_WOTS_LOGW;
     
-    u = total;
-    // TODO: FIXME: x64 shouldnt be needed
-    x64 = (64u) u; // TODO: FIXME: x64 shouldnt be needed
-    x64 >>= (bits & 63); // TODO: FIXME: x64 shouldnt be needed
-    u = (8u) x64; // TODO: FIXME: x64 shouldnt be needed
-    // TODO: FIXME: x64 shouldnt be needed
-    t = SPX_WOTS_W;
-    t -= 1;
-    u &= t;
-    z = (32u) u;
-    output[(int) out] = z;
+    // output[out] = (total >> bits) & (SPX_WOTS_W - 1);
+    total >>= (bits & 31); 
+    total &= (SPX_WOTS_W - 1);
+    output[(int) out] = total;
 
+    // out++;
     out += 1;
+
     consumed += 1;
   }
 
   return output;
-}//<> 
+}//<>
 
 inline fn __wots_checksum(
   reg ptr u32[SPX_WOTS_LEN2] csum_base_w,
@@ -168,7 +146,7 @@ inline fn __wots_checksum(
   while (i < SPX_WOTS_LEN1) 
   {
     t = SPX_WOTS_W - 1;
-    u = (64u) msg_base_w[(int) i];
+    u = (64u) msg_base_w[i];
     t -= u;
     csum += t;
     i += 1;
@@ -196,7 +174,7 @@ inline fn __wots_checksum(
 /* Takes a message and derives the matching chain lengths. */
 inline fn __chain_lengths(
   reg ptr u32[SPX_WOTS_LEN] lengths,
-  reg ptr u8[SPX_N] msg
+  reg ptr u8[SPX_N] msg // root
 ) -> reg ptr u32[SPX_WOTS_LEN]
 {
   reg ptr u32[SPX_WOTS_LEN2] t;

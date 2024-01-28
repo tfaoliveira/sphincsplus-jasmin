@@ -66,7 +66,7 @@ bin/test_sign_%.out: bin/test_sign_%
 	@./$<
 
 bin/:
-	mkdir -p bin/ fors_sign_failed_tests/ fors_pk_from_sig_failed_tests/
+	mkdir -p bin/
 
 # ------------------------------------------------------------------------------
 .PHONY: clean

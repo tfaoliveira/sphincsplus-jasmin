@@ -33,3 +33,6 @@ cd $TEST_DIR/generic && make clean && make bin/test_generic_shake_128f_1.s && cp
 
 # FORS
 cd $TEST_DIR/fors && make clean && make bin/test_fors_shake_128f_simple.s && cp bin/*.s $CURRENT_DIR/asm
+
+# WOTS
+cd $TEST_DIR/wots && make clean && make bin/test_wots_shake_128f_simple_1.s && cp bin/*.s $CURRENT_DIR/asm

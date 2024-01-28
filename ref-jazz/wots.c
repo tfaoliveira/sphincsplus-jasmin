@@ -13,32 +13,12 @@ extern void set_hash_addr_jazz(uint32_t addr[8], uint32_t hash);
 
 extern void thash_1(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
 
-// TODO clarify address expectations, and make them more uniform.
-// TODO i.e. do we expect types to be set already?
-// TODO and do we expect modifications or copies?
+extern void gen_chain_jazz(uint8_t *out, const uint8_t *in, uint32_t start, uint32_t steps,
+                           const uint8_t *pub_seed, uint32_t addr[8]);
 
-/**
- * Computes the chaining function.
- * out and in have to be n-byte arrays.
- *
- * Interprets in as start-th value of the chain.
- * addr has to contain the address of the chain.
- */
-static void gen_chain(unsigned char *out, const unsigned char *in,
-                      unsigned int start, unsigned int steps,
-                      const spx_ctx *ctx, uint32_t addr[8])
-{
-    uint32_t i;
+extern void wots_checksum_jazz(uint32_t *csum_base_w, const uint32_t *msg_base_w);
 
-    /* Initialize out with the value at position 'start'. */
-    memcpy(out, in, SPX_N);
-
-    /* Iterate 'steps' calls to the hash function. */
-    for (i = start; i < (start+steps) && i < SPX_WOTS_W; i++) {
-        set_hash_addr_jazz(addr, i);
-        thash_1(out, out, ctx->pub_seed, addr);
-    }
-}
+extern void base_w_jazz_in_SPX_N(uint32_t* out, const uint8_t* in);
 
 /**
  * base_w algorithm as described in draft.
@@ -66,31 +46,11 @@ static void base_w(unsigned int *output, const int out_len,
     }
 }
 
-/* Computes the WOTS+ checksum over a message (in base_w). */
-static void wots_checksum(unsigned int *csum_base_w,
-                          const unsigned int *msg_base_w)
-{
-    unsigned int csum = 0;
-    unsigned char csum_bytes[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8];
-    unsigned int i;
-
-    /* Compute checksum. */
-    for (i = 0; i < SPX_WOTS_LEN1; i++) {
-        csum += SPX_WOTS_W - 1 - msg_base_w[i];
-    }
-
-    /* Convert checksum to base_w. */
-    /* Make sure expected empty zero bits are the least significant bits. */
-    csum = csum << ((8 - ((SPX_WOTS_LEN2 * SPX_WOTS_LOGW) % 8)) % 8);
-    ull_to_bytes(csum_bytes, sizeof(csum_bytes), csum);
-    base_w(csum_base_w, SPX_WOTS_LEN2, csum_bytes);
-}
-
 /* Takes a message and derives the matching chain lengths. */
 void chain_lengths(unsigned int *lengths, const unsigned char *msg)
 {
     base_w(lengths, SPX_WOTS_LEN1, msg);
-    wots_checksum(lengths + SPX_WOTS_LEN1, lengths);
+    wots_checksum_jazz(lengths + SPX_WOTS_LEN1, lengths);
 }
 
 /**
@@ -109,7 +69,7 @@ void wots_pk_from_sig(unsigned char *pk,
 
     for (i = 0; i < SPX_WOTS_LEN; i++) {
         set_chain_addr_jazz(addr, i);
-        gen_chain(pk + i*SPX_N, sig + i*SPX_N,
-                  lengths[i], SPX_WOTS_W - 1 - lengths[i], ctx, addr);
+        gen_chain_jazz(pk + i*SPX_N, sig + i*SPX_N,
+                  lengths[i], SPX_WOTS_W - 1 - lengths[i], ctx->pub_seed, addr);
     }
 }
