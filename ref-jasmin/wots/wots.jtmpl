@@ -91,10 +91,11 @@ inline fn __base_w<OUTLEN,INLEN>(
 ) -> reg ptr u32[OUTLEN]
 {
   reg u64 in out;
-  reg u32 total;
+  reg u8 total;
+  reg u32 total_32;
   reg u64 bits consumed;
 
-  in   = 0;
+  in = 0;
   out  = 0;
   bits = 0;
 
@@ -105,7 +106,7 @@ inline fn __base_w<OUTLEN,INLEN>(
     // if (bits == 0) { total = input[in]; in++; bits += 8; }
     if (bits == 0) 
     {
-      total = (32u) input[(int) in];
+      total = input[in];
       in += 1;
       bits += 8;
     }
@@ -114,13 +115,13 @@ inline fn __base_w<OUTLEN,INLEN>(
     bits -= SPX_WOTS_LOGW;
     
     // output[out] = (total >> bits) & (SPX_WOTS_W - 1);
-    total >>= (bits & 31); 
-    total &= (SPX_WOTS_W - 1);
-    output[(int) out] = total;
+    total_32 = (32u) total;
+    total_32 >>= (bits & 31);
+    total_32 &= (SPX_WOTS_W - 1);
+    output[out] = total_32;
 
     // out++;
     out += 1;
-
     consumed += 1;
   }
 
@@ -311,16 +312,11 @@ inline fn __wots_pk_from_sig_(
 ) -> reg ptr u8[SPX_WOTS_BYTES],  // pk
      reg ptr u32[8]               // addr
 {
-  pk = pk;
-  sig = sig;
-  msg = msg;
-  pub_seed = pub_seed;
-  addr = addr;
+  pk = pk; sig = sig; msg = msg; pub_seed = pub_seed; addr = addr;
 
   pk, addr = _wots_pk_from_sig(pk, sig, msg, pub_seed, addr);
   
-  pk = pk;
-  addr = addr;
+  pk = pk; addr = addr;
 
   return pk, addr;
 }

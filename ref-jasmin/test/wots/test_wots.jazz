@@ -23,37 +23,68 @@ export fn gen_chain_jazz(
 
   reg u32 start steps;
 
-  stack u64 s_out s_start s_steps s_pub_seed s_addr;
+  () = #spill(_out, _start, _pub_seed, _addr);
 
-  // Spill everything (start from clean state)
-  s_out = _out;
-  s_start = _start;
-  s_steps = _steps;
-  s_pub_seed = _pub_seed;
-  s_addr = _addr;
-
-  _out = s_out;
+  () = #unspill(_out);
   out = __load_u8_array<SPX_N>(out, _out);
 
-  _start = s_start;
+  () = #unspill(_start);
   start = (32u) _start;
   steps = (32u) _steps;
 
-  _pub_seed = s_pub_seed;
+  () = #unspill(_pub_seed);
   pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
 
-  _addr = s_addr;
+  () = #unspill(_addr);
   addr = __load_u32_array<8>(addr, _addr);
 
   out, addr = __gen_chain_(out, in, start, steps, pub_seed, addr);
 
-  // Unspill
-  _out = s_out;
-  _addr = s_addr;
+  () = #unspill(_out, _addr);
  
   __store_u8_array<SPX_N>(out, _out);
   __store_u32_array<8>(addr, _addr);
 }//<>
+
+export fn base_w_jazz_out_WOTS_LEN2(reg u64 _out _in)
+{
+  stack u32[SPX_WOTS_LEN2] out;
+  reg ptr u32[SPX_WOTS_LEN2] out_p;
+
+  stack u8[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] in;
+  reg ptr u8[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] in_p;
+
+  () = #spill(_out);
+
+  in_p = in;
+  in_p = __load_u8_array<(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(in_p, _in);
+
+  out_p = out;
+  out_p = __base_w<SPX_WOTS_LEN2, (SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(out_p, in_p);
+
+  () = #unspill(_out);
+  __store_u32_array<SPX_WOTS_LEN2>(out_p, _out);
+}
+
+export fn base_w_jazz_out_WOTS_LEN1(reg u64 _out _in)
+{
+  stack u32[SPX_WOTS_LEN1] out;
+  reg ptr u32[SPX_WOTS_LEN1] out_p;
+
+  stack u8[SPX_N] in;
+  reg ptr u8[SPX_N] in_p;
+
+  () = #spill(_out);
+
+  in_p = in;
+  in_p = __load_u8_array<SPX_N>(in_p, _in);
+
+  out_p = out;
+  out_p = __base_w<SPX_WOTS_LEN1, SPX_N>(out_p, in_p);
+
+  () = #unspill(_out);
+  __store_u32_array<SPX_WOTS_LEN1>(out_p, _out);
+}
 
 export fn wots_checksum_jazz(reg u64 _csum_base_w _msg_base_w) 
 {

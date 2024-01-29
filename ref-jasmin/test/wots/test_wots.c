@@ -1,10 +1,12 @@
 #include <assert.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "address.h"
+#include "api.h"
 #include "context.h"
 #include "hash.h"
 #include "macros.h"
@@ -33,7 +35,8 @@
 extern void gen_chain_jazz(uint8_t *out, const uint8_t *in, uint32_t start, uint32_t steps,
                            const uint8_t *pub_seed, uint32_t addr[8]);
 
-extern void base_w_jazz(uint32_t *output, const uint8_t *input);
+extern void base_w_jazz_out_WOTS_LEN2(uint32_t *out, const uint8_t *in);
+extern void base_w_jazz_out_WOTS_LEN1(uint32_t *out, const uint8_t *in);
 
 extern void wots_checksum_jazz(uint32_t *csum_base_w, const uint32_t *msg_base_w);
 
@@ -80,6 +83,7 @@ static void base_w(unsigned int *output, const int out_len, const unsigned char 
             in++;
             bits += 8;
         }
+
         bits -= SPX_WOTS_LOGW;
         output[out] = (total >> bits) & (SPX_WOTS_W - 1);
         out++;
@@ -102,15 +106,17 @@ static void wots_checksum(unsigned int *csum_base_w, const unsigned int *msg_bas
 ////////////////////////////////////////////////////////////////////////
 
 void test_base_w(void) {
+    bool debug = false;
     /*
      * There's 2 calls to base_w (both in wots.jtmpl)
      *
      * __base_w<SPX_WOTS_LEN2, (SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(csum_base_w, csum_bytes_p);
-     * __base_w<SPX_WOTS_LEN,SPX_N>(lengths, msg);
+     * __base_w<SPX_WOTS_LEN1,SPX_N>(lengths, msg);
      *
      * We need to support INLEN=(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8 & OUTLEN SPX_WOTS_LEN2
      *            and
-     *                    INLEN=SPX_N & OUTLEN=SPX_WOTS_LEN
+     *                    INLEN=SPX_N & OUTLEN=SPX_WOTS_LEN1
+     * Here, the OUTLEN is SPX_WOTS_LEN1 but the actual size of the buffer is SPX_WOTS_LEN
      */
 
     // INLEN=(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8 & OUTLEN SPX_WOTS_LEN2
@@ -119,21 +125,60 @@ void test_base_w(void) {
         uint32_t out_jazz[SPX_WOTS_LEN2] = {0};
         uint8_t in[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] = {0};
 
+        randombytes(in, (SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8);
+
         base_w(out_ref, SPX_WOTS_LEN2, in);
+        base_w_jazz_out_WOTS_LEN2(out_jazz, in);
+
+        if (memcmp(out_ref, out_jazz, SPX_WOTS_LEN2 * sizeof(uint32_t)) != 0) {
+            print_str_u8("out_ref", (uint8_t *)out_ref, SPX_WOTS_LEN2 * sizeof(uint32_t));
+            print_str_u8("out_jazz", (uint8_t *)out_jazz, SPX_WOTS_LEN2 * sizeof(uint32_t));
+        }
 
         assert(memcmp(out_ref, out_jazz, SPX_WOTS_LEN2 * sizeof(uint32_t)) == 0);
     }
 
-    // INLEN=SPX_N & OUTLEN=SPX_WOTS_LEN
+    // INLEN=SPX_N & OUTLEN=SPX_WOTS_LEN1
     for (int i = 0; i < TESTS; i++) {
-        uint32_t out_ref[SPX_WOTS_LEN] = {0};
-        uint32_t out_jazz[SPX_WOTS_LEN] = {0};
+        uint32_t out_ref[SPX_WOTS_LEN1] = {0};
+        uint32_t out_jazz[SPX_WOTS_LEN1] = {0};
         uint8_t in[SPX_N] = {0};
 
-        base_w(out_ref, SPX_WOTS_LEN, in);
+        randombytes(in, SPX_N);
 
-        assert(memcmp(out_ref, out_jazz, SPX_WOTS_LEN * sizeof(uint32_t)) == 0);
+        base_w(out_ref, SPX_WOTS_LEN1, in);
+        base_w_jazz_out_WOTS_LEN1(out_jazz, in);
+
+        if (memcmp(out_ref, out_jazz, SPX_WOTS_LEN1 * sizeof(uint32_t)) != 0) {
+            print_str_u8("out_ref", (uint8_t *)out_ref, SPX_WOTS_LEN1 * sizeof(uint32_t));
+            print_str_u8("out_jazz", (uint8_t *)out_jazz, SPX_WOTS_LEN1 * sizeof(uint32_t));
+        }
+
+        assert(memcmp(out_ref, out_jazz, SPX_WOTS_LEN1 * sizeof(uint32_t)) == 0);
     }
+
+    // Test with proper data in wots.c when TEST_WOTS_BASE_W is defined
+#define MESSAGE_LENGTH 32
+
+    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
+    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
+
+    uint8_t signature[CRYPTO_BYTES];
+    size_t signature_length;
+
+    uint8_t message[MESSAGE_LENGTH];
+    size_t message_length;
+    for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("Test %d\n", i);
+        }
+        randombytes(message, message_length);
+        crypto_sign_keypair(public_key, secret_key);
+        crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+        crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+    }
+
+#undef MESSAGE_LENGTH
 }
 
 void test_gen_chain(void) {
@@ -231,11 +276,11 @@ void test_wots_pk_from_sig(void) {
 }
 
 int main(void) {
+    test_gen_chain();
     test_base_w();
-    test_gen_chain();  // WORKS
-                       // test_wots_checksum();  // Started failing i dont know why
-                       // test_chain_lengths(); // Fails
-    // test_wots_pk_from_sig(); // Also Fails
+    test_wots_checksum();
+    test_chain_lengths();
+    // test_wots_pk_from_sig();
     printf("PASS: wots { params : %s }\n", xstr(PARAMS));
     return 0;
 }
