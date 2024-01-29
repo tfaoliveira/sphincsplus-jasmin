@@ -220,71 +220,65 @@ inline fn __wots_pk_from_sig(
 ) -> reg ptr u8[SPX_WOTS_BYTES],  // pk
      reg ptr u32[8]               // addr
 {
+  stack u32[SPX_WOTS_LEN] lengths;
+  reg ptr u32[SPX_WOTS_LEN] lengths_p;
+
+  reg ptr u8[SPX_N] out;
+
+  inline int i;
+
+  inline u64 sig_offset;
+
+  reg u32 chain_addr;
+  reg u32 start steps;
+
   //////
   stack ptr u8[SPX_WOTS_BYTES] s_pk;
   stack u64 s_sig;
   stack ptr u8[SPX_N] s_pub_seed;
-  stack ptr u32[8] s_addr;
   //////
 
-  stack u32[SPX_WOTS_LEN] lengths;
-  reg ptr u32[SPX_WOTS_LEN] lengths_p;
-  
-  reg ptr u8[SPX_N] out;
-  
-  inline int i;
-  //
-  // NOTE: i tem de ser um inline int em vez de um reg u64 pq, se usar um reg u64 dá este erro
-  // stack allocation: cannot compile sub-array pk.5732 that has a non-constant start index
-  //
-  // ====> O ciclo tem de ser um for em vez de um while ?
-
-  reg u32 start steps;
-
-  reg u32 t;
-
-  //// Spill everything to the stack at the beginning
+  () = #spill(addr);
   s_pk = pk;
   s_sig = sig;
   s_pub_seed = pub_seed;
-  s_addr = addr;
 
   // chain_lengths(lengths, msg);
   lengths_p = lengths;
   lengths_p = __chain_lengths(lengths_p, msg);
   lengths = lengths_p;
 
+  // for (i = 0; i < SPX_WOTS_LEN; i++) 
   for i=0 to SPX_WOTS_LEN
   {
     // set_chain_addr(addr, i);
-    addr = s_addr;
-    t = i;
-    addr = __set_chain_addr(addr, t);
-    s_addr = addr;
+    chain_addr = i;
+    () = #unspill(addr);
+    addr = __set_chain_addr(addr, i);
+    () = #spill(addr);
 
-    // gen_chain(pk + i*SPX_N, 
-    //           sig + i*SPX_N, 
-    //           lengths[i], == start
-    //           SPX_WOTS_W - 1 - lengths[i], == steps
-    //           ctx, == pub_seed
-    //           addr);
-
+    // gen_chain(pk + i * SPX_N, sig + i * SPX_N, lengths[i], SPX_WOTS_W - 1 - lengths[i], ctx, addr);
     pk = s_pk;
     out = pk[i * SPX_N : SPX_N];
+
     sig = s_sig;
-    sig += i + SPX_N;
+    sig_offset = i * SPX_N;
+    sig += sig_offset;
+
     start = lengths[i];
-    steps = SPX_WOTS_W;
-    steps -= 1;
-    steps -= lengths[i];
+    steps = SPX_WOTS_W - 1;
+    steps -= lengths[i];  
+
     pub_seed = s_pub_seed;
-    addr = s_addr;
+
+    () = #unspill(addr);  
     s_pk[i * SPX_N : SPX_N], addr = __gen_chain(out, sig, start, steps, pub_seed, addr);
-    s_addr = addr;
+    () = #spill(addr);
   }
 
+  () = #unspill(addr);
   pk = s_pk;
-  addr = s_addr;
+
 
   return pk, addr;
 }
@@ -300,23 +294,5 @@ fn _wots_pk_from_sig(
      reg ptr u32[8]               // addr
 {
   pk, addr = __wots_pk_from_sig(pk, sig, msg, pub_seed, addr);
-  return pk, addr;
-}
-
-inline fn __wots_pk_from_sig_(
-    reg ptr u8[SPX_WOTS_BYTES] pk,
-    reg u64 sig,
-    reg ptr u8[SPX_N] msg,
-    reg ptr u8[SPX_N] pub_seed,
-    reg ptr u32[8] addr
-) -> reg ptr u8[SPX_WOTS_BYTES],  // pk
-     reg ptr u32[8]               // addr
-{
-  pk = pk; sig = sig; msg = msg; pub_seed = pub_seed; addr = addr;
-
-  pk, addr = _wots_pk_from_sig(pk, sig, msg, pub_seed, addr);
-  
-  pk = pk; addr = addr;
-
   return pk, addr;
 }

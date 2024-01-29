@@ -20,8 +20,8 @@
  * Interprets in as start-th value of the chain.
  * addr has to contain the address of the chain.
  */
-static void gen_chain(unsigned char *out, const unsigned char *in, unsigned int start,
-                      unsigned int steps, const spx_ctx *ctx, uint32_t addr[8]) {
+static void gen_chain(unsigned char *out, const unsigned char *in, unsigned int start, unsigned int steps,
+                      const spx_ctx *ctx, uint32_t addr[8]) {
     uint32_t i;
 
     /* Initialize out with the value at position 'start'. */
@@ -125,7 +125,19 @@ void chain_lengths(unsigned int *lengths, const unsigned char *msg) {
     base_w(lengths, SPX_WOTS_LEN1, msg);
 #endif
 
+#ifdef TEST_WOTS_CHECKSUM
+    uint32_t lengths_jazz[SPX_WOTS_LEN];
+
+    memcpy(lengths_jazz, lengths, SPX_WOTS_LEN * sizeof(uint32_t));
+
     wots_checksum(lengths + SPX_WOTS_LEN1, lengths);
+    wots_checksum_jazz(lengths_jazz + SPX_WOTS_LEN1, lengths_jazz);
+
+    assert(memcmp(lengths, lengths_jazz, SPX_WOTS_LEN) == 0);
+
+#else
+    wots_checksum(lengths + SPX_WOTS_LEN1, lengths);
+#endif
 }
 
 /**
@@ -133,16 +145,26 @@ void chain_lengths(unsigned int *lengths, const unsigned char *msg) {
  *
  * Writes the computed public key to 'pk'.
  */
-void wots_pk_from_sig(unsigned char *pk, const unsigned char *sig, const unsigned char *msg,
-                      const spx_ctx *ctx, uint32_t addr[8]) {
+void wots_pk_from_sig(unsigned char *pk, const unsigned char *sig, const unsigned char *msg, const spx_ctx *ctx,
+                      uint32_t addr[8]) {
     unsigned int lengths[SPX_WOTS_LEN];
     uint32_t i;
 
+#ifdef TEST_WOTS_CHAIN_LENGTHS
+    uint32_t lengths_jazz[SPX_WOTS_LEN];
+
+    memcpy(lengths_jazz, lengths, SPX_WOTS_LEN * sizeof(uint32_t));
+
     chain_lengths(lengths, msg);
+    chain_lengths_jazz(lengths_jazz, msg);
+
+    assert(memcmp(lengths_jazz, lengths, SPX_WOTS_LEN * sizeof(uint32_t)) == 0);
+#else
+    chain_lengths(lengths, msg);
+#endif
 
     for (i = 0; i < SPX_WOTS_LEN; i++) {
         set_chain_addr(addr, i);
-        gen_chain(pk + i * SPX_N, sig + i * SPX_N, lengths[i], SPX_WOTS_W - 1 - lengths[i], ctx,
-                  addr);
+        gen_chain(pk + i * SPX_N, sig + i * SPX_N, lengths[i], SPX_WOTS_W - 1 - lengths[i], ctx, addr);
     }
 }

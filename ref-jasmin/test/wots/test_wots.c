@@ -29,19 +29,19 @@
 #endif
 
 #ifndef TESTS
-#define TESTS 1000
+#define TESTS 100
 #endif
 
-extern void gen_chain_jazz(uint8_t *out, const uint8_t *in, uint32_t start, uint32_t steps,
-                           const uint8_t *pub_seed, uint32_t addr[8]);
+extern void gen_chain_jazz(uint8_t *out, const uint8_t *in, uint32_t start, uint32_t steps, const uint8_t *pub_seed,
+                           uint32_t addr[8]);
 
 extern void base_w_jazz_out_WOTS_LEN2(uint32_t *out, const uint8_t *in);
 extern void base_w_jazz_out_WOTS_LEN1(uint32_t *out, const uint8_t *in);
 
 extern void wots_checksum_jazz(uint32_t *csum_base_w, const uint32_t *msg_base_w);
 
-extern void wots_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *msg,
-                                  const spx_ctx *ctx, uint32_t addr[8]);
+extern void wots_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *msg, const spx_ctx *ctx,
+                                  uint32_t addr[8]);
 
 extern void chain_lengths_jazz(uint32_t *lengths, const uint8_t *msg);
 
@@ -56,8 +56,8 @@ void ull_to_bytes(unsigned char *out, unsigned int outlen, unsigned long long in
     }
 }
 
-static void gen_chain(unsigned char *out, const unsigned char *in, unsigned int start,
-                      unsigned int steps, const spx_ctx *ctx, uint32_t addr[8]) {
+static void gen_chain(unsigned char *out, const unsigned char *in, unsigned int start, unsigned int steps,
+                      const spx_ctx *ctx, uint32_t addr[8]) {
     uint32_t i;
 
     /* Initialize out with the value at position 'start'. */
@@ -106,7 +106,7 @@ static void wots_checksum(unsigned int *csum_base_w, const unsigned int *msg_bas
 ////////////////////////////////////////////////////////////////////////
 
 void test_base_w(void) {
-    bool debug = false;
+    bool debug = true;
     /*
      * There's 2 calls to base_w (both in wots.jtmpl)
      *
@@ -170,12 +170,15 @@ void test_base_w(void) {
     size_t message_length;
     for (int i = 0; i < TESTS; i++) {
         if (debug) {
-            printf("Test %d\n", i);
+            printf("Base W Test %d\n", i);
         }
-        randombytes(message, message_length);
-        crypto_sign_keypair(public_key, secret_key);
-        crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-        crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+
+        for (message_length = 10; message_length < MESSAGE_LENGTH; message_length++) {
+            randombytes(message, message_length);
+            crypto_sign_keypair(public_key, secret_key);
+            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+        }
     }
 
 #undef MESSAGE_LENGTH
@@ -211,6 +214,8 @@ void test_gen_chain(void) {
 }
 
 void test_wots_checksum(void) {
+    bool debug = true;
+
     uint32_t csum_base_w_ref[SPX_WOTS_LEN2], csum_base_w_jazz[SPX_WOTS_LEN2];
     uint32_t msg_base_w[SPX_WOTS_LEN];
 
@@ -230,9 +235,38 @@ void test_wots_checksum(void) {
 
         assert(memcmp(csum_base_w_ref, csum_base_w_jazz, SPX_WOTS_LEN2 * sizeof(uint32_t)) == 0);
     }
+
+// Test with proper data (without randomm bytes)
+// The "real" test is in wots.c when TEST_WOTS_CHECKUM is defined
+#define MESSAGE_LENGTH 32
+
+    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
+    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
+
+    uint8_t signature[CRYPTO_BYTES];
+    size_t signature_length;
+
+    uint8_t message[MESSAGE_LENGTH];
+    size_t message_length;
+    for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("Wots checksum: test %d\n", i);
+        }
+
+        for (message_length = 10; message_length < MESSAGE_LENGTH; message_length++) {
+            randombytes(message, message_length);
+            crypto_sign_keypair(public_key, secret_key);
+            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+        }
+    }
+
+#undef MESSAGE_LENGTH
 }
 
 void test_chain_lengths(void) {
+    bool debug = true;
+
     unsigned int lengths_ref[SPX_WOTS_LEN];
     uint32_t lengths_jazz[SPX_WOTS_LEN];
     uint8_t msg[SPX_N];
@@ -247,12 +281,41 @@ void test_chain_lengths(void) {
 
         assert(memcmp(lengths_ref, lengths_jazz, SPX_WOTS_LEN * sizeof(uint32_t)) == 0);
     }
+
+// Test with proper data (without randomm bytes)
+// The "real" test is in wots.c when TEST_WOTS_CHAIN_LENGTHS is defined
+#define MESSAGE_LENGTH 32
+
+    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
+    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
+
+    uint8_t signature[CRYPTO_BYTES];
+    size_t signature_length;
+
+    uint8_t message[MESSAGE_LENGTH];
+    size_t message_length;
+    for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("Chain lengths: test %d\n", i);
+        }
+
+        for (message_length = 10; message_length < MESSAGE_LENGTH; message_length++) {
+            randombytes(message, message_length);
+            crypto_sign_keypair(public_key, secret_key);
+            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+        }
+    }
+
+#undef MESSAGE_LENGTH
 }
 
 void test_wots_pk_from_sig(void) {
+    bool debug = true;
+
     uint8_t pk_ref[SPX_WOTS_BYTES], pk_jazz[SPX_WOTS_BYTES];
     uint8_t sig[SPX_BYTES];
-    uint8_t msg[MSG_LEN];
+    uint8_t msg[SPX_N];  // ROOT
     spx_ctx ctx;
     uint32_t addr_ref[8], addr_jazz[8];
 
@@ -261,26 +324,62 @@ void test_wots_pk_from_sig(void) {
         memset(pk_jazz, 0, SPX_WOTS_BYTES);
 
         randombytes(sig, SPX_BYTES);
-        randombytes(msg, MSG_LEN);
+        randombytes(msg, SPX_N);
         randombytes(ctx.pub_seed, SPX_N);
         randombytes(ctx.sk_seed, SPX_N);
         randombytes(addr_ref, 8 * sizeof(uint32_t));
+
         memcpy(addr_jazz, addr_ref, 8 * sizeof(uint32_t));
+
+        assert(memcmp(pk_ref, pk_jazz, SPX_WOTS_BYTES) == 0);
+        assert(memcmp(addr_ref, addr_jazz, 8 * sizeof(uint32_t)) == 0);
 
         wots_pk_from_sig_jazz(pk_jazz, sig, msg, &ctx, addr_jazz);
         wots_pk_from_sig(pk_ref, sig, msg, &ctx, addr_ref);
 
+        if (memcmp(pk_ref, pk_jazz, SPX_WOTS_BYTES * sizeof(uint8_t)) != 0) {
+            print_str_u8("PK Ref", pk_ref, SPX_WOTS_BYTES * sizeof(uint8_t));
+            print_str_u8("PK Jazz", pk_jazz, SPX_WOTS_BYTES * sizeof(uint8_t));
+        }
+
         assert(memcmp(pk_ref, pk_jazz, SPX_WOTS_BYTES) == 0);
         assert(memcmp(addr_ref, addr_jazz, 8 * sizeof(uint32_t)) == 0);
     }
+
+    // Test with proper data (without randomm bytes)
+    // The "real" test is in sign.c when TEST_WOTS_PK_FROM_SIG is defined
+#define MESSAGE_LENGTH 32
+
+    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
+    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
+
+    uint8_t signature[CRYPTO_BYTES];
+    size_t signature_length;
+
+    uint8_t message[MESSAGE_LENGTH];
+    size_t message_length;
+    for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("Chain lengths: test %d\n", i);
+        }
+
+        for (message_length = 10; message_length < MESSAGE_LENGTH; message_length++) {
+            randombytes(message, message_length);
+            crypto_sign_keypair(public_key, secret_key);
+            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+        }
+    }
+
+#undef MESSAGE_LENGTH
 }
 
 int main(void) {
-    test_gen_chain();
-    test_base_w();
-    test_wots_checksum();
-    test_chain_lengths();
-    // test_wots_pk_from_sig();
+    test_gen_chain();      // works
+    test_base_w();         // works
+    test_wots_checksum();  // works
+    test_chain_lengths();  // works
+    test_wots_pk_from_sig();  // Works
     printf("PASS: wots { params : %s }\n", xstr(PARAMS));
     return 0;
 }

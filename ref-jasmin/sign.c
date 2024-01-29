@@ -344,7 +344,24 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
         set_keypair_addr(wots_addr, idx_leaf);
 
         copy_keypair_addr(wots_pk_addr, wots_addr);
+
+        #ifdef TEST_WOTS_PK_FROM_SIG
+        uint32_t wots_addr_jazz[8];
+        uint8_t wots_pk_jazz[SPX_WOTS_BYTES];
+
+        // Copy state
+        memcpy(wots_addr_jazz, wots_addr, 8 * sizeof(uint32_t));
+        memcpy(wots_pk_jazz, wots_pk, SPX_WOTS_BYTES);
+
         wots_pk_from_sig(wots_pk, sig, root, &ctx, wots_addr);
+        wots_pk_from_sig_jazz(wots_pk_jazz, sig, root, &ctx, wots_addr_jazz);
+
+        assert(memcmp(wots_pk_jazz, wots_pk, SPX_WOTS_BYTES) == 0);
+        assert(memcmp(wots_addr_jazz, wots_addr, 8 * sizeof(uint32_t)) == 0);
+
+        #else 
+        wots_pk_from_sig(wots_pk, sig, root, &ctx, wots_addr);
+        #endif
         sig += SPX_WOTS_BYTES;
 
         thash(leaf, wots_pk, SPX_WOTS_LEN, &ctx, wots_pk_addr);
