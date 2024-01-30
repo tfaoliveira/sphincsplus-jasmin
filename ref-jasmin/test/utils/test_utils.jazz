@@ -69,8 +69,6 @@ export fn compute_root_jazz(reg u64 arguments)
   reg u64 root_ptr leaf_ptr auth_path pub_seed_ptr addr_ptr p;
   reg u32 leaf_idx idx_offset tree_height;
 
-  stack u64 root_ptr_s addr_ptr_s;
-
   //
 
   stack   u8[SPX_N] root   leaf   pub_seed;
@@ -80,7 +78,7 @@ export fn compute_root_jazz(reg u64 arguments)
   reg ptr u32[8] addr_p;
 
   // load arguments from array
-  root_ptr     = (u64)[arguments + 8*0]; root_ptr_s = root_ptr;
+  root_ptr     = (u64)[arguments + 8*0]; () = #spill(root_ptr);
   leaf_ptr     = (u64)[arguments + 8*1];
 
   p            = (u64)[arguments + 8*2];
@@ -95,7 +93,7 @@ export fn compute_root_jazz(reg u64 arguments)
   tree_height  = (u32)[p];
 
   pub_seed_ptr = (u64)[arguments + 8*6];
-  addr_ptr     = (u64)[arguments + 8*7]; addr_ptr_s = addr_ptr;
+  addr_ptr     = (u64)[arguments + 8*7]; () = #spill(addr_ptr);
 
   // load contents from pointers
   root_p = root;
@@ -115,10 +113,9 @@ export fn compute_root_jazz(reg u64 arguments)
                                   auth_path, tree_height, pub_seed_p, addr_p);
 
   // store
-  root_ptr = root_ptr_s;
+  () = #unspill(root_ptr);
   __store_spx_n(root_p, root_ptr);
 
-  addr_ptr = addr_ptr_s;
+  () = #unspill(addr_ptr);
   __store_addr(addr_p, addr_ptr);
 }
-

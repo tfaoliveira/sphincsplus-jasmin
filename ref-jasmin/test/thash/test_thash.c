@@ -1,13 +1,17 @@
 #include <assert.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "api.h"
 #include "context.h"
 #include "macros.h"
 #include "notrandombytes.c"
+#include "params.h"
 #include "print.c"
+#include "thash.h"
 
 #ifndef PARAMS
 #define PARAMS sphincs-shake-128f
@@ -25,8 +29,6 @@
 #define TESTS 1000
 #endif
 
-#include "params.h"
-
 #define thash_jazz NAMESPACE1(thash, INBLOCKS)
 #define thash_in_u64_jazz NAMESPACE1(thash_in_u64_jazz, INBLOCKS)
 
@@ -41,17 +43,17 @@ target function:
     reg ptr u8[SPX_N]
 */
 extern void thash_jazz(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
-extern void thash_in_u64_jazz(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed,
-                               uint32_t addr[8]);
+extern void thash_in_u64_jazz(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
 extern void thash_inplace_jazz(uint8_t *out, const uint8_t *pub_seed, uint32_t addr[8]);
 
 // implementation from, for instance, ../../thash_shake_robust.c / ../../thash_shake_simple.c
-extern void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks,
-                  const spx_ctx *ctx, uint32_t addr[8]);
+extern void thash(unsigned char *out, const unsigned char *in, unsigned int inblocks, const spx_ctx *ctx,
+                  uint32_t addr[8]);
 
 void test_thash(void);
 void test_thash_in_u64(void);
 void test_thash_inplace(void);
+void test_api(void);
 
 static spx_ctx init_ctx(void) {
     spx_ctx ctx;

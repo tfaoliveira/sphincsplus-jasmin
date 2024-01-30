@@ -48,11 +48,17 @@ void test_gen_message_random(void);
 void test_hash_message(void);
 
 void test_prf_addr(void) {
+    bool debug = true;
+
     spx_ctx ctx;
     uint8_t out0[SPX_N], out1[SPX_N];
     uint32_t addr[8];
 
     for (int t = 0; t < TESTS; t++) {
+        if (debug) {
+            printf("[%s] prf addr (out : reg ptr) : Test %d/%d\n", xstr(PARAMS), t, TESTS);
+        }
+
         randombytes(ctx.pub_seed, SPX_N);
         randombytes(ctx.sk_seed, SPX_N);
         randombytes(out0, SPX_N);
@@ -67,11 +73,17 @@ void test_prf_addr(void) {
 }
 
 void test_prf_addr_out_u64(void) {
+    bool debug = true;
+
     spx_ctx ctx;
     uint8_t out0[SPX_N], out1[SPX_N];
     uint32_t addr[8];
 
     for (int t = 0; t < TESTS; t++) {
+        if (debug) {
+            printf("[%s] prf addr (out : u64) : Test %d/%d\n", xstr(PARAMS), t, TESTS);
+        }
+
         randombytes(ctx.pub_seed, SPX_N);
         randombytes(ctx.sk_seed, SPX_N);
         randombytes(out0, SPX_N);
@@ -86,6 +98,8 @@ void test_prf_addr_out_u64(void) {
 }
 
 void test_gen_message_random(void) {
+    bool debug = true;
+
 #define MAX_MSG_LEN 1024
     spx_ctx ctx;
     uint8_t optrand[SPX_N], sk_prf[SPX_N];
@@ -93,6 +107,10 @@ void test_gen_message_random(void) {
     uint8_t msg[MAX_MSG_LEN] = {0};
 
     for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("[%s] gen message random: Test %d/%d\n", xstr(PARAMS), i, TESTS);
+        }
+
         for (size_t msg_len = 1; msg_len < MAX_MSG_LEN; msg_len++) {
             randombytes(msg, msg_len);
 
@@ -114,6 +132,8 @@ void test_gen_message_random(void) {
 }
 
 void test_hash_message(void) {
+    bool debug = true;
+
 #define SPX_TREE_BITS (SPX_TREE_HEIGHT * (SPX_D - 1))
 #define SPX_TREE_BYTES ((SPX_TREE_BITS + 7) / 8)
 #define SPX_LEAF_BITS SPX_TREE_HEIGHT
@@ -137,6 +157,10 @@ void test_hash_message(void) {
 
     // Test with random bytes
     for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("[%s] hash message: Test %d/%d\n", xstr(PARAMS), i, TESTS);
+        }
+
         for (size_t msg_len = 1; msg_len < MAX_MSG_LEN; msg_len++) {
             memset(digest_ref, 0, SPX_FORS_MSG_BYTES);
             memset(digest_jazz, 0, SPX_FORS_MSG_BYTES);
@@ -166,32 +190,6 @@ void test_hash_message(void) {
             assert(memcmp(&leaf_idx_ref, &leaf_idx_ref, sizeof(uint32_t)) == 0);
         }
     }
-
-// Test with proper data
-#define MESSAGE_LENGTH 32
-
-    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
-    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
-
-    uint8_t signature[CRYPTO_BYTES];
-    size_t signature_length;
-
-    uint8_t message[MESSAGE_LENGTH];
-    size_t message_length;
-
-    for (int i = 0; i < TESTS; i++) {
-        for (message_length = 10; message_length < MESSAGE_LENGTH; message_length++) {
-            // note: the 'real' test is in sign.c file and it is activated when TEST_HASH_MESSAGE is
-            // defined
-            randombytes(message, message_length);
-            crypto_sign_keypair(public_key, secret_key);
-            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
-        }
-    }
-
-#undef MESSAGE_LENGTH
-
 #undef SPX_TREE_BITS
 #undef SPX_TREE_BYTES
 #undef SPX_LEAF_BITS
@@ -200,11 +198,41 @@ void test_hash_message(void) {
 #undef MAX_MSG_LEN
 }
 
+void test_api(void) {
+    bool debug = true;
+#define MAX_MESSAGE_LENGTH 32
+
+    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
+    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
+
+    uint8_t signature[CRYPTO_BYTES];
+    size_t signature_length;
+
+    uint8_t message[MAX_MESSAGE_LENGTH];
+    size_t message_length;
+
+    for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("[%s]: Test %d/%d\n", xstr(PARAMS), i, TESTS);
+        }
+
+        for (message_length = 10; message_length < MAX_MESSAGE_LENGTH; message_length++) {
+            randombytes(message, message_length);
+            crypto_sign_keypair(public_key, secret_key);
+            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+            assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) ==0);
+        }
+    }
+
+#undef MAX_MESSAGE_LENGTH
+}
+
 int main(void) {
     test_prf_addr();
     test_prf_addr_out_u64();
     test_gen_message_random();
     test_hash_message();
+    test_api();
     printf("PASS: hash = { params : %s ; hash : %s }\n", xstr(PARAMS), xstr(HASH));
     return 0;
 }

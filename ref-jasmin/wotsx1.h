@@ -2,6 +2,8 @@
 #define WOTSX1_H_ 
 
 #include <string.h>
+#include <stdint.h>
+#include <context.h>
 
 /*
  * This is here to provide an interface to the internal wots_gen_leafx1

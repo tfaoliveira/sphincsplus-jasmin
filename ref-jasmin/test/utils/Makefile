@@ -7,8 +7,9 @@ CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
-JASMIN   ?= jasminc
-JPP      ?= ../scripts/jpp
+JASMIN       ?= jasminc
+JFLAGS       ?= -nowarning ${JADDFLAGS}
+JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
@@ -20,6 +21,8 @@ THASH_LIST    := simple robust
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST),$(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
+SOURCES    := $(filter-out ../../thash_%.c ../../utils.c, $(wildcard ../../*.c))
+
 TESTS      := $(addprefix bin/test_utils_, $(TLIST))
 OUT        := $(addsuffix .out, $(TESTS))
 
@@ -49,13 +52,13 @@ bin/test_utils_%.jpp: | bin/
 
 .PRECIOUS: bin/test_utils_%.s
 bin/test_utils_%.s: bin/test_utils_%.jpp
-	$(JASMIN) $< -o $@
+	$(JASMIN) $(JFLAGS) $< -o $@
 
 $(TESTS):
 bin/test_utils_%: bin/test_utils_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) \
--I../common -I../../ -I../../params \
-test_utils.c $< ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../fips202.c
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) -DTEST_COMPUTE_ROOT \
+	-I../common -I../../ -I../../params \
+	test_utils.c $< ../../thash_$(GET_HASH)_$(GET_THASH).c $(SOURCES)
 
 bin/test_utils_%.out: bin/test_utils_%
 	@./$<

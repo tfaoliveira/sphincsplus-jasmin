@@ -8,7 +8,7 @@ CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning
+JFLAGS       ?= -nowarning ${JADDFLAGS}
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
@@ -21,6 +21,8 @@ THASH_LIST    := simple robust
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
+SOURCES    := $(filter-out ../../hash_%.c ../../thash_%.c ../../wrappers.c ../../wrappers.h, $(wildcard ../../*.c))
+
 TESTS      := $(addprefix bin/test_hash_, $(TLIST))
 OUT        := $(addsuffix .out, $(TESTS))
 
@@ -50,11 +52,11 @@ bin/test_hash_%.s: bin/test_hash_%.jpp
 
 $(TESTS):
 bin/test_hash_%: bin/test_hash_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTEST_HASH_MESSAGE \
--I../common -I../../ -I../../params \
-test_hash.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \
-../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../wots.c \
-../../merkle.c ../../fors.c ../../utilsx1.c ../../wotsx1.c ../../sign.c
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	-DTEST_HASH_PRF_ADDR -DTEST_HASH_GEN_MESSAGE_RANDOM -DTEST_HASH_MESSAGE \
+	-I../common -I../../ -I../../params \
+	test_hash.c $< ../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c \
+	$(SOURCES)
 
 bin/test_hash_%.out: bin/test_hash_%
 	@./$<

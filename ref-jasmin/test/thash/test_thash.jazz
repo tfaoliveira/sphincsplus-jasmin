@@ -20,63 +20,27 @@ export fn thash<INBLOCKS>(reg u64 _out _in _pub_seed _addr)
 
   stack u64 _out_s _in_s _pub_seed_s _addr_s;
   
-  // Load in
-  i = 0;
-  while (i < INBLOCKS * SPX_N) {
-    t = (u8)[_in + i];
-    in[(int) i] = t;
-    i += 1;
-  }
+  in_p = in;
+  in_p = __load_u8_array<INBLOCKS*SPX_N>(in_p, _in);
 
+  pub_seed_p = pub_seed;
+  pub_seed_p = __load_u8_array<SPX_N>(pub_seed_p, _pub_seed);
+  
+  addr_p = addr;
+  addr_p = __load_u32_array<8>(addr_p, _addr);
 
-  // Load pub_seed
-  i = 0;
-  while (i < SPX_N) {
-    t = (u8)[_pub_seed + i];
-    pub_seed[(int) i] = t;
-    i += 1;
-  }
-
-  // Load address (TODO: Maybe use a for loop because the size of the array is always the same (8) and short (??))
-  i = 0;
-  while (i < 8) {
-    u = (u32)[_addr + 4 * i]; // 8 * 4 = 32
-    addr[(int) i] = u;
-    i += 1;
- }
-
- // Spill to the stack
- _out_s = _out;
- _in_s = _in;
- _pub_seed_s = _pub_seed;
- _addr_s = _addr;
+  () = #spill(_out);
 
   out_p = out;
-  in_p = in;
-  pub_seed_p = pub_seed;
-  addr_p = addr;
-
   out_p = __thash<INBLOCKS>(out_p, in_p, pub_seed_p, addr_p);
   out = out_p;
 
-  _out = _out_s;
-
-  // write result
-  i = 0;
-  while (i < SPX_N) {
-    t = out[(int) i];
-    (u8)[_out + i] = t;
-    i += 1;
-  }
+  () = #unspill(_out);
+  __store_u8_array<SPX_N>(out_p, _out);
 }//<>
 
-/*
-export fn thash_inplace_jazz(
-  reg u64 _out _pub_seed _addr
-)
+export fn thash_inplace_jazz(reg u64 _out _pub_seed _addr)
 {
-  stack u64 s_out s_pub_seed s_addr;
-
   stack u8[SPX_N] out;
   stack u8[SPX_N] pub_seed;
   stack u32[8] addr;
@@ -85,23 +49,23 @@ export fn thash_inplace_jazz(
   reg ptr u8[SPX_N] pub_seed_p;
   reg ptr u32[8] addr_p;
 
-  s_out = _out; s_pub_seed = _pub_seed; s_addr = _addr; // spill
+  () = #spill(_out, _pub_seed, _addr);
 
-  _out = s_out;
+  () = #unspill(_out);
   out_p = out;
   out_p = __load_u8_array<SPX_N>(out_p, _out);
 
-  _pub_seed = s_pub_seed;
+  () = #unspill(_pub_seed);
   pub_seed_p = pub_seed;
   pub_seed_p = __load_u8_array<SPX_N>(pub_seed_p, _pub_seed);
 
-  _addr = s_addr;
+  () = #unspill(_addr);
   addr_p = addr;
   addr_p = __load_u32_array<8>(addr_p, _addr);
 
   out_p = __thash_inplace_(out_p, pub_seed_p, addr_p);
 
-  _out = s_out;
+  () = #unspill(_out);
   __store_u8_array<SPX_N>(out_p, _out);
 }
 
@@ -111,17 +75,18 @@ export fn thash_in_u64_jazz<INBLOCKS>(reg u64 _out in _pub_seed _addr)
   stack u8[SPX_N] pub_seed;
   stack u32[8] addr;
 
-  stack u64 s_out;
+  reg ptr u8[SPX_N] out_p;
+  reg ptr u8[SPX_N] pub_seed_p;
+  reg ptr u32[8] addr_p;
 
-  out = __load_u8_array<SPX_N>(out, _out);
   pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
   addr = __load_u32_array<8>(addr, _addr);
 
-  s_out = _out;
+  () = #spill(_out);
 
+  out_p = out;
   out = __thash_in_u64_<INBLOCKS>(out, in, pub_seed, addr);
 
-  _out = s_out;
+  () = #unspill(_out);
   __store_u8_array<SPX_N>(out, _out);
 }//<>
-*/

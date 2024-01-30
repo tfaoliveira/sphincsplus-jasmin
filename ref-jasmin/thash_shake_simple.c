@@ -7,7 +7,6 @@
 #include "utils.h"
 
 #include "fips202.h"
-#include <stdio.h>
 
 /**
  * Takes an array of inblocks concatenated arrays of SPX_N bytes.
