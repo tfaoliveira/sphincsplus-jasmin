@@ -131,11 +131,41 @@ void test_thash_inplace(void) {
     }
 }
 
+void test_api(void) {
+    bool debug = true;
+#define MAX_MESSAGE_LENGTH 32
+#define TESTS 100
+
+    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
+    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
+
+    uint8_t signature[CRYPTO_BYTES];
+    size_t signature_length;
+
+    uint8_t message[MAX_MESSAGE_LENGTH];
+    size_t message_length;
+
+    for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("[%s]: Test %d/%d\n", xstr(PARAMS), i, TESTS);
+        }
+
+        for (message_length = 10; message_length < MAX_MESSAGE_LENGTH; message_length++) {
+            randombytes(message, message_length);
+            crypto_sign_keypair(public_key, secret_key);
+            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+            assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) == 0);
+        }
+    }
+
+#undef MAX_MESSAGE_LENGTH
+}
+
 int main() {
     test_thash();
     test_thash_in_u64();
     test_thash_inplace();
-    printf("PASS: thash = { params: %s, thash: %s, inblocks : %d }\n", xstr(PARAMS), xstr(THASH),
-           INBLOCKS);
+    test_api();
+    printf("PASS: thash = { params: %s, thash: %s, inblocks : %d }\n", xstr(PARAMS), xstr(THASH), INBLOCKS);
     return 0;
 }

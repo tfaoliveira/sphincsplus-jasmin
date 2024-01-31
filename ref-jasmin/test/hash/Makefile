@@ -21,7 +21,7 @@ THASH_LIST    := simple robust
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
-SOURCES    := $(filter-out ../../hash_%.c ../../thash_%.c ../../wrappers.c ../../wrappers.h, $(wildcard ../../*.c))
+SOURCES    := $(filter-out ../../hash_%.c ../../thash_%.c, $(wildcard ../../*.c))
 
 TESTS      := $(addprefix bin/test_hash_, $(TLIST))
 OUT        := $(addsuffix .out, $(TESTS))
@@ -31,12 +31,15 @@ GET_PARAM      = $(word 2, $(subst _, ,$*))
 GET_THASH      = $(word 3, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
+
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
+ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 default: $(TESTS)
 run: $(OUT)
 jpp_files: $(JPP_FILES)
+asm_files: $(ASM_FILES)
 
 $(JPP_FILES):
 .PRECIOUS: bin/test_hash_%.jpp
@@ -68,3 +71,6 @@ bin/:
 .PHONY: clean
 clean:
 	rm -fr bin/
+
+debug:
+	echo $(SOURCES)

@@ -10,6 +10,10 @@
 #include "utils.h"
 #include "wots.h"
 
+#ifdef TEST_THASH
+extern void thash_inplace_jazz(uint8_t *out, const uint8_t *pub_seed, uint32_t addr[8]);
+#endif
+
 /*
  * This generates a WOTS public key
  * It also generates the WOTS signature if leaf_info indicates
@@ -56,7 +60,11 @@ void wots_gen_leafx1(unsigned char *dest, const spx_ctx *ctx, uint32_t leaf_idx,
         set_type(leaf_addr, SPX_ADDR_TYPE_WOTSPRF);
 #endif
 
+#ifdef TEST_HASH_PRF_ADDR
+        prf_addr_jazz(buffer, ctx->pub_seed, ctx->sk_seed, leaf_addr);
+#else
         prf_addr(buffer, ctx, leaf_addr);
+#endif
 
 #ifdef TEST_ADDRESS
         set_type_jazz(leaf_addr, SPX_ADDR_TYPE_WOTS);
@@ -82,10 +90,14 @@ void wots_gen_leafx1(unsigned char *dest, const spx_ctx *ctx, uint32_t leaf_idx,
             set_hash_addr(leaf_addr, k);
 #endif
 
+#ifdef TEST_THASH
+            thash_inplace_jazz(buffer, ctx->pub_seed, leaf_addr);
+#else
             thash(buffer, buffer, 1, ctx, leaf_addr);
+#endif
         }
     }
 
     /* Do the final thash to generate the public keys */
-    thash(dest, pk_buffer, SPX_WOTS_LEN, ctx, pk_addr);
+    thash(dest, pk_buffer, SPX_WOTS_LEN, ctx, pk_addr); // TODO:
 }

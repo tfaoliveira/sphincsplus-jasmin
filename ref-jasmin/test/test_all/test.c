@@ -1,26 +1,17 @@
-#include <assert.h>
-#include <inttypes.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "api.h"
-#include "context.h"
-#include "macros.h"
-#include "merkle.h"
-#include "params.h"
-#include "print.c"
-#include "randombytes.h"
+
+#ifndef PARAMS
+#define PARAMS sphincs-shake-128f
+#endif
+
+#ifndef MAX_MESSAGE_LENGTH
+#define MAX_MESSAGE_LENGTH 1024
+#endif
 
 #ifndef TESTS
 #define TESTS 100
-#endif
+#
 
-#ifndef MAX_MLEN
-#define MAX_MLEN 128
-#endif
 
 int main(void) {
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
@@ -29,12 +20,12 @@ int main(void) {
     uint8_t signature[CRYPTO_BYTES];
     size_t signature_length;
 
-    uint8_t message[MAX_MLEN];
+    uint8_t message[MAX_MESSAGE_LENGTH];
     size_t message_length;
 
     for (int i = 0; i < TESTS; i++) {
-        for (message_length = 1; message_length < MAX_MLEN; message_length++) {
-            printf("[Test %d] Msg Len: %ld/%d\n", i, message_length, MAX_MLEN);
+        for (message_length = 1; message_length < MAX_MESSAGE_LENGTH; message_length++) {
+            printf("[Test %d] Msg Len: %ld/%d\n", i, message_length, MAX_MESSAGE_LENGTH);
             randombytes(message, message_length);
             crypto_sign_keypair(public_key, secret_key);
             crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);

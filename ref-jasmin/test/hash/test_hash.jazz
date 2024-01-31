@@ -137,8 +137,8 @@ export fn hash_message_jazz(
   reg u32 leaf_idx;
 
   R, pk = __load_args(R, pk, args);
-  // tree = [_tree];              // NOTE: we only write these values, we dont read them
-  // leaf_idx = (u32)[_leaf_idx]; // NOTE: we only write these values, we dont read them
+  tree = [_tree];              // NOTE: we only write these values, we dont read them
+  leaf_idx = (u32)[_leaf_idx]; // NOTE: we only write these values, we dont read them
 
   () = #spill(_digest, _tree, _leaf_idx);
 
@@ -149,4 +149,17 @@ export fn hash_message_jazz(
   [_tree] = tree;
   (u32)[_leaf_idx] = leaf_idx;
   __store_u8_array<SPX_FORS_MSG_BYTES>(digest, _digest);
+}
+
+export fn bytes_to_ull__8_jazz(reg u64 _in) -> reg u64 { 
+    reg u64 res; 
+    stack u8[8] in; 
+    reg ptr u8[8] in_p; 
+    
+    in_p = in; 
+    in_p = __load_u8_array<8>(in_p, _in); 
+    res = __bytes_to_ull__8_(res, in_p); 
+    in = in_p; 
+    
+    return res; 
 }

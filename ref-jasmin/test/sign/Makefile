@@ -31,12 +31,15 @@ GET_THASH      = $(word 3, $(subst _, ,$*))
 GET_MSG_LEN    = $(word 4, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
+
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
+ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 default: $(TESTS)
 run: $(OUT)
 jpp_files: $(JPP_FILES)
+asm_files: $(ASM_FILES)
 
 $(JPP_FILES):
 .PRECIOUS: bin/test_sign_%.jpp

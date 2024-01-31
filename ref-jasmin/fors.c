@@ -19,14 +19,22 @@
 extern void thash_1(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
 #endif
 
+#ifdef TEST_HASH_PRF_ADDR
+extern void prf_addr_jazz(uint8_t *out, const unsigned char *pub_seed, const unsigned char *sk_seed,
+                          const uint32_t add[8]);
+#endif
+
 static void fors_gen_sk(unsigned char *sk, const spx_ctx *ctx, uint32_t fors_leaf_addr[8]) {
+#ifdef TEST_HASH_PRF_ADDR
+    prf_addr_jazz(sk, ctx->pub_seed, ctx->sk_seed, fors_leaf_addr);
+#else
     prf_addr(sk, ctx, fors_leaf_addr);
+#endif
 }
 
 static void fors_sk_to_leaf(unsigned char *leaf, const unsigned char *sk, const spx_ctx *ctx,
                             uint32_t fors_leaf_addr[8]) {
 #ifdef TEST_THASH
-    extern void thash_1(uint8_t * out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
     thash_1(leaf, sk, ctx->pub_seed, fors_leaf_addr);
 #else
     thash(leaf, sk, 1, ctx, fors_leaf_addr);

@@ -12,6 +12,7 @@
 #include "notrandombytes.c"
 #include "params.h"
 #include "print.c"
+#include "wrappers.h"
 
 #ifndef HASH
 #define HASH shake
@@ -42,10 +43,46 @@ extern void gen_message_random_jazz(uint8_t *R, const uint8_t *sk_prf, const uin
 extern void hash_message_jazz(uint8_t *digest, uint64_t *tree, uint32_t *leaf_idx, const args *_args,
                               const uint8_t *msg, size_t msg_len);
 
+extern uint64_t bytes_to_ull__8_jazz(const uint8_t *in);
+
+void test_bytes_to_ull(void);
 void test_prf_addr(void);
 void test_prf_addr_out_u64(void);
 void test_gen_message_random(void);
 void test_hash_message(void);
+void test_hash_message_wrapper(void);
+void test_api(void);
+
+static unsigned long long bytes_to_ull(const unsigned char *in, unsigned int inlen) {
+    unsigned long long retval = 0;
+    unsigned int i;
+
+    for (i = 0; i < inlen; i++) {
+        retval |= ((unsigned long long)in[i]) << (8 * (inlen - 1 - i));
+    }
+    return retval;
+}
+
+void test_bytes_to_ull(void) {
+    // Hash message fails on this line tree = bytes_to_ull(bufp, SPX_TREE_BYTES)
+    // This test makes sure bytes_to_ull works
+    // For 128s this is
+    bool debug = true;
+    uint64_t res;
+    uint64_t expected;
+    uint8_t buf[8];
+
+    for (int i = 0; i < TESTS * 100; i++) {
+        if (debug) {
+            printf("[%s] bytes to ull : Test %d/%d\n", xstr(PARAMS), i, TESTS * 100);
+        }
+        randombytes(buf, 8);
+        expected = bytes_to_ull(buf, 8);
+        res = bytes_to_ull__8_jazz(buf);
+
+        assert(expected == res);
+    }
+}
 
 void test_prf_addr(void) {
     bool debug = true;
@@ -143,12 +180,11 @@ void test_hash_message(void) {
 #define MAX_MSG_LEN 1024
 
     uint8_t digest_ref[SPX_FORS_MSG_BYTES], digest_jazz[SPX_FORS_MSG_BYTES];
-    uint64_t tree_ref = 0;
-    uint64_t tree_jazz = 0;
-    uint32_t leaf_idx_ref = 0;
-    uint32_t leaf_idx_jazz = 0;
+    uint64_t tree_ref;
+    uint64_t tree_jazz;
+    uint32_t leaf_idx_ref;
+    uint32_t leaf_idx_jazz;
 
-    spx_ctx ctx;
     args _args;
     uint8_t R[SPX_N];
     uint8_t pk[SPX_PK_BYTES];
@@ -164,24 +200,29 @@ void test_hash_message(void) {
         for (size_t msg_len = 1; msg_len < MAX_MSG_LEN; msg_len++) {
             memset(digest_ref, 0, SPX_FORS_MSG_BYTES);
             memset(digest_jazz, 0, SPX_FORS_MSG_BYTES);
-            tree_ref = 0;
-            tree_jazz = 0;
-            leaf_idx_ref = 0;
-            leaf_idx_jazz = 0;
+
+            randombytes((uint8_t *)&tree_ref, sizeof(uint64_t));
+            memcpy(&tree_jazz, &tree_ref, sizeof(uint64_t));
+
+            randombytes((uint8_t *)&leaf_idx_ref, sizeof(uint32_t));
+            memcpy(&leaf_idx_jazz, &leaf_idx_ref, sizeof(uint32_t));
 
             randombytes(R, SPX_N);
             randombytes(pk, SPX_PK_BYTES);
             randombytes(msg, msg_len);
-            randombytes(ctx.sk_seed, SPX_N);
-            randombytes(ctx.pub_seed, SPX_N);
 
             memcpy(_args.R, R, SPX_N);
             memcpy(_args.pk, pk, SPX_PK_BYTES);
 
-            hash_message(digest_ref, &tree_ref, &leaf_idx_ref, R, pk, msg, msg_len, &ctx);
+            hash_message(digest_ref, &tree_ref, &leaf_idx_ref, R, pk, msg, msg_len, NULL);  // ctx is not used
             hash_message_jazz(digest_jazz, &tree_jazz, &leaf_idx_jazz, &_args, msg, msg_len);
 
             assert(memcmp(digest_ref, digest_jazz, SPX_FORS_MSG_BYTES) == 0);
+
+            if (memcmp(&tree_ref, &tree_jazz, sizeof(uint64_t)) != 0) {
+                print_str_u8("tree ref", (uint8_t *)&tree_ref, sizeof(uint64_t));
+                print_str_u8("tree jazz", (uint8_t *)&tree_jazz, sizeof(uint64_t));
+            }
 
             assert(tree_ref == tree_jazz);
             assert(memcmp(&tree_ref, &tree_jazz, sizeof(uint64_t)) == 0);
@@ -198,9 +239,68 @@ void test_hash_message(void) {
 #undef MAX_MSG_LEN
 }
 
+void test_hash_message_wrapper(void) {
+    bool debug = true;
+
+#define MAX_MESSAGE_LENGTH 1024
+
+    uint8_t digest_ref[SPX_FORS_MSG_BYTES], digest_jazz[SPX_FORS_MSG_BYTES];
+    uint64_t tree_ref;
+    uint64_t tree_jazz;
+    uint32_t leaf_idx_ref;
+    uint32_t leaf_idx_jazz;
+    uint8_t R[SPX_N];
+    uint8_t pk[SPX_PK_BYTES];
+    uint8_t msg[MAX_MESSAGE_LENGTH] = {0};
+
+    for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("[%s] hash message wrapper: Test %d/%d\n", xstr(PARAMS), i, TESTS);
+        }
+
+        for (size_t msg_len = 1; msg_len < MAX_MESSAGE_LENGTH; msg_len++) {
+            memset(digest_ref, 0, SPX_FORS_MSG_BYTES);
+            memset(digest_jazz, 0, SPX_FORS_MSG_BYTES);
+
+            randombytes((uint8_t *)&tree_ref, sizeof(uint64_t));
+            memcpy(&tree_jazz, &tree_ref, sizeof(uint64_t));
+
+            randombytes((uint8_t *)&leaf_idx_ref, sizeof(uint32_t));
+            memcpy(&leaf_idx_jazz, &leaf_idx_ref, sizeof(uint32_t));
+
+            randombytes(R, SPX_N);
+            randombytes(pk, SPX_PK_BYTES);
+            randombytes(msg, msg_len);
+
+            hash_message(digest_ref, &tree_ref, &leaf_idx_ref, R, pk, msg, msg_len, NULL);
+            hash_message_jasmin(digest_jazz, &tree_jazz, &leaf_idx_jazz, R, pk, msg, msg_len);
+
+            assert(memcmp(digest_ref, digest_jazz, SPX_FORS_MSG_BYTES) == 0);
+
+            if (memcmp(&tree_ref, &tree_jazz, sizeof(uint64_t)) != 0) {
+                print_str_u8("tree ref", (uint8_t *)&tree_ref, sizeof(uint64_t));
+                print_str_u8("tree jazz", (uint8_t *)&tree_jazz, sizeof(uint64_t));
+            }
+
+            assert(tree_ref == tree_jazz);
+            assert(memcmp(&tree_ref, &tree_jazz, sizeof(uint64_t)) == 0);
+
+            assert(leaf_idx_ref == leaf_idx_ref);
+            assert(memcmp(&leaf_idx_ref, &leaf_idx_ref, sizeof(uint32_t)) == 0);
+        }
+    }
+#undef SPX_TREE_BITS
+#undef SPX_TREE_BYTES
+#undef SPX_LEAF_BITS
+#undef SPX_LEAF_BYTES
+
+#undef MAX_MESSAGE_LENGTH
+}
+
 void test_api(void) {
     bool debug = true;
 #define MAX_MESSAGE_LENGTH 32
+#define TESTS 100
 
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
     uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
@@ -220,7 +320,7 @@ void test_api(void) {
             randombytes(message, message_length);
             crypto_sign_keypair(public_key, secret_key);
             crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-            assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) ==0);
+            assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) == 0);
         }
     }
 
@@ -228,10 +328,15 @@ void test_api(void) {
 }
 
 int main(void) {
+    // uint64_t res;
+    // res = (~(uint64_t)0) >> (64 - 8);
+    // print_str_u8("a", (uint8_t*)&res, sizeof(uint64_t)); return;
+    test_bytes_to_ull();
     test_prf_addr();
     test_prf_addr_out_u64();
     test_gen_message_random();
     test_hash_message();
+    test_hash_message_wrapper();
     test_api();
     printf("PASS: hash = { params : %s ; hash : %s }\n", xstr(PARAMS), xstr(HASH));
     return 0;

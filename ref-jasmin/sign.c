@@ -12,6 +12,12 @@
 #include "thash.h"
 #include "utils.h"
 #include "wots.h"
+#include "wrappers.h"
+
+#ifdef TEST_HASH_GEN_MESSAGE_RANDOM
+extern void gen_message_random_jazz(uint8_t *R, const uint8_t *sk_prf, const uint8_t *optrand, const uint8_t *msg,
+                                    size_t msg_len);
+#endif
 
 /*
  * Returns the length of a secret key, in bytes
@@ -111,11 +117,22 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
        This can help counter side-channel attacks that would benefit from
        getting a large number of traces when the signer uses the same nodes. */
     randombytes(optrand, SPX_N);
+    
+    
     /* Compute the digest randomization value. */
+    #ifdef TEST_HASH_GEN_MESSAGE_RANDOM
+    gen_message_random_jazz(sig, sk_prf, optrand, m, mlen);
+    #else
     gen_message_random(sig, sk_prf, optrand, m, mlen, &ctx);
+    #endif
 
     /* Derive the message digest and leaf index from R, PK and M. */
+    #ifdef TEST_HASH_MESSAGE
+    hash_message_jasmin(mhash, &tree, &idx_leaf, sig, pk, m, mlen);
+    #else
     hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
+    #endif
+
     sig += SPX_N;
 
 #ifdef TEST_ADDRESS

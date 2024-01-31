@@ -29,7 +29,7 @@ inline fn __prf_addr(
 
 //// PRF [out is a reg u64 instead of reg ptr u8]
 inline fn __prf_addr_out_u64(
-  reg u64 out,// reg ptr u8[SPX_N] out,
+  reg u64 out, // reg ptr u8[SPX_N] out,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
   reg ptr u32[8] addr
@@ -153,6 +153,13 @@ inline fn __hash_message(
   // *tree &= (~(uint64_t)0) >> (64 - SPX_TREE_BITS);
   tree &= (0xffffffffffffffff >> (64 - SPX_TREE_BITS)); // the expression after &= can be evaluated at compile time
   
+  // TODO: Tried this but it still doenst work
+  // reg u64 not_zero;
+  // ?{}, not_zero = #set0();
+  // not_zero = #NOT(not_zero);
+  // ?{}, not_zero = #SHR(not_zero, (64 - SPX_TREE_BITS));
+  // tree &= not_zero;
+
   // bufp += SPX_TREE_BYTES;
   leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES];
 
