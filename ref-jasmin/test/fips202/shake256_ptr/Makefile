@@ -7,7 +7,7 @@ CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN   ?= jasminc
-JFLAGS   ?=
+JFLAGS   ?= -nowarning ${JADDFLAGS}
 
 # ------------------------------------------------------------------------------
 default: bin/test_shake256_ptr

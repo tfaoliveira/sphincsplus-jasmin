@@ -9,7 +9,7 @@ CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 # Ignore Compilation Warnings for now
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning -g # -lazy-regalloc
+JFLAGS       ?= -nowarning -g ${JADDFLAGS} # -lazy-regalloc
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 

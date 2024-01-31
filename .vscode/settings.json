@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "context.h": "c",
+        "thash.h": "c",
+        "utils.h": "c"
     }
 }

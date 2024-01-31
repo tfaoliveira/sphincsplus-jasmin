@@ -148,17 +148,11 @@ inline fn __hash_message(
 
   // *tree = bytes_to_ull(bufp, SPX_TREE_BYTES);
   // tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, tree_bytes);
+  // FIXME: Only works for 128f. TREE_BYTES is not always SPX_TREE_BYTES
   tree = __bytes_to_ull__8_(tree, tree_bytes);
 
   // *tree &= (~(uint64_t)0) >> (64 - SPX_TREE_BITS);
   tree &= (0xffffffffffffffff >> (64 - SPX_TREE_BITS)); // the expression after &= can be evaluated at compile time
-  
-  // TODO: Tried this but it still doenst work
-  // reg u64 not_zero;
-  // ?{}, not_zero = #set0();
-  // not_zero = #NOT(not_zero);
-  // ?{}, not_zero = #SHR(not_zero, (64 - SPX_TREE_BITS));
-  // tree &= not_zero;
 
   // bufp += SPX_TREE_BYTES;
   leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES];

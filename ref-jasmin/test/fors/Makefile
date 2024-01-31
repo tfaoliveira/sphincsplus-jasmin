@@ -9,7 +9,7 @@ CFLAGS   ?= -w # -O3 -g -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 # Ignore compilation warnings for now
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -lazy-regalloc -nowarning
+JFLAGS       ?= -lazy-regalloc -nowarning ${JADDFLAGS}
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
@@ -57,11 +57,11 @@ $(TESTS):
 bin/test_fors_%: bin/test_fors_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
 	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
--DTEST_FORS_TREEHASH -DTEST_FORS \
--I../common -I../../ -I../../params \
-test_fors.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \
-../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \
-../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c 
+	-DTEST_FORS_GEN_SK -DTEST_FORS_SK_TO_LEAF -DTEST_FORS_GEN_LEAF -DTEST_FORS_SIGN -DTEST_FORS_PK_FROM_SIG -DTEST_FORS_TREEHASH \
+	-I../common -I../../ -I../../params \
+	test_fors.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \
+	../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \
+	../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c  ../../wrappers.c
 
 bin/test_fors_%.out: bin/test_fors_%
 	@./$<
@@ -73,6 +73,3 @@ bin/:
 .PHONY: clean
 clean:
 	rm -fr bin/
-
-debug:
-	echo $(TESTS)

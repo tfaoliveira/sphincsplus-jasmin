@@ -10,10 +10,7 @@
 #include "thash.h"
 #include "utils.h"
 #include "utilsx1.h"
-
-#ifdef TEST_COMPUTE_ROOT
 #include "wrappers.h"
-#endif
 
 #ifdef TEST_THASH
 extern void thash_1(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, uint32_t addr[8]);
@@ -22,6 +19,11 @@ extern void thash_1(uint8_t *out, const uint8_t *in, const uint8_t *pub_seed, ui
 #ifdef TEST_HASH_PRF_ADDR
 extern void prf_addr_jazz(uint8_t *out, const unsigned char *pub_seed, const unsigned char *sk_seed,
                           const uint32_t add[8]);
+#endif
+
+#ifdef TEST_FORS_TREEHASH
+extern void treehash_fors_jazz(uint8_t *root, uint8_t *auth_path, uint8_t *ctx, uint32_t leaf_idx, uint32_t idx_offset,
+                               void *addr);
 #endif
 
 static void fors_gen_sk(unsigned char *sk, const spx_ctx *ctx, uint32_t fors_leaf_addr[8]) {
@@ -45,7 +47,8 @@ struct fors_gen_leaf_info {
     uint32_t leaf_addrx[8];
 };
 
-static void fors_gen_leafx1(unsigned char *leaf, const spx_ctx *ctx, uint32_t addr_idx, void *info) {
+// NOTE: This function is no longer static because we use it in wrappers.c
+void fors_gen_leafx1(unsigned char *leaf, const spx_ctx *ctx, uint32_t addr_idx, void *info) {
     struct fors_gen_leaf_info *fors_info = info;
     uint32_t *fors_leaf_addr = fors_info->leaf_addrx;
 
@@ -58,7 +61,11 @@ static void fors_gen_leafx1(unsigned char *leaf, const spx_ctx *ctx, uint32_t ad
     set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSPRF);
 #endif
 
+#ifdef TEST_FORS_GEN_SK
+    fors_gen_sk_jazz(leaf, ctx->pub_seed, ctx->sk_seed, fors_leaf_addr);
+#else
     fors_gen_sk(leaf, ctx, fors_leaf_addr);
+#endif
 
 #ifdef TEST_ADDRESS
     set_type_jazz(fors_leaf_addr, SPX_ADDR_TYPE_FORSTREE);
@@ -66,7 +73,11 @@ static void fors_gen_leafx1(unsigned char *leaf, const spx_ctx *ctx, uint32_t ad
     set_type(fors_leaf_addr, SPX_ADDR_TYPE_FORSTREE);
 #endif
 
+#ifdef TEST_FORS_SK_TO_LEAF
+    fors_sk_to_leaf_jazz(leaf, leaf, ctx->pub_seed, fors_leaf_addr);
+#else
     fors_sk_to_leaf(leaf, leaf, ctx, fors_leaf_addr);
+#endif
 }
 
 /**
@@ -141,9 +152,17 @@ void fors_sign(unsigned char *sig, unsigned char *pk, const unsigned char *m, co
 
         sig += SPX_N;
 
-        /* Compute the authentication path for this leaf node. */
-        treehashx1(roots + i * SPX_N, sig, ctx, indices[i], idx_offset, SPX_FORS_HEIGHT, fors_gen_leafx1,
-                   fors_tree_addr, &fors_info);
+/* Compute the authentication path for this leaf node. */
+#ifdef TEST_FORS_TREEHASH
+        uint32_t *fors_tree_leaf_addr_jazz[2];               
+        fors_tree_leaf_addr_jazz[0] = fors_tree_addr;        
+        fors_tree_leaf_addr_jazz[1] = fors_info.leaf_addrx;  
+
+        treehash_fors_jazz(roots + i * SPX_N, sig, ctx, indices[i], idx_offset, fors_tree_leaf_addr_jazz);
+#else
+        treehashx1_fors(roots + i * SPX_N, sig, ctx, indices[i], idx_offset, SPX_FORS_HEIGHT, fors_tree_addr,
+                        &fors_info);
+#endif
 
         sig += SPX_N * SPX_FORS_HEIGHT;
     }
@@ -195,8 +214,13 @@ void fors_pk_from_sig(unsigned char *pk, const unsigned char *sig, const unsigne
         set_tree_index(fors_tree_addr, indices[i] + idx_offset);
 #endif
 
-        /* Derive the leaf from the included secret key part. */
+/* Derive the leaf from the included secret key part. */
+#ifdef TEST_FORS_SK_TO_LEAF
+        fors_sk_to_leaf_jazz(leaf, sig, ctx->pub_seed, fors_tree_addr);
+#else
         fors_sk_to_leaf(leaf, sig, ctx, fors_tree_addr);
+#endif
+
         sig += SPX_N;
 
 /* Derive the corresponding root node of this tree. */
@@ -205,6 +229,7 @@ void fors_pk_from_sig(unsigned char *pk, const unsigned char *sig, const unsigne
 #else
         compute_root(roots + i * SPX_N, leaf, indices[i], idx_offset, sig, SPX_FORS_HEIGHT, ctx, fors_tree_addr);
 #endif
+
         sig += SPX_N * SPX_FORS_HEIGHT;
     }
 

@@ -8,6 +8,7 @@ CFLAGS   ?= -O3 #-Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
+JFLAGS       ?= -nowarning ${JADDFLAGS}
 JPP          ?= ../../scripts/jpp
 PREPROCESSOR ?= ../../scripts/preprocessor
 
@@ -45,7 +46,7 @@ bin/test_shake256_inc_%.jpp: | bin/
 
 .PRECIOUS: bin/test_shake256_inc_%.s
 bin/test_shake256_inc_%.s: bin/test_shake256_inc_%.jpp | bin/
-	$(JASMIN) -I Sphincs:../../../ -nowarning $< -o $@
+	$(JASMIN) $(JFLAGS) -I Sphincs:../../../ $< -o $@
 
 bin/test_shake256_inc_%: bin/test_shake256_inc_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DOUTLEN=$(GET_OUTLEN) -DINLEN=$(GET_INLEN) -I../../common -I../../ test_shake256_inc.c $< ../../../fips202.c

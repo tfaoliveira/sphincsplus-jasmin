@@ -5,8 +5,9 @@ CFLAGS ?= -O3 -Wall -Wextra -Wpedantic -Wvla -Werror -std=c99 \
           -Wundef -Wshadow -Wcast-align -Wpointer-arith -Wmissing-prototypes \
           -fstrict-aliasing -fno-common -pipe -g
       
-JASMIN        ?= jasminc
-JPP           ?= ../scripts/jpp
+JASMIN ?= jasminc
+JFLAGS ?= -nowarning ${JADDFLAGS}
+JPP    ?= ../scripts/jpp
 
 # ------------------------------------------------------------------------------
 default: bin/test_memset
@@ -19,7 +20,7 @@ bin/test_memset.jpp: bin/
   
 .PRECIOUS: bin/test_memset.s
 bin/test_memset.s: bin/test_memset.jpp
-	$(JASMIN) $< -o $@
+	$(JASMIN) $(JFLAGS) $< -o $@
 
 bin/test_memset: bin/test_memset.s 
 	$(CC) $(CFLAGS) -o $@ -I../common test_memset.c $<

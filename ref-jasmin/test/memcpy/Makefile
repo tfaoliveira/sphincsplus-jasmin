@@ -6,7 +6,7 @@ CFLAGS ?= -w #-O3 -Wall -Wextra -Wpedantic -Wvla -Werror -std=c99 \
 	        -fstrict-aliasing -fno-common -pipe -g
 
 JASMIN ?= jasminc
-JFLAGS ?= -nowarning
+JFLAGS ?= -nowarning ${JADDFLAGS}
 JPP    ?= ../scripts/jpp
 PREPROCESSOR  ?= ../scripts/preprocessor
 

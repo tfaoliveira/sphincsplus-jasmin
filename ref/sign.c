@@ -134,7 +134,12 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen,
     set_keypair_addr(wots_addr, idx_leaf);
 
     /* Sign the message hash using FORS. */
+    #ifdef TEST_FORS_SIGN
+    puts("DEBUG FORS SIGN");
+    fors_sign_jazz(sig, root, mhash, ctx.pub_seed, ctx.sk_seed, wots_addr);
+    #else
     fors_sign(sig, root, mhash, &ctx, wots_addr);
+    #endif
     sig += SPX_FORS_BYTES;
 
     for (i = 0; i < SPX_D; i++) {

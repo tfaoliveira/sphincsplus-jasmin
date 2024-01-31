@@ -117,21 +117,20 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
        This can help counter side-channel attacks that would benefit from
        getting a large number of traces when the signer uses the same nodes. */
     randombytes(optrand, SPX_N);
-    
-    
-    /* Compute the digest randomization value. */
-    #ifdef TEST_HASH_GEN_MESSAGE_RANDOM
-    gen_message_random_jazz(sig, sk_prf, optrand, m, mlen);
-    #else
-    gen_message_random(sig, sk_prf, optrand, m, mlen, &ctx);
-    #endif
 
-    /* Derive the message digest and leaf index from R, PK and M. */
-    #ifdef TEST_HASH_MESSAGE
+/* Compute the digest randomization value. */
+#ifdef TEST_HASH_GEN_MESSAGE_RANDOM
+    gen_message_random_jazz(sig, sk_prf, optrand, m, mlen);
+#else
+    gen_message_random(sig, sk_prf, optrand, m, mlen, &ctx);
+#endif
+
+/* Derive the message digest and leaf index from R, PK and M. */
+#ifdef TEST_HASH_MESSAGE
     hash_message_jasmin(mhash, &tree, &idx_leaf, sig, pk, m, mlen);
-    #else
+#else
     hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
-    #endif
+#endif
 
     sig += SPX_N;
 
@@ -144,7 +143,12 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
 #endif
 
     /* Sign the message hash using FORS. */
+#ifdef TEST_FORS_SIGN
+    fors_sign_jazz(sig, root, mhash, ctx.pub_seed, ctx.sk_seed, wots_addr);
+#else
     fors_sign(sig, root, mhash, &ctx, wots_addr);
+#endif
+
     sig += SPX_FORS_BYTES;
 
     for (i = 0; i < SPX_D; i++) {
@@ -210,9 +214,13 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
     set_type(wots_pk_addr, SPX_ADDR_TYPE_WOTSPK);
 #endif
 
-    /* Derive the message digest and leaf index from R || PK || M. */
-    /* The additional SPX_N is a result of the hash domain separator. */
+/* Derive the message digest and leaf index from R || PK || M. */
+/* The additional SPX_N is a result of the hash domain separator. */
+#ifdef TEST_HASH_MESSAGE
+    hash_message_jasmin(mhash, &tree, &idx_leaf, sig, pk, m, mlen);
+#else
     hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
+#endif
     sig += SPX_N;
 
 /* Layer correctly defaults to 0, so no need to set_layer_addr */
@@ -224,7 +232,12 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
     set_keypair_addr(wots_addr, idx_leaf);
 #endif
 
+#ifdef TEST_FORS_PK_FROM_SIG
+    fors_pk_from_sig_jazz(root, sig, mhash, ctx.pub_seed, wots_addr);
+#else
     fors_pk_from_sig(root, sig, mhash, &ctx, wots_addr);
+#endif
+
     sig += SPX_FORS_BYTES;
 
     /* For each subtree.. */
