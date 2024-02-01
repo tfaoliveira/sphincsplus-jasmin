@@ -31,7 +31,6 @@ static void gen_chain(unsigned char *out, const unsigned char *in, unsigned int 
 
     /* Iterate 'steps' calls to the hash function. */
     for (i = start; i < (start + steps) && i < SPX_WOTS_W; i++) {
-
 #ifdef TEST_ADDRESS
         set_hash_addr_jazz(addr, i);
 #else
@@ -81,13 +80,27 @@ static void wots_checksum(unsigned int *csum_base_w, const unsigned int *msg_bas
     /* Make sure expected empty zero bits are the least significant bits. */
     csum = csum << ((8 - ((SPX_WOTS_LEN2 * SPX_WOTS_LOGW) % 8)) % 8);
     ull_to_bytes(csum_bytes, sizeof(csum_bytes), csum);
+
+#ifdef TEST_WOTS_BASE_W
+    base_w_jazz_out_WOTS_LEN2(csum_base_w, csum_bytes);
+#else
     base_w(csum_base_w, SPX_WOTS_LEN2, csum_bytes);
+#endif
 }
 
 /* Takes a message and derives the matching chain lengths. */
 void chain_lengths(unsigned int *lengths, const unsigned char *msg) {
+#ifdef TEST_WOTS_BASE_W
+    base_w_jazz_out_WOTS_LEN1(lengths, msg);
+#else
     base_w(lengths, SPX_WOTS_LEN1, msg);
+#endif
+
+#ifdef TEST_WOTS_CHECKSUM
+    wots_checksum_jazz(lengths + SPX_WOTS_LEN1, lengths);
+#else
     wots_checksum(lengths + SPX_WOTS_LEN1, lengths);
+#endif
 }
 
 /**
@@ -100,16 +113,23 @@ void wots_pk_from_sig(unsigned char *pk, const unsigned char *sig, const unsigne
     unsigned int lengths[SPX_WOTS_LEN];
     uint32_t i;
 
+#ifdef TEST_WOTS_CHAIN_LENGTHS
     chain_lengths(lengths, msg);
+#else
+    chain_lengths(lengths, msg);
+#endif
 
     for (i = 0; i < SPX_WOTS_LEN; i++) {
-
 #ifdef TEST_ADDRESS
         set_chain_addr_jazz(addr, i);
 #else
         set_chain_addr(addr, i);
 #endif
 
+#ifdef TEST_WOTS_GEN_CHAIN
+        gen_chain_jazz(pk + i * SPX_N, sig + i * SPX_N, lengths[i], SPX_WOTS_W - 1 - lengths[i], ctx->pub_seed, addr);
+#else
         gen_chain(pk + i * SPX_N, sig + i * SPX_N, lengths[i], SPX_WOTS_W - 1 - lengths[i], ctx, addr);
+#endif
     }
 }

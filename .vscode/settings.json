@@ -3,6 +3,9 @@
         "stdint.h": "c",
         "context.h": "c",
         "thash.h": "c",
-        "utils.h": "c"
+        "utils.h": "c",
+        "stdio.h": "c",
+        "string.h": "c",
+        "address.h": "c"
     }
 }

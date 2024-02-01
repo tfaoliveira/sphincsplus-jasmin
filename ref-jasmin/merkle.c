@@ -9,6 +9,7 @@
 #include "utilsx1.h"
 #include "wots.h"
 #include "wotsx1.h"
+#include "wrappers.h"
 
 /*
  * This generates a Merkle signature (WOTS signature followed by the Merkle
@@ -23,7 +24,13 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
     unsigned steps[SPX_WOTS_LEN];
 
     info.wots_sig = sig;
+
+#ifdef TEST_WOTS_CHAIN_LENGTHS
+    chain_lengths_jazz(steps, root);
+#else
     chain_lengths(steps, root);
+#endif
+
     info.wots_steps = steps;
 
 #ifdef TEST_ADDRESS
@@ -40,7 +47,7 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
 
     info.wots_sign_leaf = idx_leaf;
 
-    treehashx1(root, auth_path, ctx, idx_leaf, 0, SPX_TREE_HEIGHT, wots_gen_leafx1, tree_addr, &info);
+    treehashx1_wots(root, auth_path, ctx, idx_leaf, 0, SPX_TREE_HEIGHT, tree_addr, &info);
 }
 
 /* Compute root node of the top-most subtree. */

@@ -9,6 +9,7 @@
 #include "params.h"
 #include "thash.h"
 #include "utils.h"
+#include "wotsx1.h"
 
 void treehashx1_fors(unsigned char *root, unsigned char *auth_path, const spx_ctx *ctx, uint32_t leaf_idx,
                      uint32_t idx_offset, uint32_t tree_height, uint32_t tree_addr[8], void *info) {
@@ -26,6 +27,101 @@ void treehashx1_fors(unsigned char *root, unsigned char *auth_path, const spx_ct
         fors_gen_leafx1_jazz(&current[SPX_N], ctx->pub_seed, ctx->sk_seed, idx + idx_offset, info);
 #else
         fors_gen_leafx1(&current[SPX_N], ctx, idx + idx_offset, info);
+#endif
+
+        /* Now combine the freshly generated right node with previously */
+        /* generated left ones */
+        uint32_t internal_idx_offset = idx_offset;
+        uint32_t internal_idx = idx;
+        uint32_t internal_leaf = leaf_idx;
+        uint32_t h; /* The height we are in the Merkle tree */
+        for (h = 0;; h++, internal_idx >>= 1, internal_leaf >>= 1) {
+            /* Check if we hit the top of the tree */
+            if (h == tree_height) {
+                /* We hit the root; return it */
+                memcpy(root, &current[SPX_N], SPX_N);
+                return;
+            }
+
+            /*
+             * Check if the node we have is a part of the
+             * authentication path; if it is, write it out
+             */
+            if ((internal_idx ^ internal_leaf) == 0x01) {
+                memcpy(&auth_path[h * SPX_N], &current[SPX_N], SPX_N);
+            }
+
+            /*
+             * Check if we're at a left child; if so, stop going up the stack
+             * Exception: if we've reached the end of the tree, keep on going
+             * (so we combine the last 4 nodes into the one root node in two
+             * more iterations)
+             */
+            if ((internal_idx & 1) == 0 && idx < max_idx) {
+                break;
+            }
+
+            /* Ok, we're at a right node */
+            /* Now combine the left and right logical nodes together */
+
+            /* Set the address of the node we're creating. */
+            internal_idx_offset >>= 1;
+
+#ifdef TEST_ADDRESS
+            set_tree_height_jazz(tree_addr, h + 1);
+            set_tree_index_jazz(tree_addr, internal_idx / 2 + internal_idx_offset);
+#else
+            set_tree_height(tree_addr, h + 1);
+            set_tree_index(tree_addr, internal_idx / 2 + internal_idx_offset);
+#endif
+
+            unsigned char *left = &stack[h * SPX_N];
+            memcpy(&current[0], left, SPX_N);
+            thash(&current[1 * SPX_N], &current[0 * SPX_N], 2, ctx, tree_addr);
+        }
+
+        /* We've hit a left child; save the current for when we get the */
+        /* corresponding right right */
+        memcpy(&stack[h * SPX_N], &current[SPX_N], SPX_N);
+    }
+}
+
+#ifdef TEST_WOTS_GEN_LEAF
+extern void wots_gen_leafx1_jazz(void *args);
+
+static void wots_gen_leafx1_jasmin(unsigned char *dest, const spx_ctx *ctx, uint32_t leaf_idx, void *info) {
+    void *arguments[9];
+
+    arguments[0] = (void *)dest;
+    arguments[1] = (void *)ctx->pub_seed;
+    arguments[2] = (void *)ctx->sk_seed;
+    arguments[3] = (void *)&leaf_idx;
+    arguments[4] = (void *)((struct leaf_info_x1 *)info)->wots_sig;
+    arguments[5] = (void *)&((struct leaf_info_x1 *)info)->wots_sign_leaf;
+    arguments[6] = (void *)((struct leaf_info_x1 *)info)->wots_steps;
+    arguments[7] = (void *)((struct leaf_info_x1 *)info)->leaf_addr;
+    arguments[8] = (void *)((struct leaf_info_x1 *)info)->pk_addr;
+
+    wots_gen_leafx1_jazz(arguments);
+}
+#endif
+
+void treehashx1_wots(unsigned char *root, unsigned char *auth_path, const spx_ctx *ctx, uint32_t leaf_idx,
+                     uint32_t idx_offset, uint32_t tree_height, uint32_t tree_addr[8], void *info) {
+    /* This is where we keep the intermediate nodes */
+    uint8_t stack[tree_height * SPX_N];
+
+    uint32_t idx;
+    uint32_t max_idx = (uint32_t)((1 << tree_height) - 1);
+    for (idx = 0;; idx++) {
+        unsigned char current[2 * SPX_N]; /* Current logical node is at */
+                                          /* index[SPX_N].  We do this to minimize the number of copies */
+                                          /* needed during a thash */
+
+#ifdef TEST_WOTS_GEN_LEAF
+        wots_gen_leafx1_jasmin(&current[SPX_N], ctx, idx + idx_offset, info);
+#else
+        wots_gen_leafx1(&current[SPX_N], ctx, idx + idx_offset, info);
 #endif
 
         /* Now combine the freshly generated right node with previously */

@@ -23,7 +23,7 @@ export fn shake256<OUTLEN,INLEN>(reg u64 _out _in)
   while (i < INLEN)
   {
     t = (u8)[_in + i];
-    in[(int) i] = t;
+    in[i] = t;
     i += 1;
   }
 
@@ -34,9 +34,8 @@ export fn shake256<OUTLEN,INLEN>(reg u64 _out _in)
   // write out
   i = 0;
   while (i < OUTLEN) {
-    t = out[(int) i];
+    t = out[i];
     (u8)[_out + i] = t;
     i += 1;
   }
 }//<>
-

@@ -10,7 +10,7 @@ CFLAGS   ?= -w # -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning ${JADDFLAGS} # -lazy-regalloc
+JFLAGS       ?= -nowarning -lazy-regalloc ${JADDFLAGS} 
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
@@ -58,11 +58,11 @@ $(TESTS):
 bin/test_wotsx1_%: bin/test_wotsx1_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
 	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
-	-DTEST_WOTSX1=1 -DDEBUG_PRINT=1 \
--I../common -I../../ -I../../params \
-test_wotsx1.c $< \
-../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
-../../utilsx1.c ../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c ../../fors.c  
+	-DTEST_WOTS_GEN_LEAF \
+	-I../common -I../../ -I../../params \
+	test_wotsx1.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \
+	../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \
+	../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c ../../fors.c  ../../wrappers.c
 
 bin/test_wotsx1_%.out: bin/test_wotsx1_%
 	@./$<

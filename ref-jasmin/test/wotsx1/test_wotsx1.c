@@ -30,7 +30,9 @@
 #endif
 
 int main(void) {
-#define MESSAGE_LENGTH 32
+    bool debug = true;
+
+#define MAX_MESSAGE_LENGTH 1024
 
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
     uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
@@ -38,28 +40,24 @@ int main(void) {
     uint8_t signature[CRYPTO_BYTES];
     size_t signature_length;
 
-    uint8_t message[MESSAGE_LENGTH];
-    size_t message_length = MESSAGE_LENGTH;
+    uint8_t message[MAX_MESSAGE_LENGTH];
 
-    for (int i = 0; i < 100; i++) {
-        // note: the 'real' test is in merkle.c file and it is activated when DTEST_WOTSX1 is
-        // defined
+    for (int i = 0; i < TESTS; i++) {
+        for (size_t message_length = 1; message_length < MAX_MESSAGE_LENGTH; message_length++) {
+            if (debug) {
+                printf("[%s]: Test %d/%d [Len=%ld]\n", xstr(PARAMS), i, TESTS, message_length);
+            }
 
-        // The test is in merkle.c because that is where the treehash (with wots_gen_leaf) function
-        // is called
-        randombytes(message, MESSAGE_LENGTH);
-
-        crypto_sign_keypair(public_key, secret_key);
-        crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-        crypto_sign_verify(signature, signature_length, message, message_length, public_key);
-        // TODO: FIXME: Assert == 0 here fails. But the asserts in merkle related to wotsx1 work
-        // ?????????????
-        //
-        // TODO: FIXME: Also, treehash_wots is used to implement merkle, but these assert in the
-        // merkle tests also works???
+            randombytes(message, message_length);
+            crypto_sign_keypair(public_key, secret_key);
+            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+            // assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) == 0);
+            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+        }
     }
 
 #undef MESSAGE_LENGTH
+
     printf("Pass treehash_wots : { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;
 }

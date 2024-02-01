@@ -121,6 +121,10 @@ void test_base_w(void) {
 
     // INLEN=(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8 & OUTLEN SPX_WOTS_LEN2
     for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("Base w [1]: test %d/%d\n", i, TESTS);
+        }
+
         uint32_t out_ref[SPX_WOTS_LEN2] = {0};
         uint32_t out_jazz[SPX_WOTS_LEN2] = {0};
         uint8_t in[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] = {0};
@@ -140,6 +144,10 @@ void test_base_w(void) {
 
     // INLEN=SPX_N & OUTLEN=SPX_WOTS_LEN1
     for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("Base w [2]: test %d/%d\n", i, TESTS);
+        }
+
         uint32_t out_ref[SPX_WOTS_LEN1] = {0};
         uint32_t out_jazz[SPX_WOTS_LEN1] = {0};
         uint8_t in[SPX_N] = {0};
@@ -156,35 +164,11 @@ void test_base_w(void) {
 
         assert(memcmp(out_ref, out_jazz, SPX_WOTS_LEN1 * sizeof(uint32_t)) == 0);
     }
-
-    // Test with proper data in wots.c when TEST_WOTS_BASE_W is defined
-#define MESSAGE_LENGTH 32
-
-    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
-    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
-
-    uint8_t signature[CRYPTO_BYTES];
-    size_t signature_length;
-
-    uint8_t message[MESSAGE_LENGTH];
-    size_t message_length;
-    for (int i = 0; i < TESTS; i++) {
-        if (debug) {
-            printf("Base W Test %d\n", i);
-        }
-
-        for (message_length = 10; message_length < MESSAGE_LENGTH; message_length++) {
-            randombytes(message, message_length);
-            crypto_sign_keypair(public_key, secret_key);
-            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
-        }
-    }
-
-#undef MESSAGE_LENGTH
 }
 
 void test_gen_chain(void) {
+    bool debug = true;
+
     uint8_t out_ref[SPX_N], out_jazz[SPX_N];
     uint8_t in[SPX_N];
     uint32_t start, steps;
@@ -192,6 +176,10 @@ void test_gen_chain(void) {
     uint32_t addr_ref[8], addr_jazz[8];
 
     for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("Gen Chain: test %d/%d\n", i, TESTS);
+        }
+
         memset(out_ref, 0, SPX_N * sizeof(uint8_t));
         memset(out_jazz, 0, SPX_N * sizeof(uint8_t));
 
@@ -220,6 +208,10 @@ void test_wots_checksum(void) {
     uint32_t msg_base_w[SPX_WOTS_LEN];
 
     for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("Wots Checksum: test %d/%d\n", i, TESTS);
+        }
+
         memset((uint8_t *)csum_base_w_ref, 0, SPX_WOTS_LEN2 * sizeof(uint32_t));
         memset((uint8_t *)csum_base_w_jazz, 0, SPX_WOTS_LEN2 * sizeof(uint32_t));
 
@@ -235,33 +227,6 @@ void test_wots_checksum(void) {
 
         assert(memcmp(csum_base_w_ref, csum_base_w_jazz, SPX_WOTS_LEN2 * sizeof(uint32_t)) == 0);
     }
-
-// Test with proper data (without randomm bytes)
-// The "real" test is in wots.c when TEST_WOTS_CHECKUM is defined
-#define MESSAGE_LENGTH 32
-
-    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
-    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
-
-    uint8_t signature[CRYPTO_BYTES];
-    size_t signature_length;
-
-    uint8_t message[MESSAGE_LENGTH];
-    size_t message_length;
-    for (int i = 0; i < TESTS; i++) {
-        if (debug) {
-            printf("Wots checksum: test %d\n", i);
-        }
-
-        for (message_length = 10; message_length < MESSAGE_LENGTH; message_length++) {
-            randombytes(message, message_length);
-            crypto_sign_keypair(public_key, secret_key);
-            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
-        }
-    }
-
-#undef MESSAGE_LENGTH
 }
 
 void test_chain_lengths(void) {
@@ -272,6 +237,10 @@ void test_chain_lengths(void) {
     uint8_t msg[SPX_N];
 
     for (int t = 0; t < TESTS; t++) {
+        if (debug) {
+            printf("Chain Lengths: test %d/%d\n", t, TESTS);
+        }
+
         memset(lengths_ref, 0, SPX_WOTS_LEN * sizeof(unsigned int));
         memset(lengths_jazz, 0, SPX_WOTS_LEN * sizeof(uint32_t));
         randombytes(msg, SPX_N);
@@ -281,33 +250,6 @@ void test_chain_lengths(void) {
 
         assert(memcmp(lengths_ref, lengths_jazz, SPX_WOTS_LEN * sizeof(uint32_t)) == 0);
     }
-
-// Test with proper data (without randomm bytes)
-// The "real" test is in wots.c when TEST_WOTS_CHAIN_LENGTHS is defined
-#define MESSAGE_LENGTH 32
-
-    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
-    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
-
-    uint8_t signature[CRYPTO_BYTES];
-    size_t signature_length;
-
-    uint8_t message[MESSAGE_LENGTH];
-    size_t message_length;
-    for (int i = 0; i < TESTS; i++) {
-        if (debug) {
-            printf("Chain lengths: test %d\n", i);
-        }
-
-        for (message_length = 10; message_length < MESSAGE_LENGTH; message_length++) {
-            randombytes(message, message_length);
-            crypto_sign_keypair(public_key, secret_key);
-            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
-        }
-    }
-
-#undef MESSAGE_LENGTH
 }
 
 void test_wots_pk_from_sig(void) {
@@ -320,6 +262,10 @@ void test_wots_pk_from_sig(void) {
     uint32_t addr_ref[8], addr_jazz[8];
 
     for (int t = 0; t < TESTS; t++) {
+        if (debug) {
+            printf("Wots Pk from Sig: test %d/%d\n", t, TESTS);
+        }
+
         memset(pk_ref, 0, SPX_WOTS_BYTES);
         memset(pk_jazz, 0, SPX_WOTS_BYTES);
 
@@ -345,10 +291,12 @@ void test_wots_pk_from_sig(void) {
         assert(memcmp(pk_ref, pk_jazz, SPX_WOTS_BYTES) == 0);
         assert(memcmp(addr_ref, addr_jazz, 8 * sizeof(uint32_t)) == 0);
     }
+}
 
-    // Test with proper data (without randomm bytes)
-    // The "real" test is in sign.c when TEST_WOTS_PK_FROM_SIG is defined
-#define MESSAGE_LENGTH 32
+void test_api(void) {
+    bool debug = true;
+
+#define MAX_MESSAGE_LENGTH 1024
 
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
     uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
@@ -356,18 +304,18 @@ void test_wots_pk_from_sig(void) {
     uint8_t signature[CRYPTO_BYTES];
     size_t signature_length;
 
-    uint8_t message[MESSAGE_LENGTH];
-    size_t message_length;
-    for (int i = 0; i < TESTS; i++) {
-        if (debug) {
-            printf("Chain lengths: test %d\n", i);
-        }
+    uint8_t message[MAX_MESSAGE_LENGTH];
 
-        for (message_length = 10; message_length < MESSAGE_LENGTH; message_length++) {
+    for (int i = 0; i < TESTS; i++) {
+        for (size_t message_length = 1; message_length < MAX_MESSAGE_LENGTH; message_length++) {
+            if (debug) {
+                printf("[%s]: Test %d/%d [Len=%ld]\n", xstr(PARAMS), i, TESTS, message_length);
+            }
+
             randombytes(message, message_length);
             crypto_sign_keypair(public_key, secret_key);
             crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+            assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) == 0);
         }
     }
 
@@ -375,11 +323,12 @@ void test_wots_pk_from_sig(void) {
 }
 
 int main(void) {
-    test_gen_chain();      // works
-    test_base_w();         // works
-    test_wots_checksum();  // works
-    test_chain_lengths();  // works
-    test_wots_pk_from_sig();  // Works
+    test_gen_chain();
+    test_base_w();
+    test_wots_checksum();
+    test_chain_lengths();
+    test_wots_pk_from_sig();
+    test_api();
     printf("PASS: wots { params : %s }\n", xstr(PARAMS));
     return 0;
 }

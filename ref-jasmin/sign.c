@@ -256,10 +256,15 @@ int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m, size
         copy_keypair_addr(wots_pk_addr, wots_addr);
 #endif
 
-        /* The WOTS public key is only correct if the signature was correct. */
-        /* Initially, root is the FORS pk, but on subsequent iterations it is
-           the root of the subtree below the currently processed subtree. */
+/* The WOTS public key is only correct if the signature was correct. */
+/* Initially, root is the FORS pk, but on subsequent iterations it is
+   the root of the subtree below the currently processed subtree. */
+#ifdef TEST_WOTS_PK_FROM_SIG
+        wots_pk_from_sig_jazz(wots_pk, sig, root, &ctx, wots_addr);
+#else
         wots_pk_from_sig(wots_pk, sig, root, &ctx, wots_addr);
+#endif
+
         sig += SPX_WOTS_BYTES;
 
         /* Compute the leaf node using the WOTS public key. */

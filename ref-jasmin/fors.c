@@ -154,9 +154,9 @@ void fors_sign(unsigned char *sig, unsigned char *pk, const unsigned char *m, co
 
 /* Compute the authentication path for this leaf node. */
 #ifdef TEST_FORS_TREEHASH
-        uint32_t *fors_tree_leaf_addr_jazz[2];               
-        fors_tree_leaf_addr_jazz[0] = fors_tree_addr;        
-        fors_tree_leaf_addr_jazz[1] = fors_info.leaf_addrx;  
+        uint32_t *fors_tree_leaf_addr_jazz[2];
+        fors_tree_leaf_addr_jazz[0] = fors_tree_addr;
+        fors_tree_leaf_addr_jazz[1] = fors_info.leaf_addrx;
 
         treehash_fors_jazz(roots + i * SPX_N, sig, ctx, indices[i], idx_offset, fors_tree_leaf_addr_jazz);
 #else

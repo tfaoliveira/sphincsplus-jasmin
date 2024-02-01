@@ -17,7 +17,7 @@ export fn x_memcpy_u8u32<OUTLEN,INLEN>(reg u64 _out offset _in)
   i = 0;
   while(i < INLEN)
   { t32 = (u32)[_in + i*4];
-    in[(int)i] = t32;
+    in[i] = t32;
     i += 1;
   }
 
@@ -28,7 +28,7 @@ export fn x_memcpy_u8u32<OUTLEN,INLEN>(reg u64 _out offset _in)
 
   i = 0;
   while(i < OUTLEN)
-  { t8 = out[(int)i];
+  { t8 = out[i];
     (u8)[_out + i] = t8;
     i += 1;
   }
@@ -49,7 +49,7 @@ export fn x_memcpy_u8u8<OUTLEN,INLEN>(reg u64 _out offset _in)
   i = 0;
   while(i < INLEN)
   { t = (u8)[_in + i];
-    in[(int)i] = t;
+    in[i] = t;
     i += 1;
   }
 
@@ -60,7 +60,7 @@ export fn x_memcpy_u8u8<OUTLEN,INLEN>(reg u64 _out offset _in)
 
   i = 0;
   while(i < OUTLEN)
-  { t = out[(int)i];
+  { t = out[i];
     (u8)[_out + i] = t;
     i += 1;
   }
@@ -82,7 +82,7 @@ export fn x_memcpy_u8u8p<OUTLEN>(reg u64 _out offset _in inlen)
 
   i = 0;
   while(i < OUTLEN)
-  { t = out[(int)i];
+  { t = out[i];
     (u8)[_out + i] = t;
     i += 1;
   }
@@ -98,12 +98,10 @@ export fn x_memcpy_u8pu8<INLEN>(reg u64 _out offset _in)
   i = 0;
   while(i < INLEN)
   { t = (u8)[_in + i];
-    in[(int)i] = t;
+    in[i] = t;
     i += 1;
   }
 
   _, _ = _x_memcpy_u8pu8<INLEN>(_out, offset, in);
 
 }//<>
-
-

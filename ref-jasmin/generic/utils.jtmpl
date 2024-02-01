@@ -167,7 +167,7 @@ inline fn __load_u8_array<INLEN>(
   i = 0;
   while(i < INLEN) { 
     t = (u8)[addr + i];
-    in[(int) i] = t;
+    in[i] = t;
     i += 1;
   }
 
@@ -237,7 +237,7 @@ inline fn __store_u32_array<INLEN>(
 
   i = 0;
   while (i < INLEN) { 
-    t = in[(int) i];
+    t = in[i];
     (u32)[addr + 4*i] = t;
     i += 1;
   }
