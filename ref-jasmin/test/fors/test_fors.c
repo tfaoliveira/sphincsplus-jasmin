@@ -18,7 +18,7 @@
 #include "thash.h"
 
 #ifndef PARAMS
-#define PARAMS sphincs - shake - 128f
+#define PARAMS sphincs-shake-128f
 #endif
 
 #ifndef THASH
@@ -26,7 +26,7 @@
 #endif
 
 #ifndef TESTS
-#define TESTS 100
+#define TESTS 1000
 #endif
 
 extern void fors_gen_sk_jazz(uint8_t *sk, const uint8_t *pub_seed, const uint8_t *sk_seed, uint32_t fors_leaf_addr[8]);
@@ -214,6 +214,7 @@ void test_api(void) {
     bool debug = true;
 
 #define MAX_MESSAGE_LENGTH 1024
+#define TESTS 100
 
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
     uint8_t public_key[CRYPTO_PUBLICKEYBYTES];

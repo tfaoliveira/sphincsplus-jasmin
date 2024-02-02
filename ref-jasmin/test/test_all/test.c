@@ -10,7 +10,7 @@
 
 #ifndef TESTS
 #define TESTS 100
-#
+#endif
 
 
 int main(void) {
@@ -34,5 +34,6 @@ int main(void) {
     }
 
     printf("Pass: %s\n", xstr(PARAMS));
+
     return 0;
 }

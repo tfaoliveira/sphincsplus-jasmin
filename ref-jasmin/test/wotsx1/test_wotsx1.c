@@ -32,6 +32,12 @@
 int main(void) {
     bool debug = true;
 
+    if (debug && false) {
+        printf("SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES = %d\n", SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
+        printf("SPX_BYTES - SPX_N - SPX_FORS_BYTES = %d\n", SPX_BYTES - SPX_N - SPX_FORS_BYTES);
+        return;
+    }
+
 #define MAX_MESSAGE_LENGTH 1024
 
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
@@ -51,8 +57,8 @@ int main(void) {
             randombytes(message, message_length);
             crypto_sign_keypair(public_key, secret_key);
             crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-            // assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) == 0);
-            crypto_sign_verify(signature, signature_length, message, message_length, public_key);
+            assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) == 0);
+            // crypto_sign_verify(signature, signature_length, message, message_length, public_key);
         }
     }
 
