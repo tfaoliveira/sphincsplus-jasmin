@@ -58,7 +58,6 @@ int main(void) {
             crypto_sign_keypair(public_key, secret_key);
             crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
             assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) == 0);
-            // crypto_sign_verify(signature, signature_length, message, message_length, public_key);
         }
     }
 

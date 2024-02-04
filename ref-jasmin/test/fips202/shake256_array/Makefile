@@ -30,12 +30,16 @@ GET_OUTLEN  = $(word 1, $(subst _, ,$*))
 GET_INLEN   = $(word 2, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
+
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
+ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 default: $(TESTS)
 run: $(OUT)
+
 jpp_files: $(JPP_FILES)
+asm_files: $(ASM_FILES)
 
 $(JPP_FILES):
 .PRECIOUS: bin/test_fips202_%.jpp
@@ -50,8 +54,8 @@ bin/test_fips202_%.s: bin/test_fips202_%.jpp
 
 $(TESTS):
 bin/test_fips202_%: bin/test_fips202_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DOUTLEN=$(GET_OUTLEN) -DINLEN=$(GET_INLEN) -I../../common -I../../../ \
-test_fips202.c $< ../../../fips202.c
+	$(CC) $(CFLAGS) -o $@ -DOUTLEN=$(GET_OUTLEN) -DINLEN=$(GET_INLEN) \
+	-I../../common -I../../../ test_fips202.c $< ../../../fips202.c
 
 bin/test_fips202_%.out: bin/test_fips202_%
 	@./$<

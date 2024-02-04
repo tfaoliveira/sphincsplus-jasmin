@@ -21,13 +21,12 @@ THASH_LIST    := simple robust
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST),$(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
-SOURCES    := $(filter-out ../../thash_%.c ../../utils.c, $(wildcard ../../*.c))
 
-TESTS      := $(addprefix bin/test_utils_, $(TLIST))
-OUT        := $(addsuffix .out, $(TESTS))
+TESTS := $(addprefix bin/test_utils_, $(TLIST))
+OUT   := $(addsuffix .out, $(TESTS))
 
-GET_HASH     = $(word 1, $(subst _, ,$*))
-GET_PARAM    = $(word 2, $(subst _, ,$*))
+GET_HASH  = $(word 1, $(subst _, ,$*))
+GET_PARAM = $(word 2, $(subst _, ,$*))
 
 GET_PARAMS   = sphincs-$(GET_HASH)-$(GET_PARAM)
 GET_THASH    = $(word 3, $(subst _, ,$*))
@@ -39,8 +38,15 @@ JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
+
+SOURCES := $(filter-out ../../thash_%.c ../../utils.c, $(wildcard ../../*.c))
+
+TEST_FLAGS = -DTEST_COMPUTE_ROOT
+
+# ------------------------------------------------------------------------------
 default: $(TESTS)
 run: $(OUT)
+
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
 
@@ -59,7 +65,7 @@ bin/test_utils_%.s: bin/test_utils_%.jpp
 
 $(TESTS):
 bin/test_utils_%: bin/test_utils_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) -DTEST_COMPUTE_ROOT \
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) $(TEST_FLAGS) \
 	-I../common -I../../ -I../../params \
 	test_utils.c $< ../../thash_$(GET_HASH)_$(GET_THASH).c $(SOURCES)
 

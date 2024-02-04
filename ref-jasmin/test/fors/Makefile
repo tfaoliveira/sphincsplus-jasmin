@@ -47,7 +47,7 @@ bin/test_fors_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --workers 8 --input_file $@ --output_file $@
+	$(PREPROCESSOR) --input_file $@ --output_file $@
 
 .PRECIOUS: bin/test_fors_%.s
 bin/test_fors_%.s: bin/test_fors_%.jpp

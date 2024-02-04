@@ -28,14 +28,13 @@ THASH_LIST    := simple robust
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
-SOURCES := $(filter-out ../../thash_%.c, $(wildcard ../../*.c))
 
-TESTS      := $(addprefix bin/test_address_, $(TLIST))
-OUT        := $(addsuffix .out, $(TESTS))
+TESTS := $(addprefix bin/test_address_, $(TLIST))
+OUT   := $(addsuffix .out, $(TESTS))
 
-GET_HASH     = $(word 1, $(subst _, ,$*))
-GET_PARAM    = $(word 2, $(subst _, ,$*))
-GET_THASH    = $(word 3, $(subst _, ,$*))
+GET_HASH  = $(word 1, $(subst _, ,$*))
+GET_PARAM = $(word 2, $(subst _, ,$*))
+GET_THASH = $(word 3, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
 
@@ -44,8 +43,15 @@ ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 
+SOURCES := $(filter-out ../../thash_%.c, $(wildcard ../../*.c))
+
+TEST_FLAGS = -DTEST_ADDRESS
+
+# ------------------------------------------------------------------------------
+
 default: $(TESTS)
 run: $(OUT)
+
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
 
@@ -62,9 +68,9 @@ bin/test_address_%.s: bin/test_address_%.jpp
 
 $(TESTS):
 bin/test_address_%: bin/test_address_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTEST_ADDRESS \
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) $(TEST_FLAGS) \
 	-I../common -I../../ -I../../params \
-	test_address.c $< ../../thash_$(GET_HASH)_$(GET_THASH).c $(SOURCES)
+	test_address.c $< $(SOURCES) ../../thash_$(GET_HASH)_$(GET_THASH).c
 
 bin/test_address_%.out: bin/test_address_%
 	@./$<

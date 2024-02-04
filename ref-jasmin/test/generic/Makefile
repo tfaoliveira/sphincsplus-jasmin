@@ -14,28 +14,31 @@ PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
-HASH_LIST     := shake
-PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
+HASH_LIST    := shake
+PARAMS_LIST  := 128f 128s 192f 192s 256f 256s
 IN_LEN_LIST  := $(shell seq 1 100)
 
 TLIST := $(foreach H,$(HASH_LIST),$(foreach P,$(PARAMS_LIST),$(foreach L,$(IN_LEN_LIST),$(H)_$(P)_$(L))))
 
 # ------------------------------------------------------------------------------
-TESTS      := $(addprefix bin/test_generic_, $(TLIST))
-OUT        := $(addsuffix .out, $(TESTS))
+TESTS := $(addprefix bin/test_generic_, $(TLIST))
+OUT   := $(addsuffix .out, $(TESTS))
 
-GET_HASH       = $(word 1, $(subst _, ,$*))
-GET_PARAM      = $(word 2, $(subst _, ,$*))
-GET_INLEN      = $(word 3, $(subst _, ,$*))
+GET_HASH  = $(word 1, $(subst _, ,$*))
+GET_PARAM = $(word 2, $(subst _, ,$*))
+GET_INLEN = $(word 3, $(subst _, ,$*))
 # ------------------------------------------------------------------------------
 
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
+ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 
 default: $(TESTS)
 run: $(OUT)
+
 jpp_files: $(JPP_FILES)
+asm_files: $(ASM_FILES)
 
 $(JPP_FILES):
 .PRECIOUS: bin/test_generic_%.jpp
@@ -53,8 +56,8 @@ bin/test_generic_%.s: bin/test_generic_%.jpp
 $(TESTS):
 bin/test_generic_%: bin/test_generic_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DINLEN=$(GET_INLEN) -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
--I../common -I../../ -I../../params \
-test_generic.c ../common/print.c $<
+	-I../common -I../../ -I../../params \
+	test_generic.c ../common/print.c $<
 
 bin/test_generic_%.out: bin/test_generic_%
 	@./$<

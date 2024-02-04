@@ -20,32 +20,24 @@ export fn merkle_sign_jazz(reg u64 _sig _root _ctx _wots_addr _tree_addr, reg u3
   stack u8[SPX_N] pub_seed sk_seed;
   stack u32[8] wots_addr tree_addr;
 
-
-  stack u64 s_sig s_root s_tree_addr;
-
   sig = __load_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(sig, _sig);
   root = __load_u8_array<SPX_N>(root, _root);
   pub_seed, sk_seed = __load_ctx(pub_seed, sk_seed, _ctx);
   wots_addr = __load_u32_array<8>(wots_addr, _wots_addr);
   tree_addr = __load_u32_array<8>(tree_addr, _tree_addr);
 
-  // spill
-  s_sig = _sig;
-  s_root = _root;
-  s_tree_addr = _tree_addr;
+  () = #spill(sig, root, tree_addr);
 
   sig, root, tree_addr = _merkle_sign(sig, root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
 
-  // unspill
-  _sig = s_sig;
-  _root = s_root;
-  _tree_addr = s_tree_addr;
+  () = #unspill(sig, root, tree_addr);
 
   __store_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(sig, _sig);
   __store_u8_array<SPX_N>(root, _root);
   __store_u32_array<8>(tree_addr, _tree_addr);
 }
 
+/*
 export fn merkle_gen_root_jazz(
   reg u64 _root _pub_seed _sk_seed
   )
@@ -77,3 +69,4 @@ export fn merkle_gen_root_jazz(
   _root = s_root; // unspill
   __store_u8_array<SPX_N>(root_p, _root);
 }
+*/

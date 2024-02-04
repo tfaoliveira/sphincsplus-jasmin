@@ -224,7 +224,7 @@ inline fn __treehash_wots(
   reg ptr u8[SPX_N] current_0 current_1;
 
   reg u32 idx r_max_idx;
-  stack u32 s_idx s_internal_idx_offset s_internal_idx s_internal_leaf s_h;
+  stack u32 s_idx s_internal_idx s_internal_leaf s_h;
   stack u64 s_h_spx_n;
 
   inline u32 max_idx; // (1 << SPX_TREE_HEIGHT) - 1;
@@ -250,18 +250,17 @@ inline fn __treehash_wots(
   while(s_exit_outer_loop == 0) {
     // gen_leaf( &current[SPX_N], ctx, idx + idx_offset, info);
     current_1 = current[SPX_N:SPX_N];
-    temp = s_idx; temp += s_idx_offset; // temp =  idx + idx_offset
+    temp = s_idx; // temp =  idx + idx_offset
     () = #unspill(pub_seed, sk_seed, wots_sig, wots_sign_leaf, wots_steps, leaf_addr, pk_addr);
-    // current[SPX_N:SPX_N], wots_sig, leaf_addr, pk_addr = _wots_gen_leafx1(current_1, pub_seed, sk_seed, 
-    //                                                            temp, wots_sig, wots_sign_leaf, 
-    //                                                            wots_steps, leaf_addr, pk_addr);
+    current[SPX_N:SPX_N], leaf_addr, pk_addr = _wots_gen_leafx1(current_1, pub_seed, sk_seed, 
+                                                               temp, wots_sig, wots_sign_leaf, 
+                                                               wots_steps, leaf_addr, pk_addr);
     () = #spill(wots_sig, leaf_addr, pk_addr);
 
     // uint32_t internal_idx_offset = idx_offset;
     // uint32_t internal_idx = idx;
     // uint32_t internal_leaf = leaf_idx;
 
-    temp = s_idx_offset; s_internal_idx_offset = temp;
     temp = s_idx; s_internal_idx = temp;
     temp = s_leaf_idx; s_internal_leaf = temp;
 
@@ -286,8 +285,7 @@ inline fn __treehash_wots(
         // { memcpy( &auth_path[ h * SPX_N ], &current[SPX_N], SPX_N ); }
         temp = s_internal_idx;
         temp ^= s_internal_leaf;
-        if( temp == 1 )
-        {
+        if(temp == 1) {
           () = #unspill(auth_path);
           out_offset = s_h_spx_n;
           current_1 = current[SPX_N : SPX_N];
@@ -302,21 +300,18 @@ inline fn __treehash_wots(
         r_max_idx = max_idx; // add inline int to conditions library to avoid this
         cond = __cond_u32_a_eq_b_and_c_below_d(temp, zero, idx, r_max_idx);
 
-        if(cond)
-        {
+        if(cond) {
           s_exit_inner_loop = 1;
         } else {
           // internal_idx_offset >>= 1;
           // set_tree_height(tree_addr, h + 1);
           // set_tree_index(tree_addr, internal_idx/2 + internal_idx_offset );
 
-          s_internal_idx_offset >>= 1;
-
           () = #unspill(tree_addr);
           temp = s_h; temp += 1;
           tree_addr = __set_tree_height(tree_addr, temp);
 
-          temp = s_internal_idx; temp >>= 1; temp += s_internal_idx_offset;
+          temp = s_internal_idx; temp >>= 1;
           tree_addr = __set_tree_index(tree_addr, temp);
           () = #spill(tree_addr);      
 
@@ -349,7 +344,7 @@ inline fn __treehash_wots(
       // Jasmin: while(s_exit_inner_loop == 0)
 
     // memcpy( &stack[h * SPX_N], &current[SPX_N], SPX_N);
-    if( s_exit_outer_loop == 0 ) {
+    if(s_exit_outer_loop == 0) {
       // no need to memcpy if s_exit_outer_loop == 1
       nodes_p = nodes;
       out_offset = s_h_spx_n;

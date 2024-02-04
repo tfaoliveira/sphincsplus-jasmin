@@ -15,15 +15,15 @@ PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
-HASH_LIST     := shake
-PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple robust
+HASH_LIST   := shake
+PARAMS_LIST := 128f 128s 192f 192s 256f 256s
+THASH_LIST  := simple robust
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
-TESTS      := $(addprefix bin/test_wots_, $(TLIST))
-OUT        := $(addsuffix .out, $(TESTS))
+TESTS := $(addprefix bin/test_wots_, $(TLIST))
+OUT   := $(addsuffix .out, $(TESTS))
 
 GET_HASH       = $(word 1, $(subst _, ,$*))
 GET_PARAM      = $(word 2, $(subst _, ,$*))
@@ -35,8 +35,17 @@ JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
+
+SOURCES := ../../wots.c ../../fips202.c ../../utils.c ../../address.c  ../../utilsx1.c ../../fors.c \
+           ../../merkle.c ../../sign.c ../../wotsx1.c ../../wrappers.c
+
+TEST_FLAGS = -DTEST_WOTS_BASE_W -DTEST_WOTS_GEN_CHAIN -DTEST_WOTS_CHECKSUM -DTEST_WOTS_CHAIN_LENGTHS -DTEST_WOTS_PK_FROM_SIG 
+
+# ------------------------------------------------------------------------------
+
 default: $(TESTS)
 run: $(OUT)
+
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
 
@@ -55,12 +64,9 @@ bin/test_wots_%.s: bin/test_wots_%.jpp
 
 $(TESTS):
 bin/test_wots_%: bin/test_wots_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
-	-DTEST_WOTS_BASE_W -DTEST_WOTS_GEN_CHAIN -DTEST_WOTS_CHECKSUM -DTEST_WOTS_CHAIN_LENGTHS -DTEST_WOTS_PK_FROM_SIG \
--I../common -I../../ -I../../params \
-test_wots.c $< ../../hash_$(GET_HASH).c ../../wots.c ../../fips202.c \
-../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
-../../utilsx1.c ../../fors.c ../../merkle.c ../../sign.c ../../wotsx1.c ../../wrappers.c
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) $(TEST_FLAGS) \
+	-I../common -I../../ -I../../params test_wots.c $< \
+	../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c $(SOURCES)
 
 bin/test_wots_%.out: bin/test_wots_%
 	@./$<
@@ -72,6 +78,3 @@ bin/:
 .PHONY: clean
 clean:
 	rm -fr bin/
-
-debug:
-	echo $(TESTS)

@@ -14,21 +14,20 @@ PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
-HASH_LIST     := shake
-PARAMS_LIST   := 128f # 128s 192f 192s 256f 256s
-THASH_LIST    := simple robust
+HASH_LIST   := shake
+PARAMS_LIST := 128f # 128s 192f 192s 256f 256s
+THASH_LIST  := simple robust
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
-SOURCES    := $(filter-out ../../hash_%.c ../../thash_%.c, $(wildcard ../../*.c))
 
-TESTS      := $(addprefix bin/test_hash_, $(TLIST))
-OUT        := $(addsuffix .out, $(TESTS))
+TESTS := $(addprefix bin/test_hash_, $(TLIST))
+OUT   := $(addsuffix .out, $(TESTS))
 
-GET_HASH       = $(word 1, $(subst _, ,$*))
-GET_PARAM      = $(word 2, $(subst _, ,$*))
-GET_THASH      = $(word 3, $(subst _, ,$*))
+GET_HASH  = $(word 1, $(subst _, ,$*))
+GET_PARAM = $(word 2, $(subst _, ,$*))
+GET_THASH = $(word 3, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
 
@@ -36,8 +35,15 @@ JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
+
+SOURCES := $(filter-out ../../hash_%.c ../../thash_%.c, $(wildcard ../../*.c))
+
+TEST_FLAGS = -DTEST_HASH_PRF_ADDR -DTEST_HASH_GEN_MESSAGE_RANDOM -DTEST_HASH_MESSAGE
+
+# ------------------------------------------------------------------------------
 default: $(TESTS)
 run: $(OUT)
+
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
 
@@ -56,8 +62,7 @@ bin/test_hash_%.s: bin/test_hash_%.jpp
 $(TESTS):
 bin/test_hash_%: bin/test_hash_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
-	-DTEST_HASH_PRF_ADDR -DTEST_HASH_GEN_MESSAGE_RANDOM -DTEST_HASH_MESSAGE \
-	-I../common -I../../ -I../../params \
+	$(TEST_FLAGS) -I../common -I../../ -I../../params \
 	test_hash.c $< ../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c \
 	$(SOURCES)
 
@@ -71,6 +76,3 @@ bin/:
 .PHONY: clean
 clean:
 	rm -fr bin/
-
-debug:
-	echo $(SOURCES)

@@ -27,14 +27,17 @@ GET_OUTLEN  = $(word 1, $(subst _, ,$*))
 GET_INLEN   = $(word 2, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
+
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
+ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 
 default: $(TESTS)
 run: $(OUT)
-jpp_files: $(JPP_FILES)
 
+jpp_files: $(JPP_FILES)
+asm_files: $(ASM_FILES)
 
 $(JPP_FILES):
 .PRECIOUS: bin/test_shake256_inc_%.jpp

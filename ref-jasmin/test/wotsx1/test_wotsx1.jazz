@@ -150,7 +150,6 @@ export fn treehash_wots_jazz(reg u64 args)
   tree_addr = __load_u32_array<8>(tree_addr, tree_addr_ptr);
 
   wots_sig_ptr = (u64) [args + 8*6];
-  // wots_sig = __load_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(wots_sig, wots_sig_ptr);
 
   wots_sign_leaf_ptr = (u64) [args + 8*7];
   wots_sign_leaf = (u32) [wots_sign_leaf_ptr];

@@ -22,7 +22,6 @@ INBLOCKS_LIST := $(shell seq 1 4) 64 100
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach N,$(INBLOCKS_LIST),$(H)_$(P)_$(T)_$(N)))))
 
 # ------------------------------------------------------------------------------
-SOURCES := $(filter-out ../../thash_%.c, $(wildcard ../../*.c))
 
 TESTS      := $(addprefix bin/test_thash_, $(TLIST))
 OUT        := $(addsuffix .out, $(TESTS))
@@ -38,6 +37,12 @@ GET_INBLOCKS = $(word 4, $(subst _, ,$*))
 
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
+
+# ------------------------------------------------------------------------------
+
+SOURCES := $(filter-out ../../thash_%.c, $(wildcard ../../*.c))
+
+TEST_FLAGS = -DTEST_THASH -DTEST_THASH_INPLACE
 
 # ------------------------------------------------------------------------------
 default: $(TESTS)
@@ -61,8 +66,7 @@ bin/test_thash_%.s: bin/test_thash_%.jpp
 
 $(TESTS):
 bin/test_thash_%: bin/test_thash_%.s | bin/
-	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) -DINBLOCKS=$(GET_INBLOCKS) \
-	-DTEST_THASH -DTEST_THASH_INPLACE \
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) -DINBLOCKS=$(GET_INBLOCKS) $(TEST_FLAGS) \
 	-I../common -I../../ -I../../params \
 	test_thash.c $< ../../thash_$(GET_HASH)_$(GET_THASH).c $(SOURCES)
 
