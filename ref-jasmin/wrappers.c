@@ -135,10 +135,59 @@ void treehashx1_wots(unsigned char *root, unsigned char *auth_path, const spx_ct
                                           /* index[SPX_N].  We do this to minimize the number of copies */
                                           /* needed during a thash */
 
+#ifdef DEBUG_WOTSX1
+        puts("Debug wots gen leaf");
+
+        uint8_t sig_jazz[SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N];
+        unsigned char current_jazz[2 * SPX_N];
+        uint32_t steps[SPX_WOTS_LEN];
+
+        struct leaf_info_x1 info_jazz;
+
+        memcpy(current_jazz, current, 2 * SPX_N);
+
+        memcpy(steps, ((struct leaf_info_x1 *)info)->wots_steps, SPX_WOTS_LEN * sizeof(uint32_t));
+        memcpy(sig_jazz, ((struct leaf_info_x1 *)info)->wots_sig, SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N);
+
+        info_jazz.wots_sig = sig_jazz;
+        info_jazz.wots_sign_leaf = ((struct leaf_info_x1 *)info)->wots_sign_leaf;
+        info_jazz.wots_steps = steps;
+        memcpy(info_jazz.leaf_addr, ((struct leaf_info_x1 *)info)->leaf_addr, 8 * sizeof(uint32_t));
+        memcpy(info_jazz.pk_addr, ((struct leaf_info_x1 *)info)->pk_addr, 8 * sizeof(uint32_t));
+
+        assert(memcmp(current_jazz, current, 2 * SPX_N) == 0);
+        assert(memcmp(info_jazz.wots_sig, ((struct leaf_info_x1 *)info)->wots_sig,
+                      SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N) == 0);
+        assert(info_jazz.wots_sign_leaf == ((struct leaf_info_x1 *)info)->wots_sign_leaf);
+        assert(memcmp(&info_jazz.wots_sign_leaf, &((struct leaf_info_x1 *)info)->wots_sign_leaf, sizeof(uint32_t)) ==
+               0);
+        assert(memcmp(info_jazz.wots_steps, ((struct leaf_info_x1 *)info)->wots_steps,
+                      SPX_WOTS_LEN * sizeof(uint32_t)) == 0);
+        assert(memcmp(info_jazz.leaf_addr, ((struct leaf_info_x1 *)info)->leaf_addr, 8 * sizeof(uint32_t)) == 0);
+        assert(memcmp(info_jazz.pk_addr, ((struct leaf_info_x1 *)info)->pk_addr, 8 * sizeof(uint32_t)) == 0);
+
+        wots_gen_leafx1_jasmin(&current_jazz[SPX_N], ctx, idx, &info_jazz);
+
+        wots_gen_leafx1(&current[SPX_N], ctx, idx, info);
+
+        assert(memcmp(current_jazz, current, 2 * SPX_N) == 0);
+        assert(memcmp(info_jazz.wots_sig, ((struct leaf_info_x1 *)info)->wots_sig,
+                      SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N) == 0);
+        assert(info_jazz.wots_sign_leaf == ((struct leaf_info_x1 *)info)->wots_sign_leaf);
+        assert(memcmp(&info_jazz.wots_sign_leaf, &((struct leaf_info_x1 *)info)->wots_sign_leaf, sizeof(uint32_t)) ==
+               0);
+        assert(memcmp(info_jazz.wots_steps, ((struct leaf_info_x1 *)info)->wots_steps,
+                      SPX_WOTS_LEN * sizeof(uint32_t)) == 0);
+        assert(memcmp(info_jazz.leaf_addr, ((struct leaf_info_x1 *)info)->leaf_addr, 8 * sizeof(uint32_t)) == 0);
+        assert(memcmp(info_jazz.pk_addr, ((struct leaf_info_x1 *)info)->pk_addr, 8 * sizeof(uint32_t)) == 0);
+#else
+
 #ifdef TEST_WOTS_GEN_LEAF
         wots_gen_leafx1_jasmin(&current[SPX_N], ctx, idx, info);
 #else
         wots_gen_leafx1(&current[SPX_N], ctx, idx, info);
+#endif
+
 #endif
 
         /* Now combine the freshly generated right node with previously */

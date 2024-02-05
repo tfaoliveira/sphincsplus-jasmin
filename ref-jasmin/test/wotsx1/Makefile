@@ -41,7 +41,9 @@ ASM_FILES := $(JPP_FILES:.jpp=.s)
 SOURCES = ../../address.c ../../fips202.c ../../utils.c ../../utilsx1.c ../../merkle.c \
           ../../wots.c ../../wotsx1.c ../../sign.c ../../fors.c  ../../wrappers.c
 
-TEST_FLAGS = -DTEST_WOTS_GEN_LEAF -DTEST_TREEHASH_WOTS -DDEBUG
+# -DDEBUG_WOTSX1 -DTEST_WOTS_GEN_LEAF to debug just wots gen leaf
+# -DDEBUG -DTEST_TREEHASH_WOTS to debug just treehash
+TEST_FLAGS = -DTEST_WOTS_GEN_LEAF -DTEST_TREEHASH_WOTS
 
 # ------------------------------------------------------------------------------
 default: $(TESTS)

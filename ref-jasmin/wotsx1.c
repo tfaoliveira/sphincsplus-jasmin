@@ -29,18 +29,6 @@ void wots_gen_leafx1(unsigned char *dest, const spx_ctx *ctx, uint32_t leaf_idx,
     unsigned char *buffer;
     uint32_t wots_k_mask;
 
-#ifdef DEBUG_WOTS_GEN_LEAF
-
-    // print_str_u8("pub seed ref", ctx->pub_seed, SPX_N);
-    // print_str_u8("sk seed ref", ctx->sk_seed, SPX_N);
-    // print_str_u8("leaf idx ref", (uint8_t *)&leaf_idx, sizeof(uint32_t));
-    // print_str_u8("wots_sig ref", info->wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
-    // print_str_u8("wots_sign_leaf ref", (uint8_t *)&info->wots_sign_leaf, sizeof(uint32_t));
-    // print_str_u8("wots_steps ref", (uint8_t *)info->wots_steps, SPX_WOTS_LEN * sizeof(uint32_t));
-    // print_str_u8("leaf_addr ref", info->leaf_addr, 8 * sizeof(uint32_t));
-    // print_str_u8("pk_addr ref", (uint8_t *)info->pk_addr, 8 * sizeof(uint32_t));
-#endif
-
     if (leaf_idx == info->wots_sign_leaf) {
         /* We're traversing the leaf that's signing; generate the WOTS */
         /* signature */
@@ -112,5 +100,5 @@ void wots_gen_leafx1(unsigned char *dest, const spx_ctx *ctx, uint32_t leaf_idx,
     }
 
     /* Do the final thash to generate the public keys */
-    thash(dest, pk_buffer, SPX_WOTS_LEN, ctx, pk_addr);  // TODO:
+    thash(dest, pk_buffer, SPX_WOTS_LEN, ctx, pk_addr);
 }

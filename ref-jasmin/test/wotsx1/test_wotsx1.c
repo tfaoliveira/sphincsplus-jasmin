@@ -29,10 +29,13 @@
 #define TESTS 100
 #endif
 
-int main(void) {
+void test_wotsx1(void);
+
+void test_wotsx1(void) {
     bool debug = true;
 
 #define MAX_MESSAGE_LENGTH 1024
+#define TESTS 100
 
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
     uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
@@ -56,7 +59,10 @@ int main(void) {
     }
 
 #undef MESSAGE_LENGTH
+}
 
+int main(void) {
+    test_wotsx1();
     printf("Pass treehash_wots : { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;
 }

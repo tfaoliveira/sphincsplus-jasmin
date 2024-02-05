@@ -51,6 +51,8 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
     info.wots_sign_leaf = idx_leaf;
 
 #ifdef DEBUG
+    puts("Debug do treehash wots");
+
     uint8_t root_jazz[SPX_N];
     uint8_t auth_path_jazz[SPX_TREE_HEIGHT * SPX_N];
     uint32_t tree_addr_jazz[8];
@@ -58,18 +60,21 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
 
     uint8_t wots_sig_jazz[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES];
     uint32_t steps_jazz[SPX_WOTS_LEN];
+
     // CTX AND IDX LEAF ARE THE SAME BECAUSE THEY ARE NOT CHANGED
-
-    info_jazz.wots_sig = wots_sig_jazz;
-    info_jazz.wots_steps = steps_jazz;
-    info_jazz.wots_sign_leaf = idx_leaf;
-
+    
     // Copy state
+    memcpy(wots_sig_jazz, sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
+    memcpy(steps_jazz, info.wots_steps, SPX_WOTS_LEN * sizeof(uint32_t));
+
     memcpy(root_jazz, root, SPX_N);
     memcpy(auth_path_jazz, auth_path, SPX_TREE_HEIGHT * SPX_N);
     memcpy(tree_addr_jazz, tree_addr, 8 * sizeof(uint32_t));
-    memcpy(wots_sig_jazz, sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
-    memcpy(steps_jazz, info.wots_steps, SPX_WOTS_LEN * sizeof(uint32_t));
+    
+    info_jazz.wots_sig = wots_sig_jazz;
+    info_jazz.wots_steps = steps_jazz;
+    info_jazz.wots_sign_leaf = idx_leaf;
+    
     memcpy(info_jazz.leaf_addr, info.leaf_addr, 8 * sizeof(uint32_t));
     memcpy(info_jazz.pk_addr, info.pk_addr, 8 * sizeof(uint32_t));
 
@@ -85,30 +90,34 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
     treehashx1_wots(root, auth_path, ctx, idx_leaf, tree_addr, &info);
     treehashx1_wots_jasmin(root_jazz, auth_path_jazz, ctx, idx_leaf, tree_addr_jazz, &info_jazz);
 
+    print_str_u8("auth path ref", auth_path, SPX_TREE_HEIGHT * SPX_N);
+    print_str_u8("info wots sig", info.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
+
+    // They point to the same memory region so they should be equwal
+
     puts("Asserts after running");
-    assert(memcmp(root_jazz, root, SPX_N) == 0);                            
+    assert(memcmp(root_jazz, root, SPX_N) == 0);
     assert(memcmp(auth_path_jazz, auth_path, SPX_TREE_HEIGHT * SPX_N) == 0);
     assert(memcmp(tree_addr_jazz, tree_addr, 8 * sizeof(uint32_t)) == 0);
-    
+
     if (memcmp(info.wots_sig, info_jazz.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) != 0) {
         print_str_u8("Wots Sig ref", info.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
         print_str_u8("Wots Sig jasmin", info_jazz.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
         exit(1);
     }
 
-    assert(memcmp(info.wots_sig, info_jazz.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0); // FIXME: Fails
+    assert(memcmp(info.wots_sig, info_jazz.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0);  // FIXME: Fails
     assert(memcmp(info.wots_steps, info_jazz.wots_steps, SPX_WOTS_LEN * sizeof(uint32_t)) == 0);
     assert(memcmp(info.leaf_addr, info_jazz.leaf_addr, 8 * sizeof(uint32_t)) == 0);
     assert(memcmp(info.pk_addr, info_jazz.pk_addr, 8 * sizeof(uint32_t)) == 0);
 
-#endif
-
+#else
 #ifdef TEST_TREEHASH_WOTS
     treehashx1_wots_jasmin(root, auth_path, ctx, idx_leaf, tree_addr, &info);
 #else
     treehashx1_wots(root, auth_path, ctx, idx_leaf, tree_addr, &info);
 #endif
-
+#endif
 }
 
 /* Compute root node of the top-most subtree. */

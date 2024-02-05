@@ -13,7 +13,7 @@ inline fn __load_ctx(
   return pub_seed, sk_seed;
 }
 
-export fn merkle_sign_jazz(reg u64 sig _root _ctx _wots_addr _tree_addr _idx_leaf)
+export fn merkle_sign_jazz(reg u64 _sig _root _ctx _wots_addr _tree_addr _idx_leaf)
 {
   stack u8[SPX_N] root;
   stack u8[SPX_N] pub_seed;
@@ -30,48 +30,29 @@ export fn merkle_sign_jazz(reg u64 sig _root _ctx _wots_addr _tree_addr _idx_lea
   wots_addr = __load_u32_array<8>(wots_addr, _wots_addr);
   tree_addr = __load_u32_array<8>(tree_addr, _tree_addr);
 
-  () = #spill(_root, _tree_addr);
+  () = #spill(_sig, _root, _tree_addr);
 
   root, tree_addr = _merkle_sign(sig, root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
 
-  () = #unspill(_root, _tree_addr);
+  () = #unspill(_sig, _root, _tree_addr);
 
   __store_u8_array<SPX_N>(root, _root);
   __store_u32_array<8>(tree_addr, _tree_addr);
 }
 
-export fn merkle_gen_root_jazz(reg u64 _root _pub_seed _sk_seed) { } // placeholder so compilation doesnt fail
-
-/*
-export fn merkle_gen_root_jazz(
-  reg u64 _root _pub_seed _sk_seed
-  )
-{
+export fn merkle_gen_root_jazz(reg u64 _root _pub_seed _sk_seed){
   stack u8[SPX_N] root;
-  reg ptr u8[SPX_N] root_p;
-
   stack u8[SPX_N] pub_seed;
-  reg ptr u8[SPX_N] pub_seed_p;
-
   stack u8[SPX_N] sk_seed;
-  reg ptr u8[SPX_N] sk_seed_p;
 
-  stack u64 s_root s_pub_seed s_sk_seed;
+  root = __load_u8_array<SPX_N>(root, _root);
+  pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
+  sk_seed = __load_u8_array<SPX_N>(sk_seed, _sk_seed);
 
-  root_p = root;
-  root_p = __load_u8_array<SPX_N>(root_p, _root);
+  () = #spill(_root);
 
-  pub_seed_p = pub_seed;
-  pub_seed_p = __load_u8_array<SPX_N>(pub_seed_p, _pub_seed);
+  root = _merkle_gen_root(root, pub_seed, sk_seed);
 
-  sk_seed_p = sk_seed; 
-  sk_seed_p = __load_u8_array<SPX_N>(sk_seed_p, _sk_seed);
-
-  s_root = _root; // spill
-
-  root_p = _merkle_gen_root(root_p, pub_seed_p, sk_seed_p);
-
-  _root = s_root; // unspill
-  __store_u8_array<SPX_N>(root_p, _root);
+  () = #unspill(_root);
+  __store_u8_array<SPX_N>(root, _root);
 }
-*/
