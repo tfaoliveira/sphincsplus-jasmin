@@ -23,12 +23,13 @@ THASH_LIST    := simple robust
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
-TESTS      := $(addprefix bin/test_merkle_, $(TLIST))
-OUT        := $(addsuffix .out, $(TESTS))
 
-GET_HASH       = $(word 1, $(subst _, ,$*))
-GET_PARAM      = $(word 2, $(subst _, ,$*))
-GET_THASH      = $(word 3, $(subst _, ,$*))
+TESTS := $(addprefix bin/test_merkle_, $(TLIST))
+OUT   := $(addsuffix .out, $(TESTS))
+
+GET_HASH  = $(word 1, $(subst _, ,$*))
+GET_PARAM = $(word 2, $(subst _, ,$*))
+GET_THASH = $(word 3, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
 
@@ -36,8 +37,17 @@ JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
+
+SOURCES := ../../fips202.c ../../utils.c ../../address.c ../../utilsx1.c ../../merkle.c ../../wots.c \
+           ../../wotsx1.c ../../sign.c ../../fors.c  ../../wrappers.c
+
+TEST_FLAGS = -DTEST_MERKLE_SIGN -DTEST_MERKLE_GEN_ROOT
+
+# ------------------------------------------------------------------------------
+
 default: $(TESTS)
 run: $(OUT)
+
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
 
@@ -57,12 +67,9 @@ bin/test_merkle_%.s: bin/test_merkle_%.jpp
 $(TESTS):
 bin/test_merkle_%: bin/test_merkle_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
-	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
-	-DTEST_MERKLE=1 -DDEBUG_PRINT=1 \
--I../common -I../../ -I../../params \
-test_merkle.c $< \
-../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
-../../utilsx1.c ../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c ../../fors.c  
+	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) $(TEST_FLAGS) \
+	 -I../common -I../../ -I../../params test_merkle.c $< \
+	../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c $(SOURCES)
 
 bin/test_merkle_%.out: bin/test_merkle_%
 	@./$<

@@ -32,12 +32,6 @@
 int main(void) {
     bool debug = true;
 
-    if (debug && false) {
-        printf("SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES = %d\n", SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
-        printf("SPX_BYTES - SPX_N - SPX_FORS_BYTES = %d\n", SPX_BYTES - SPX_N - SPX_FORS_BYTES);
-        return;
-    }
-
 #define MAX_MESSAGE_LENGTH 1024
 
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];

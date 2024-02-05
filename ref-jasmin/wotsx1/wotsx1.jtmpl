@@ -197,7 +197,7 @@ reg ptr u8[SPX_N] dest,
 //        Because idx_offset is always zero, so is internal_idx_offset
 inline fn __treehash_wots(
   reg ptr u8[SPX_N] root,
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N] auth_path,
+  reg u64 auth_path,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
   reg u32 leaf_idx,
@@ -208,7 +208,6 @@ inline fn __treehash_wots(
   reg ptr u32[8] leaf_addr,
   reg ptr u32[8] pk_addr // struct info
 ) -> reg ptr u8[SPX_N],
-     reg ptr u8[SPX_TREE_HEIGHT * SPX_N],
      reg ptr u32[8],
      reg ptr u32[8],
      reg ptr u32[8]
@@ -289,7 +288,7 @@ inline fn __treehash_wots(
           () = #unspill(auth_path);
           out_offset = s_h_spx_n;
           current_1 = current[SPX_N : SPX_N];
-          auth_path, _ = _x_memcpy_u8u8<SPX_TREE_HEIGHT * SPX_N, SPX_N>(auth_path, out_offset, current_1);
+          _, _ = _x_memcpy_u8pu8<SPX_N>(auth_path, out_offset, current_1);
           () = #spill(auth_path);
         }
         
@@ -355,7 +354,7 @@ inline fn __treehash_wots(
     }
   } // end: C: for (idx = 0;; idx++) // Jasmin: while(s_exit_outer_loop == 0)
 
-  () = #unspill(root, auth_path, tree_addr, wots_sig, leaf_addr, pk_addr);
+  () = #unspill(root, tree_addr, wots_sig, leaf_addr, pk_addr);
 
-  return root, auth_path, tree_addr, leaf_addr, pk_addr;
+  return root, tree_addr, leaf_addr, pk_addr;
 }

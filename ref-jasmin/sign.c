@@ -164,7 +164,11 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t
         set_keypair_addr(wots_addr, idx_leaf);
 #endif
 
+#ifdef TEST_MERKLE_SIGN
+        merkle_sign_jazz(sig, root, &ctx, wots_addr, tree_addr, idx_leaf);
+#else
         merkle_sign(sig, root, &ctx, wots_addr, tree_addr, idx_leaf);
+#endif
         sig += SPX_WOTS_BYTES + SPX_TREE_HEIGHT * SPX_N;
 
         /* Update the indices for the next layer. */
