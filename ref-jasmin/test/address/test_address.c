@@ -1,11 +1,11 @@
 #include <assert.h>
 #include <inttypes.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 
-#include "macros.h"
 #include "api.h"
+#include "macros.h"
 #include "notrandombytes.c"
 #include "print.c"
 
@@ -251,7 +251,7 @@ void test_set_tree_index(void) {
 }
 
 void test_api(void) {
-  bool debug = true;
+    bool debug = true;
 
 #define MAX_MESSAGE_LENGTH 32
 #define TESTS 100
@@ -263,7 +263,6 @@ void test_api(void) {
     size_t signature_length;
 
     uint8_t message[MAX_MESSAGE_LENGTH];
-
 
     for (int i = 0; i < TESTS; i++) {
         // clang-format off

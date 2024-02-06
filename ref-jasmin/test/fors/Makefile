@@ -35,8 +35,18 @@ JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
+
+SOURCES = ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \
+		  ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \
+		  ../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c  ../../wrappers.c
+
+TEST_FLAGS := -DTEST_FORS_GEN_SK -DTEST_FORS_SK_TO_LEAF -DTEST_FORS_GEN_LEAF -DTEST_FORS_SIGN \
+              -DTEST_FORS_PK_FROM_SIG -DTEST_FORS_TREEHASH
+
+# ------------------------------------------------------------------------------
 default: $(TESTS)
 run: $(OUT)
+
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
 
@@ -56,12 +66,8 @@ bin/test_fors_%.s: bin/test_fors_%.jpp
 $(TESTS):
 bin/test_fors_%: bin/test_fors_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
-	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
-	-DTEST_FORS_GEN_SK -DTEST_FORS_SK_TO_LEAF -DTEST_FORS_GEN_LEAF -DTEST_FORS_SIGN -DTEST_FORS_PK_FROM_SIG -DTEST_FORS_TREEHASH \
-	-I../common -I../../ -I../../params \
-	test_fors.c $< ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \
-	../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \
-	../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c  ../../wrappers.c
+	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) $(TEST_FLAGS) \
+	-I../common -I../../ -I../../params test_fors.c $< $(SOURCES)
 
 bin/test_fors_%.out: bin/test_fors_%
 	@./$<

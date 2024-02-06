@@ -43,9 +43,9 @@ ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 
-SOURCES := $(filter-out ../../thash_%.c, $(wildcard ../../*.c))
+SOURCES = $(filter-out ../../thash_%.c, $(wildcard ../../*.c)) ../../thash_$(GET_HASH)_$(GET_THASH).c
 
-TEST_FLAGS = -DTEST_ADDRESS
+TEST_FLAGS := -DTEST_ADDRESS
 
 # ------------------------------------------------------------------------------
 
@@ -69,8 +69,7 @@ bin/test_address_%.s: bin/test_address_%.jpp
 $(TESTS):
 bin/test_address_%: bin/test_address_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) $(TEST_FLAGS) \
-	-I../common -I../../ -I../../params \
-	test_address.c $< $(SOURCES) ../../thash_$(GET_HASH)_$(GET_THASH).c
+	-I../common -I../../ -I../../params test_address.c $< $(SOURCES)
 
 bin/test_address_%.out: bin/test_address_%
 	@./$<

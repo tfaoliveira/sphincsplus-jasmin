@@ -110,8 +110,7 @@ static void wots_gen_leafx1_jasmin(unsigned char *dest, const spx_ctx *ctx, uint
 // NOTE: Removed index offset because it is always 0
 // NOTE: Removed index offset because it is always SPX_TREE_HEIGHT
 // NOTE: Removed iinternal index offset because it is always 0 (because index offset = 0)
-void treehashx1_wots(unsigned char *root, unsigned char *auth_path, const spx_ctx *ctx, uint32_t leaf_idx,
-                     uint32_t tree_addr[8], void *info) {
+void treehashx1_wots(unsigned char *root, const spx_ctx *ctx, uint32_t leaf_idx, uint32_t tree_addr[8], void *info) {
     // print_str_u8("root ref", root, SPX_N);
     // print_str_u8("auth path ref", auth_path, SPX_TREE_HEIGHT * SPX_N);
     // print_str_u8("pub seed ref", ctx->pub_seed, SPX_N);
@@ -126,7 +125,16 @@ void treehashx1_wots(unsigned char *root, unsigned char *auth_path, const spx_ct
     // print_str_u8("leaf addr ref", (uint8_t *)((struct leaf_info_x1 *)info)->leaf_addr, 8 * sizeof(uint32_t));
     // print_str_u8("pk addr ref", (uint8_t *)((struct leaf_info_x1 *)info)->pk_addr, 8 * sizeof(uint32_t));
 
+    // In merkle sign, we have
+    // unsigned char *auth_path = sig + SPX_WOTS_BYTES;
+    // and
+    // info.wots_sig = sig;
+    //
+    // Because of this, we can remove the auth_path argument and replace it by ((struct leaf_info_x1*) info)->wots_sig +
+    // SPX_WOTS_BYTES
+
     uint8_t stack[SPX_TREE_HEIGHT * SPX_N];
+    uint8_t *auth_path = ((struct leaf_info_x1 *)info)->wots_sig + SPX_WOTS_BYTES;
 
     uint32_t idx;
     uint32_t max_idx = (uint32_t)((1 << SPX_TREE_HEIGHT) - 1);
@@ -299,25 +307,24 @@ void hash_message_jasmin(uint8_t *digest, uint64_t *tree, uint32_t *leaf_idx, co
 #ifdef TEST_TREEHASH_WOTS
 extern void treehash_wots_jazz(void *arguments);
 
-void treehashx1_wots_jasmin(unsigned char *root, unsigned char *auth_path, const spx_ctx *ctx, uint32_t leaf_idx,
-                            uint32_t tree_addr[8], void *info) {
+void treehashx1_wots_jasmin(unsigned char *root, const spx_ctx *ctx, uint32_t leaf_idx, uint32_t tree_addr[8],
+                            void *info) {
     // We remove the idx_offset parameter because it is always zero
     // We remove the tree_height parameter because it is always SPX_TREE_HEIGHT
     // These were also removed from the ref impl
 
-    void *args[11];
+    void *args[10];
 
     args[0] = (void *)root;
-    args[1] = (void *)auth_path;
-    args[2] = (void *)ctx->pub_seed;
-    args[3] = (void *)ctx->sk_seed;
-    args[4] = (void *)&leaf_idx;
-    args[5] = (void *)tree_addr;
-    args[6] = (void *)((struct leaf_info_x1 *)info)->wots_sig;
-    args[7] = (void *)&((struct leaf_info_x1 *)info)->wots_sign_leaf;
-    args[8] = (void *)((struct leaf_info_x1 *)info)->wots_steps;
-    args[9] = (void *)((struct leaf_info_x1 *)info)->leaf_addr;
-    args[10] = (void *)((struct leaf_info_x1 *)info)->pk_addr;
+    args[1] = (void *)ctx->pub_seed;
+    args[2] = (void *)ctx->sk_seed;
+    args[3] = (void *)&leaf_idx;
+    args[4] = (void *)tree_addr;
+    args[5] = (void *)((struct leaf_info_x1 *)info)->wots_sig;
+    args[6] = (void *)&((struct leaf_info_x1 *)info)->wots_sign_leaf;
+    args[7] = (void *)((struct leaf_info_x1 *)info)->wots_steps;
+    args[8] = (void *)((struct leaf_info_x1 *)info)->leaf_addr;
+    args[9] = (void *)((struct leaf_info_x1 *)info)->pk_addr;
 
     treehash_wots_jazz(args);
 }

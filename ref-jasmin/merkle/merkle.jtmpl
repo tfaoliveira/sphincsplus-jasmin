@@ -4,7 +4,7 @@ from Sphincs require "wots/wots.jtmpl"
 from Sphincs require "wotsx1/wotsx1.jtmpl"
 
 inline fn __merkle_sign(
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] sig,
+  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] sig, // auth path
   reg ptr u8[SPX_N] root,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
@@ -15,10 +15,6 @@ inline fn __merkle_sign(
      reg ptr u8[SPX_N], 
      reg ptr u32[8]
 {
-  reg u64 wots_sig;
-  
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N] auth_path;
-
   stack u32[SPX_WOTS_LEN] steps;
   reg ptr u32[SPX_WOTS_LEN] steps_p;
 
@@ -33,9 +29,6 @@ inline fn __merkle_sign(
   reg u32 type;
   reg u64 offset t;
 
-  // unsigned char *auth_path = sig + SPX_WOTS_BYTES;
-  auth_path = sig[SPX_WOTS_BYTES : SPX_TREE_HEIGHT * SPX_N];
-  
   // struct leaf_info_x1 info = { 0 };
   // NOTE:
   // struct leaf_info_x1 {
@@ -49,14 +42,10 @@ inline fn __merkle_sign(
   leaf_addr_p = __zero_array_u32<8>(leaf_addr_p);
   pk_addr_p = __zero_array_u32<8>(pk_addr_p);
 
-  // info.wots_sig = sig;
-  wots_sig = sig;
-
   // chain_lengths(steps, root);
   // info.wots_steps = steps;
   steps_p = steps;
   steps_p = __chain_lengths(steps_p, root);
-  steps = steps_p;
 
   // set_type(&tree_addr[0], SPX_ADDR_TYPE_HASHTREE);
   type = SPX_ADDR_TYPE_HASHTREE;
@@ -76,11 +65,9 @@ inline fn __merkle_sign(
   wots_sign_leaf = idx_leaf;
 
   // treehashx1(root, auth_path, ctx, idx_leaf, 0, SPX_TREE_HEIGHT, wots_gen_leafx1, tree_addr, &info);  
-  steps_p = steps;
-  root, tree_addr, leaf_addr, pk_addr = __treehash_wots(root, auth_path, pub_seed, sk_seed, 
-                                                        idx_leaf, tree_addr, wots_sig, wots_sign_leaf, 
-                                                        steps_p, leaf_addr, pk_addr);
-  sig[SPX_WOTS_BYTES : SPX_TREE_HEIGHT * SPX_N] = auth_path;
+  root, tree_addr, sig, leaf_addr, pk_addr = __treehash_wots(root, pub_seed, sk_seed, 
+                                                             idx_leaf, tree_addr, sig, wots_sign_leaf, 
+                                                             steps_p, leaf_addr, pk_addr);
   return sig, root, tree_addr;
 }
 
@@ -165,6 +152,7 @@ inline fn __merkle_gen_root(
   auth_path_p = auth_path;
   t = #NOT_32(t);
   
+  auth_path_p, root, top_tree_addr_p = _merkle_sign(auth_path_p, root, pub_seed, sk_seed, wots_addr_p, top_tree_addr_p, t);
 
   return root;
 }

@@ -36,8 +36,8 @@ ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 
-SOURCES := ../../wots.c ../../fips202.c ../../utils.c ../../address.c  ../../utilsx1.c ../../fors.c \
-           ../../merkle.c ../../sign.c ../../wotsx1.c ../../wrappers.c
+SOURCES = $(filter-out ../../hash_%.c ../../thash_%.c, $(wildcard ../../*.c)) \
+          ../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c
 
 TEST_FLAGS = -DTEST_WOTS_BASE_W -DTEST_WOTS_GEN_CHAIN -DTEST_WOTS_CHECKSUM -DTEST_WOTS_CHAIN_LENGTHS -DTEST_WOTS_PK_FROM_SIG 
 
@@ -65,8 +65,7 @@ bin/test_wots_%.s: bin/test_wots_%.jpp
 $(TESTS):
 bin/test_wots_%: bin/test_wots_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) $(TEST_FLAGS) \
-	-I../common -I../../ -I../../params test_wots.c $< \
-	../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c $(SOURCES)
+	-I../common -I../../ -I../../params test_wots.c $< $(SOURCES)
 
 bin/test_wots_%.out: bin/test_wots_%
 	@./$<

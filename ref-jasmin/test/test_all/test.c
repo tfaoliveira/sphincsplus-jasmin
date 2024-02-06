@@ -1,7 +1,7 @@
 #include "api.h"
 
 #ifndef PARAMS
-#define PARAMS sphincs-shake-128f
+#define PARAMS sphincs - shake - 128f
 #endif
 
 #ifndef MAX_MESSAGE_LENGTH
@@ -11,7 +11,6 @@
 #ifndef TESTS
 #define TESTS 100
 #endif
-
 
 int main(void) {
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];

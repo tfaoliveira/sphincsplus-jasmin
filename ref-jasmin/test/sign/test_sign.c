@@ -41,14 +41,10 @@ int fors_pk_from_sig_test_number = 0;
 
 extern int crypto_sign_seed_keypair_jazz(uint8_t *pk, uint8_t *sk, const uint8_t *seed);
 extern int crypto_sign_keypair_jazz(uint8_t *pk, uint8_t *sk);
-extern int crypto_sign_signature_jazz(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen,
-                                      const uint8_t *sk);
-extern int crypto_sign_verify_jazz(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen,
-                                   const uint8_t *pk);
-extern int crypto_sign_jazz(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen,
-                            const uint8_t *sk);
-extern int crypto_sign_open_jazz(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen,
-                                 const uint8_t *pk);
+extern int crypto_sign_signature_jazz(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk);
+extern int crypto_sign_verify_jazz(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, const uint8_t *pk);
+extern int crypto_sign_jazz(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen, const uint8_t *sk);
+extern int crypto_sign_open_jazz(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen, const uint8_t *pk);
 
 void test_crypto_sign_seed_keypair(void);
 void test_crypto_sign_keypair(void);
@@ -222,8 +218,7 @@ void test_crypto_sign_signature(void) {
             assert(signature_length_jazz == signature_length_ref);
             assert(signature_length_jazz == CRYPTO_BYTES);
 
-            if (memcmp(sig_ref, sig_jazz, CRYPTO_BYTES) != 0) 
-            {
+            if (memcmp(sig_ref, sig_jazz, CRYPTO_BYTES) != 0) {
                 fprint_str_u8("sig_ref.txt", "sig", sig_ref, CRYPTO_BYTES);
                 fprint_str_u8("sig_jazz.txt", "sig", sig_jazz, CRYPTO_BYTES);
             }
@@ -266,7 +261,7 @@ void test_crypto_sign_verify(void) {
 
             if (!strcmp(xstr(PARAMS), "sphincs-shake-128f") &&
                 !strcmp(xstr(THASH), "simple")) {  // TODO: See if the test does not fail. If it
-                                                      // doesnt, we can remote the file
+                                                   // doesnt, we can remote the file
                 char file_path[256];
                 sprintf(file_path, "fors_pk_from_sig_failed_tests/test_%d.txt", i);
 
@@ -384,10 +379,8 @@ void test_api() {
             randombytes(message, message_length);
 
             crypto_sign_keypair(public_key, secret_key);
-            crypto_sign_signature(signature, &signature_length, message, message_length,
-                                  secret_key);
-            res = crypto_sign_verify(signature, signature_length, message, message_length,
-                                     public_key);
+            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+            res = crypto_sign_verify(signature, signature_length, message, message_length, public_key);
             assert(res == 0);
         }
     }
@@ -397,7 +390,7 @@ int main(void) {
 #if 0
     test_crypto_sign_keypair(); // WORKS Uses random bytes
 #endif
-    //test_crypto_sign_seed_keypair();
+    // test_crypto_sign_seed_keypair();
     test_crypto_sign_signature();
     // test_crypto_sign_verify();
     // test_crypto_sign();

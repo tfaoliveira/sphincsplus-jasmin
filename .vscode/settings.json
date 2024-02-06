@@ -6,6 +6,7 @@
         "utils.h": "c",
         "stdio.h": "c",
         "string.h": "c",
-        "address.h": "c"
+        "address.h": "c",
+        "hash.h": "c"
     }
 }

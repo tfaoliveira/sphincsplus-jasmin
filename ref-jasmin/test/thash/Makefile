@@ -40,7 +40,7 @@ ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 
-SOURCES := $(filter-out ../../thash_%.c, $(wildcard ../../*.c))
+SOURCES = $(filter-out ../../thash_%.c, $(wildcard ../../*.c)) ../../thash_$(GET_HASH)_$(GET_THASH).c
 
 TEST_FLAGS = -DTEST_THASH -DTEST_THASH_INPLACE
 
@@ -67,8 +67,7 @@ bin/test_thash_%.s: bin/test_thash_%.jpp
 $(TESTS):
 bin/test_thash_%: bin/test_thash_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) -DINBLOCKS=$(GET_INBLOCKS) $(TEST_FLAGS) \
-	-I../common -I../../ -I../../params \
-	test_thash.c $< ../../thash_$(GET_HASH)_$(GET_THASH).c $(SOURCES)
+	-I../common -I../../ -I../../params test_thash.c $<  $(SOURCES)
 
 bin/test_thash_%.out: bin/test_thash_%
 	@./$<

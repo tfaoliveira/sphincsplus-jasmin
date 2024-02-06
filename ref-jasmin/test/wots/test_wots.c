@@ -29,7 +29,7 @@
 #endif
 
 #ifndef TESTS
-#define TESTS 100
+#define TESTS 1000
 #endif
 
 extern void gen_chain_jazz(uint8_t *out, const uint8_t *in, uint32_t start, uint32_t steps, const uint8_t *pub_seed,
@@ -297,6 +297,7 @@ void test_api(void) {
     bool debug = true;
 
 #define MAX_MESSAGE_LENGTH 1024
+#define TESTS 100
 
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
     uint8_t public_key[CRYPTO_PUBLICKEYBYTES];

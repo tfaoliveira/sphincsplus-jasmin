@@ -172,9 +172,6 @@ inline fn __treehash_wots(
      reg ptr u32[8],
      reg ptr u32[8]
 {
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N] auth_path;
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] wots_sig;
-
   stack u32 s_leaf_idx;
   stack u32 s_idx_offset;
 
@@ -214,11 +211,9 @@ inline fn __treehash_wots(
     () = #unspill(sig, pub_seed, sk_seed, wots_sign_leaf, wots_steps, leaf_addr, pk_addr);
     current_1 = current[SPX_N:SPX_N];
     temp = s_idx; // temp =  idx + idx_offset
-    wots_sig = sig;
-    current[SPX_N:SPX_N], wots_sig, leaf_addr, pk_addr = _wots_gen_leafx1(current_1, pub_seed, sk_seed, 
-                                                                          temp, wots_sig, wots_sign_leaf, 
+    current[SPX_N:SPX_N], sig, leaf_addr, pk_addr = _wots_gen_leafx1(current_1, pub_seed, sk_seed, 
+                                                                          temp, sig, wots_sign_leaf, 
                                                                           wots_steps, leaf_addr, pk_addr);
-    sig = wots_sig;
     () = #spill(sig, leaf_addr, pk_addr);
 
     // uint32_t internal_idx_offset = idx_offset;
@@ -251,11 +246,9 @@ inline fn __treehash_wots(
         temp ^= s_internal_leaf;
         if(temp == 1) {
           () = #unspill(sig);
-          auth_path = sig[SPX_WOTS_BYTES : SPX_TREE_HEIGHT * SPX_N];
           out_offset = s_h_spx_n;
           current_1 = current[SPX_N : SPX_N];
-          auth_path, _ = _x_memcpy_u8u8<SPX_TREE_HEIGHT * SPX_N, SPX_N>(auth_path, out_offset, current_1);
-          sig[SPX_WOTS_BYTES : SPX_TREE_HEIGHT * SPX_N] = auth_path;
+          sig[SPX_WOTS_BYTES : SPX_TREE_HEIGHT * SPX_N], _ = _x_memcpy_u8u8<SPX_TREE_HEIGHT * SPX_N, SPX_N>(sig[SPX_WOTS_BYTES : SPX_TREE_HEIGHT * SPX_N], out_offset, current_1);
           () = #spill(sig);
         }
         

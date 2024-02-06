@@ -14,7 +14,7 @@
 #include "thash.h"
 
 #ifndef PARAMS
-#define PARAMS sphincs-shake-128f
+#define PARAMS sphincs - shake - 128f
 #endif
 
 #ifndef THASH

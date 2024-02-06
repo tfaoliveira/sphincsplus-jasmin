@@ -36,7 +36,8 @@ ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 
-SOURCES := $(filter-out ../../hash_%.c ../../thash_%.c, $(wildcard ../../*.c))
+SOURCES = $(filter-out ../../hash_%.c ../../thash_%.c, $(wildcard ../../*.c)) \
+          ../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c
 
 TEST_FLAGS = -DTEST_HASH_PRF_ADDR -DTEST_HASH_GEN_MESSAGE_RANDOM -DTEST_HASH_MESSAGE
 
@@ -62,9 +63,7 @@ bin/test_hash_%.s: bin/test_hash_%.jpp
 $(TESTS):
 bin/test_hash_%: bin/test_hash_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
-	$(TEST_FLAGS) -I../common -I../../ -I../../params \
-	test_hash.c $< ../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c \
-	$(SOURCES)
+	$(TEST_FLAGS) -I../common -I../../ -I../../params test_hash.c $< $(SOURCES)
 
 bin/test_hash_%.out: bin/test_hash_%
 	@./$<

@@ -16,9 +16,10 @@
 #include "params.h"
 #include "print.c"
 #include "thash.h"
+#include "wotsx1.h"
 
 #ifndef PARAMS
-#define PARAMS sphincs-shake-128f
+#define PARAMS sphincs - shake - 128f
 #endif
 
 #ifndef THASH

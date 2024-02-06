@@ -38,12 +38,13 @@ ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 
-SOURCES = ../../address.c ../../fips202.c ../../utils.c ../../utilsx1.c ../../merkle.c \
-          ../../wots.c ../../wotsx1.c ../../sign.c ../../fors.c  ../../wrappers.c
+SOURCES = $(filter-out ../../hash_%.c ../../thash_%.c, $(wildcard ../../*.c)) \
+          ../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c
+
 
 # -DDEBUG_WOTSX1 -DTEST_WOTS_GEN_LEAF to debug just wots gen leaf
 # -DDEBUG -DTEST_TREEHASH_WOTS to debug just treehash
-TEST_FLAGS = -DTEST_WOTS_GEN_LEAF -DTEST_TREEHASH_WOTS
+TEST_FLAGS := -DTEST_WOTS_GEN_LEAF -DTEST_TREEHASH_WOTS
 
 # ------------------------------------------------------------------------------
 default: $(TESTS)
@@ -69,8 +70,7 @@ $(TESTS):
 bin/test_wotsx1_%: bin/test_wotsx1_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
 	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) $(TEST_FLAGS) \
-	-I../common -I../../ -I../../params test_wotsx1.c $< $(SOURCES) \
-	../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c
+	-I../common -I../../ -I../../params test_wotsx1.c $< $(SOURCES)
 
 bin/test_wotsx1_%.out: bin/test_wotsx1_%
 	@./$<
