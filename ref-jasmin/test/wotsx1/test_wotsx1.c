@@ -12,9 +12,8 @@
 #include "notrandombytes.c"
 #include "params.h"
 #include "print.c"
-#include "wrappers.h"
 #include "wotsx1.h"
-
+#include "wrappers.h"
 
 #ifndef HASH
 #define HASH shake

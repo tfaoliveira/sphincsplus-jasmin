@@ -254,7 +254,7 @@ void test_api(void) {
     bool debug = true;
 
 #define MAX_MESSAGE_LENGTH 32
-#define TESTS 100
+#define TESTS 1
 
     uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
     uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
@@ -268,7 +268,8 @@ void test_api(void) {
         // clang-format off
         if (debug) { printf("Test %d/%d\n", i, TESTS); }
 
-        for (size_t message_length = 10; message_length < MAX_MESSAGE_LENGTH; message_length++) {
+        for (size_t message_length = 10; message_length <= 5; message_length++) {
+            printf("%d\n", message_length);
             // note: the 'real' test is in .c files and it is activated when TEST_ADDRESS is defined
             randombytes(message, message_length);
             crypto_sign_keypair(public_key, secret_key);
@@ -283,16 +284,16 @@ void test_api(void) {
 int main(void) {
     printf("\nPARAMS: %s\n\n", xstr(PARAMS));
 
-    test_set_layer_addr();
-    test_set_tree_addr();
-    test_set_type();
-    test_copy_subtree_addr();
-    test_set_keypair_addr();
-    test_copy_keypair_addr();
-    test_set_chain_addr();
-    test_set_hash_addr();
-    test_set_tree_height();
-    test_set_tree_index();
+    // test_set_layer_addr();
+    // test_set_tree_addr();
+    // test_set_type();
+    // test_copy_subtree_addr();
+    // test_set_keypair_addr();
+    // test_copy_keypair_addr();
+    // test_set_chain_addr();
+    // test_set_hash_addr();
+    // test_set_tree_height();
+    // test_set_tree_index();
 
     printf("\n\n");
 

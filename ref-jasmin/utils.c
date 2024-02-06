@@ -1,6 +1,7 @@
 #include "utils.h"
 
 #include <string.h>
+#include <assert.h>
 
 #include "address.h"
 #include "hash.h"

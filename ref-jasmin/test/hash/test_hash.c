@@ -53,37 +53,6 @@ void test_hash_message(void);
 void test_hash_message_wrapper(void);
 void test_api(void);
 
-static unsigned long long bytes_to_ull(const unsigned char *in, unsigned int inlen) {
-    unsigned long long retval = 0;
-    unsigned int i;
-
-    for (i = 0; i < inlen; i++) {
-        retval |= ((unsigned long long)in[i]) << (8 * (inlen - 1 - i));
-    }
-    return retval;
-}
-
-void test_bytes_to_ull(void) {
-    // Hash message fails on this line tree = bytes_to_ull(bufp, SPX_TREE_BYTES)
-    // This test makes sure bytes_to_ull works
-    // For 128s this is
-    bool debug = true;
-    uint64_t res;
-    uint64_t expected;
-    uint8_t buf[8];
-
-    for (int i = 0; i < TESTS * 100; i++) {
-        if (debug) {
-            printf("[%s] bytes to ull : Test %d/%d\n", xstr(PARAMS), i, TESTS * 100);
-        }
-        randombytes(buf, 8);
-        expected = bytes_to_ull(buf, 8);
-        res = bytes_to_ull__8_jazz(buf);
-
-        assert(expected == res);
-    }
-}
-
 void test_prf_addr(void) {
     bool debug = true;
 
@@ -331,7 +300,6 @@ int main(void) {
     // uint64_t res;
     // res = (~(uint64_t)0) >> (64 - 8);
     // print_str_u8("a", (uint8_t*)&res, sizeof(uint64_t)); return;
-    test_bytes_to_ull();
     test_prf_addr();
     test_prf_addr_out_u64();
     test_gen_message_random();

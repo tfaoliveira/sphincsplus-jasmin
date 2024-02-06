@@ -12,6 +12,7 @@
 #include "notrandombytes.c"
 #include "params.h"
 #include "print.c"
+#include "randombytes.h"
 
 #ifndef HASH
 #define HASH shake
@@ -34,11 +35,17 @@ extern void merkle_sign_jazz(uint8_t *sig, uint8_t *root, const spx_ctx *ctx, ui
 extern void merkle_gen_root_jazz(uint8_t *root, const uint8_t *pub_seed, const uint8_t *sk_seed);
 
 void test_merkle_sign(void) {
-    uint8_t sig_ref[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES], sig_jazz[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES];
-    uint8_t root_ref[SPX_N], root_jazz[SPX_N];
+    uint8_t sig_ref[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] = {0};
+    uint8_t sig_jazz[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] = {0};
+
+    uint8_t root_ref[SPX_N] = {0};
+    uint8_t root_jazz[SPX_N] = {0};
+
     spx_ctx ctx;
+
     uint32_t wots_addr_ref[8], wots_addr_jazz[8];
     uint32_t tree_addr_ref[8], tree_addr_jazz[8];
+
     uint32_t idx_leaf;
 
     bool debug = true;
@@ -70,19 +77,13 @@ void test_merkle_sign(void) {
         assert(memcmp(wots_addr_ref, wots_addr_jazz, 8 * sizeof(uint32_t)) == 0);
         assert(memcmp(tree_addr_ref, tree_addr_jazz, 8 * sizeof(uint32_t)) == 0);
 
-        merkle_sign(sig_ref, root_ref, &ctx, wots_addr_ref, tree_addr_ref, idx_leaf);
         merkle_sign_jazz(sig_jazz, root_jazz, &ctx, wots_addr_jazz, tree_addr_jazz, idx_leaf);
+        merkle_sign(sig_ref, root_ref, &ctx, wots_addr_ref, tree_addr_ref, idx_leaf);
 
-        assert(memcmp(sig_ref, sig_jazz, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0);  // WORKS
-
-        if (debug && memcmp(root_ref, root_jazz, SPX_N) != 0) {
-            print_str_u8("Root Ref", root_ref, SPX_N);
-            print_str_u8("Root Jazz", root_jazz, SPX_N);
-        }
-
-        // assert(memcmp(root_ref, root_jazz, SPX_N) == 0);
-        assert(memcmp(wots_addr_ref, wots_addr_jazz, 8 * sizeof(uint32_t)) == 0);  // works
-        assert(memcmp(tree_addr_ref, tree_addr_jazz, 8 * sizeof(uint32_t)) == 0);  // works
+        assert(memcmp(sig_ref, sig_jazz, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0); 
+        assert(memcmp(root_ref, root_jazz, SPX_N) == 0);
+        assert(memcmp(wots_addr_ref, wots_addr_jazz, 8 * sizeof(uint32_t)) == 0); 
+        assert(memcmp(tree_addr_ref, tree_addr_jazz, 8 * sizeof(uint32_t)) == 0); 
     }
 }
 

@@ -38,14 +38,20 @@ inline fn __merkle_sign(
   //   uint32_t leaf_addr[8];
   //   uint32_t pk_addr[8];
   // };
-  leaf_addr_p = leaf_addr; pk_addr_p = pk_addr;
-  leaf_addr_p = __zero_array_u32<8>(leaf_addr_p);
-  pk_addr_p = __zero_array_u32<8>(pk_addr_p);
+  
+  () = #spill(sig, pub_seed, sk_seed);
 
   // chain_lengths(steps, root);
-  // info.wots_steps = steps;
   steps_p = steps;
   steps_p = __chain_lengths(steps_p, root);
+
+  () = #unspill(sig, pub_seed, sk_seed);
+
+  leaf_addr_p = leaf_addr; 
+  pk_addr_p = pk_addr;
+  
+  leaf_addr_p = __zero_array_u32<8>(leaf_addr_p);
+  pk_addr_p = __zero_array_u32<8>(pk_addr_p);
 
   // set_type(&tree_addr[0], SPX_ADDR_TYPE_HASHTREE);
   type = SPX_ADDR_TYPE_HASHTREE;
@@ -56,16 +62,35 @@ inline fn __merkle_sign(
   pk_addr_p = __set_type(pk_addr_p, type);
 
   // copy_subtree_addr(&info.leaf_addr[0], wots_addr);
-  leaf_addr_p = __copy_subtree_addr(leaf_addr_p, wots_addr);
+  leaf_addr = __copy_subtree_addr(leaf_addr_p, wots_addr);
+  // leaf_addr_p[4:4] = __zero_array_u32<4>(leaf_addr_p[4:4]);
+  // leaf_addr = leaf_addr_p;
 
   // copy_subtree_addr(&info.pk_addr[0], wots_addr);
-  pk_addr_p = __copy_subtree_addr(pk_addr_p, wots_addr);
+  pk_addr = __copy_subtree_addr(pk_addr_p, wots_addr);
+  // pk_addr_p[4:4] = __zero_array_u32<4>(pk_addr_p[4:4]);
+  // pk_addr = pk_addr_p;
 
   // info.wots_sign_leaf = idx_leaf;
   wots_sign_leaf = idx_leaf;
 
   // treehashx1(root, auth_path, ctx, idx_leaf, 0, SPX_TREE_HEIGHT, wots_gen_leafx1, tree_addr, &info);  
-  root, tree_addr, sig, leaf_addr, pk_addr = __treehash_wots(root, pub_seed, sk_seed, 
+
+
+  //() = #spill(pub_seed, sk_seed, sig);
+  // root = #randombytes(root);
+  // stack u8[SPX_N] debug; debug = #copy_32(pub_seed); debug = #randombytes(debug);
+  // stack u8[SPX_N] debug; debug = #copy_32(sk_seed); debug = #randombytes(debug);
+  // stack u32[1] debug; debug[0] = idx_leaf; debug = #randombytes(debug);
+  // tree_addr = #randombytes(tree_addr);
+  // sig = #randombytes(sig);
+  // stack u32[1] debug; debug[0] = wots_sign_leaf; debug = #randombytes(debug);
+  // steps_p = #randombytes(steps_p);
+  // leaf_addr = #randombytes(leaf_addr);
+  //pk_addr = #randombytes(pk_addr);
+  //() = #unspill(pub_seed, sk_seed, sig);
+  
+  root, tree_addr, sig, _, _ = __treehash_wots(root, pub_seed, sk_seed, 
                                                              idx_leaf, tree_addr, sig, wots_sign_leaf, 
                                                              steps_p, leaf_addr, pk_addr);
   return sig, root, tree_addr;

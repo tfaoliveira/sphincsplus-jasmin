@@ -3,14 +3,14 @@ AS       ?= as
 CC       ?= clang
 CFLAGS   ?= -w # -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 	          -Wundef -Wshadow -Wcast-align -Wpointer-arith \
-	          -fstrict-aliasing -fno-common -pipe -g
+	          -fstrict-alipk_addrasing -fno-common -pipe -g
 
 # Suppress compilation warnings for now
 
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning ${JADDFLAGS} # -lazy-regalloc
+JFLAGS       ?= -nowarning ${JADDFLAGS} -lazy-regalloc
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 

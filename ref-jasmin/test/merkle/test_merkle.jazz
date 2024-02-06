@@ -13,8 +13,7 @@ inline fn __load_ctx(
   return pub_seed, sk_seed;
 }
 
-export fn merkle_sign_jazz(reg u64 _sig _root _ctx _wots_addr _tree_addr _idx_leaf)
-{
+export fn merkle_sign_jazz(reg u64 _sig _root _ctx _wots_addr _tree_addr _idx_leaf) {
   stack u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] sig;
   stack u8[SPX_N] root;
   stack u8[SPX_N] pub_seed;
@@ -34,7 +33,7 @@ export fn merkle_sign_jazz(reg u64 _sig _root _ctx _wots_addr _tree_addr _idx_le
 
   () = #spill(_sig, _root, _tree_addr);
 
-  sig, root, tree_addr = _merkle_sign(sig, root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
+  sig, root, tree_addr = __merkle_sign(sig, root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
 
   () = #unspill(_sig, _root, _tree_addr);
 

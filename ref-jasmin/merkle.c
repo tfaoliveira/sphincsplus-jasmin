@@ -44,8 +44,13 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
 #else
     set_type(&tree_addr[0], SPX_ADDR_TYPE_HASHTREE);
     set_type(&info.pk_addr[0], SPX_ADDR_TYPE_WOTSPK);
+    // print_str_u8("Pk addr", (uint8_t *)info.pk_addr, 8 * sizeof(uint32_t));
+    // print_str_u8("Leaf addr", (uint8_t *)info.leaf_addr, 8 * sizeof(uint32_t));
+
     copy_subtree_addr(&info.leaf_addr[0], wots_addr);
     copy_subtree_addr(&info.pk_addr[0], wots_addr);
+    // print_str_u8("Pk addr", (uint8_t *)info.pk_addr, 8 * sizeof(uint32_t));
+    // print_str_u8("Leaf addr", (uint8_t *)info.leaf_addr, 8 * sizeof(uint32_t));
 #endif
 
     info.wots_sign_leaf = idx_leaf;
@@ -104,6 +109,17 @@ void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t
 #ifdef TEST_TREEHASH_WOTS
     treehashx1_wots_jasmin(root, ctx, idx_leaf, tree_addr, &info);
 #else
+    // print_str_u8("Root ref", root, SPX_N);
+    // print_str_u8("Pub Seed", ctx->pub_seed, SPX_N);
+    // print_str_u8("Sk Seed", ctx->sk_seed, SPX_N);
+    // print_str_u8("Idx Leaf Ref", (uint8_t *)&idx_leaf, sizeof(uint32_t));
+    // print_str_u8("Tree Addr", (uint8_t*)tree_addr, 8 * sizeof(uint32_t));
+    // print_str_u8("Sig", info.wots_sig, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES);
+    // print_str_u8("Wots Sign Leaf", (uint8_t*)&info.wots_sign_leaf, sizeof(uint32_t));
+    // print_str_u8("steps", (uint8_t*)info.wots_steps, SPX_WOTS_LEN * sizeof(uint32_t));
+    // print_str_u8("leaf addr", (uint8_t*)info.leaf_addr, 8 * sizeof(uint32_t));
+    // print_str_u8("pk addr", (uint8_t*)info.pk_addr, 8 * sizeof(uint32_t));
+    // print_str_u8("WOTS ADDR", wots_addr, 8 * sizeof(uint32_t));
     treehashx1_wots(root, ctx, idx_leaf, tree_addr, &info);
 #endif
 #endif
