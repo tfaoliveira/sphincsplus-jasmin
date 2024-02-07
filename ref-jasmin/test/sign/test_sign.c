@@ -258,22 +258,6 @@ void test_crypto_sign_verify(void) {
             // Verify the signature and compare Jasmin & reference implementations
             res_ref = crypto_sign_verify(sig, signature_length, m, msg_len, pk);
             res_jazz = crypto_sign_verify_jazz(sig, signature_length, m, msg_len, pk);
-
-            if (!strcmp(xstr(PARAMS), "sphincs-shake-128f") &&
-                !strcmp(xstr(THASH), "simple")) {  // TODO: See if the test does not fail. If it
-                                                   // doesnt, we can remote the file
-                char file_path[256];
-                sprintf(file_path, "fors_pk_from_sig_failed_tests/test_%d.txt", i);
-
-                if (access(file_path, F_OK) == 0) {
-                    // File exists, attempt to remove it
-                    if (remove(file_path) != 0) {
-                        perror("Error removing file");
-                        exit(EXIT_FAILURE);
-                    }
-                }
-            }
-
             assert(res_ref == res_jazz);
         }
     }
@@ -340,12 +324,6 @@ void test_crypto_sign_verify(void) {
         print_green("[DEBUG] ");
         puts("crypto_sign_signature passed the tests on invalid keypairs");
     }
-
-    // TODO: Test signatures of invalid sizes
-    // if (debug) {
-    //     print_green("[DEBUG] ");
-    //     puts("crypto_sign_signature passed the tests on signatures of invalid size");
-    // }
 }
 
 void test_crypto_sign(void) {
@@ -388,9 +366,9 @@ void test_api() {
 
 int main(void) {
 #if 0
-    test_crypto_sign_keypair(); // WORKS Uses random bytes
 #endif
-    // test_crypto_sign_seed_keypair();
+    test_crypto_sign_keypair();
+    test_crypto_sign_seed_keypair();
     test_crypto_sign_signature();
     // test_crypto_sign_verify();
     // test_crypto_sign();

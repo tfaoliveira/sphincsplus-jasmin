@@ -86,6 +86,7 @@ inline fn __gen_message_random(
   return R;
 }
 
+
 inline fn __hash_message(
   reg ptr u8[SPX_FORS_MSG_BYTES] digest,
   reg u64 tree,
@@ -112,7 +113,7 @@ inline fn __hash_message(
 
   reg ptr u8[SPX_TREE_BYTES] tree_bytes;
   reg ptr u8[SPX_LEAF_BYTES] leaf_bytes;
- 
+
   shake256_state_p = shake256_state;
 
   // shake256_inc_init(s_inc);
@@ -136,6 +137,7 @@ inline fn __hash_message(
   // shake256_inc_squeeze(buf, SPX_DGST_BYTES, s_inc);
   buf_p = buf;
   buf_p, _ = __shake256_inc_squeeze_t<SPX_DGST_BYTES>(buf_p, shake256_state_p);
+  shake256_state = shake256_state_p;
 
   // memcpy(digest, bufp, SPX_FORS_MSG_BYTES);
   offset = 0;
@@ -154,11 +156,9 @@ inline fn __hash_message(
   tree &= (0xffffffffffffffff >> (64 - SPX_TREE_BITS)); // the expression after &= can be evaluated at compile time
 
   // bufp += SPX_TREE_BYTES;
-  leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES];
-
   // *leaf_idx = (uint32_t)bytes_to_ull(bufp, SPX_LEAF_BYTES);
-  t = (64u) buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES]; // FIXME: This only works for INLEN = 1
-                                                      // should be leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES]; and then call bytes_to_ull<SPX_LEAF_BYTES>
+  leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES];
+  t = __bytes_to_ull<SPX_LEAF_BYTES>(leaf_bytes);
   leaf_idx = (32u) t;
 
   // *leaf_idx &= (~(uint32_t)0) >> (32 - SPX_LEAF_BITS);

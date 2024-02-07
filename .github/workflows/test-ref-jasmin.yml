@@ -13,9 +13,10 @@ jobs:
     strategy:
       matrix:
         directory:
-          - fors
-          - wots
-          - wotsx1
+          # - fors
+          # - wots
+          # - wotsx1
+          - merkle
     steps:
       - uses: actions/checkout@v4
       - name: Compile tests

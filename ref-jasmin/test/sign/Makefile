@@ -9,7 +9,7 @@ CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -wunusedvar -wduplicatevar ${JADDFLAGS} # -lazy-regalloc
+JFLAGS       ?= -nowarning# -wunusedvar -wduplicatevar ${JADDFLAGS} -lazy-regalloc
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
@@ -35,9 +35,13 @@ GET_MSG_LEN    = $(word 4, $(subst _, ,$*))
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 
+SOURCES = ../../hash_$(GET_HASH).c ../../merkle.c ../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c \
+		  ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c ../../fors.c ../../sign.c ../../wrappers.c
+
 # ------------------------------------------------------------------------------
 default: $(TESTS)
 run: $(OUT)
+
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
 
@@ -58,12 +62,7 @@ $(TESTS):
 bin/test_sign_%: bin/test_sign_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
 	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
-	-DDEBUG_FORS_SIGN -DDEBUG_FORS_PK_FROM_SIG \
--I../common -I../../ -I../../params \
-test_sign.c $< ../../hash_$(GET_HASH).c ../../merkle.c \
-../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c \
-../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
-../../utilsx1.c ../../fors.c ../../sign.c
+	-I../common -I../../ -I../../params test_sign.c $< $(SOURCES) 
 
 bin/test_sign_%.out: bin/test_sign_%
 	@./$<

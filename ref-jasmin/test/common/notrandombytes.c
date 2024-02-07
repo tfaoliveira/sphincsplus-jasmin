@@ -218,7 +218,6 @@ void randombytes1(uint8_t *x, uint64_t xlen) { randombytes_internal(x, xlen, g1,
 // ////////
 
 uint8_t *__jasmin_syscall_randombytes__(uint8_t *x, uint64_t xlen) {
-    // randombytes1(x, xlen);
-    print_str_u8("Jasmin buffer", x, xlen);
+    randombytes1(x, xlen);
     return x;
 }
