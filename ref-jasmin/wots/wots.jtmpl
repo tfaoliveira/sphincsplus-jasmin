@@ -296,3 +296,22 @@ fn _wots_pk_from_sig(
   pk, addr = __wots_pk_from_sig(pk, sig, msg, pub_seed, addr);
   return pk, addr;
 }
+
+inline fn __wots_pk_from_sig_(
+  reg ptr u8[SPX_WOTS_BYTES] pk,
+  reg u64 sig,
+  reg ptr u8[SPX_N] msg,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[SPX_WOTS_BYTES],  // pk
+     reg ptr u32[8]               // addr
+{
+
+  pk = pk;
+  sig = sig;
+  msg = msg;
+  pub_seed = pub_seed;
+  addr = addr;
+  pk, addr = _wots_pk_from_sig(pk, sig, msg, pub_seed, addr);
+  return pk, addr;
+}

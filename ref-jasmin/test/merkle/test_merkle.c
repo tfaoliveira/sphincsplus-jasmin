@@ -80,10 +80,10 @@ void test_merkle_sign(void) {
         merkle_sign_jazz(sig_jazz, root_jazz, &ctx, wots_addr_jazz, tree_addr_jazz, idx_leaf);
         merkle_sign(sig_ref, root_ref, &ctx, wots_addr_ref, tree_addr_ref, idx_leaf);
 
-        assert(memcmp(sig_ref, sig_jazz, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0); 
+        assert(memcmp(sig_ref, sig_jazz, SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES) == 0);
         assert(memcmp(root_ref, root_jazz, SPX_N) == 0);
-        assert(memcmp(wots_addr_ref, wots_addr_jazz, 8 * sizeof(uint32_t)) == 0); 
-        assert(memcmp(tree_addr_ref, tree_addr_jazz, 8 * sizeof(uint32_t)) == 0); 
+        assert(memcmp(wots_addr_ref, wots_addr_jazz, 8 * sizeof(uint32_t)) == 0);
+        assert(memcmp(tree_addr_ref, tree_addr_jazz, 8 * sizeof(uint32_t)) == 0);
     }
 }
 
@@ -151,7 +151,7 @@ void test_merkle(void) {
 
 int main(void) {
     test_merkle_sign();
-    // test_merkle_gen_root();
+    test_merkle_gen_root();
     test_merkle();
     printf("Pass merkle : { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;

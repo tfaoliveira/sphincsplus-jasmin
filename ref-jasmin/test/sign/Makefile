@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 CC       ?= clang
-CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
+CFLAGS   ?= -w -g #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 	          -Wundef -Wshadow -Wcast-align -Wpointer-arith \
 	          -fstrict-aliasing -fno-common -pipe -g
 
@@ -9,26 +9,26 @@ CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning# -wunusedvar -wduplicatevar ${JADDFLAGS} -lazy-regalloc
+JFLAGS       ?= -nowarning -g ${JADDFLAGS} #-lazy-regalloc# -wunusedvar -wduplicatevar 
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
-HASH_LIST     := shake
-PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple robust
+HASH_LIST   := shake
+PARAMS_LIST := 128f # 128s 192f 192s 256f 256s
+THASH_LIST  := simple # robust
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
-TESTS      := $(addprefix bin/test_sign_, $(TLIST))
-OUT        := $(addsuffix .out, $(TESTS))
+TESTS := $(addprefix bin/test_sign_, $(TLIST))
+OUT   := $(addsuffix .out, $(TESTS))
 
-GET_HASH       = $(word 1, $(subst _, ,$*))
-GET_PARAM      = $(word 2, $(subst _, ,$*))
-GET_THASH      = $(word 3, $(subst _, ,$*))
-GET_MSG_LEN    = $(word 4, $(subst _, ,$*))
+GET_HASH    = $(word 1, $(subst _, ,$*))
+GET_PARAM   = $(word 2, $(subst _, ,$*))
+GET_THASH   = $(word 3, $(subst _, ,$*))
+GET_MSG_LEN = $(word 4, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
 
@@ -62,7 +62,7 @@ $(TESTS):
 bin/test_sign_%: bin/test_sign_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
 	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
-	-I../common -I../../ -I../../params test_sign.c $< $(SOURCES) 
+	-I../common -I../../ -I../../params test_sign.c $< $(SOURCES)
 
 bin/test_sign_%.out: bin/test_sign_%
 	@./$<

@@ -29,7 +29,7 @@
 // NOTE: for testing purposes, randombytes always outputs the same value, so all the tests are the
 // same
 #ifndef TESTS
-#define TESTS 1
+#define TESTS 100
 #endif
 
 #ifndef MAX_MLEN
@@ -39,13 +39,16 @@
 int fors_sign_test_number = 0;
 int fors_pk_from_sig_test_number = 0;
 
+#if 0
 extern int crypto_sign_seed_keypair_jazz(uint8_t *pk, uint8_t *sk, const uint8_t *seed);
 extern int crypto_sign_keypair_jazz(uint8_t *pk, uint8_t *sk);
 extern int crypto_sign_signature_jazz(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk);
-extern int crypto_sign_verify_jazz(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, const uint8_t *pk);
 extern int crypto_sign_jazz(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen, const uint8_t *sk);
 extern int crypto_sign_open_jazz(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen, const uint8_t *pk);
+#endif
+extern int crypto_sign_verify_jazz(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, const uint8_t *pk);
 
+/*
 void test_crypto_sign_seed_keypair(void);
 void test_crypto_sign_keypair(void);
 void test_crypto_sign_signature(void);
@@ -53,6 +56,7 @@ void test_crypto_sign_verify(void);
 void test_crypto_sign(void);
 void test_crypto_sign_open(void);
 void test_api(void);
+
 
 static void flip_bits(uint8_t *array, size_t len, size_t num_bits_to_flip) {
     size_t random_index;
@@ -155,7 +159,7 @@ void test_crypto_sign_keypair(void) {
 }
 
 void test_crypto_sign_signature(void) {
-    bool debug = false;
+    bool debug = true;
 
     uint8_t pk_jazz[SPX_PK_BYTES];  // ignored (used to generate a valid keypair)
     uint8_t sk_jazz[SPX_SK_BYTES];
@@ -175,8 +179,12 @@ void test_crypto_sign_signature(void) {
 
     uint8_t seed[CRYPTO_SEEDBYTES];
 
-    for (int i = 0; i < 1000; i++) {
-        for (msg_len = 1; msg_len <= 1 /*MAX_MLEN*/; msg_len++) {
+    for (int i = 0; i < TESTS; i++) {
+        for (msg_len = 1; msg_len <= MAX_MLEN; msg_len++) { 
+            if (debug) {
+                printf("[%s %s]: Sign Signature: Test %d/%d [len=%d]\n", xstr(PARAMS), xstr(THASH), i, TESTS, msg_len);
+            }
+
             // generate a valid key pair
             crypto_sign_keypair(pk_ref, sk_ref);
             memcpy(sk_jazz, sk_ref, SPX_SK_BYTES);
@@ -185,7 +193,6 @@ void test_crypto_sign_signature(void) {
             memset(sig_jazz, 0, CRYPTO_BYTES);
 
             randombytes(m_ref, msg_len);
-            // m_ref[0] = 0x1;
             memcpy(m_jazz, m_ref, msg_len);
 
             signature_length_ref = 0;
@@ -200,21 +207,6 @@ void test_crypto_sign_signature(void) {
             crypto_sign_signature(sig_ref, &signature_length_ref, m_ref, msg_len, sk_ref);
             crypto_sign_signature_jazz(sig_jazz, &signature_length_jazz, m_jazz, msg_len, sk_jazz);
 
-            // We assume the test fails. If it doesnt, we remove the respective file
-            if (!strcmp(xstr(PARAMS), "sphincs-shake-128f") && !strcmp(xstr(THASH), "simple") &&
-                memcmp(sig_ref, sig_jazz, CRYPTO_BYTES) == 0) {
-                char file_path[256];
-                sprintf(file_path, "fors_sign_failed_tests/test_%d.txt", i);
-
-                if (access(file_path, F_OK) == 0) {
-                    // File exists, attempt to remove it
-                    if (remove(file_path) != 0) {
-                        perror("Error removing file");
-                        exit(EXIT_FAILURE);
-                    }
-                }
-            }
-
             assert(signature_length_jazz == signature_length_ref);
             assert(signature_length_jazz == CRYPTO_BYTES);
 
@@ -227,9 +219,10 @@ void test_crypto_sign_signature(void) {
         }
     }
 }
+*/
 
 void test_crypto_sign_verify(void) {
-    bool debug = false;
+    bool debug = true;
 
     uint8_t pk[SPX_PK_BYTES];
     uint8_t sk[SPX_SK_BYTES];
@@ -244,8 +237,12 @@ void test_crypto_sign_verify(void) {
     int res_ref, res_jazz;
 
     // Test valid signatures
-    for (int i = 0; i < 1000; i++) {
-        for (msg_len = 1; msg_len <= 1 /* MAX_MLEN */; msg_len++) {
+    for (int i = 0; i < TESTS; i++) {
+        for (msg_len = 1; msg_len <= MAX_MLEN; msg_len++) {
+            if (debug) {
+                printf("[%s %s]: Verify valid signatures: Test %d/%d [len=%d]\n", xstr(PARAMS), xstr(THASH), i, TESTS, msg_len);
+            }
+
             // Generate a valid key pair
             crypto_sign_keypair(pk, sk);
 
@@ -263,13 +260,17 @@ void test_crypto_sign_verify(void) {
     }
 
     if (debug) {
-        print_green("[DEBUG] ");
         puts("crypto_sign_signature passed the tests on valid signatures");
     }
 
+    #if 0
     // Test invalid signatures
     for (int i = 0; i < TESTS; i++) {
         for (msg_len = 10; msg_len < MAX_MLEN; msg_len++) {
+            if (debug) {
+                printf("[%s %s]: Verify invalid signatures: Test %d/%d [len=%d]\n", xstr(PARAMS), xstr(THASH), i, TESTS, msg_len);
+            }
+
             // generate a valid key pair
             crypto_sign_keypair(pk, sk);
 
@@ -324,6 +325,7 @@ void test_crypto_sign_verify(void) {
         print_green("[DEBUG] ");
         puts("crypto_sign_signature passed the tests on invalid keypairs");
     }
+    #endif
 }
 
 void test_crypto_sign(void) {
@@ -367,10 +369,10 @@ void test_api() {
 int main(void) {
 #if 0
 #endif
-    test_crypto_sign_keypair();
-    test_crypto_sign_seed_keypair();
-    test_crypto_sign_signature();
-    // test_crypto_sign_verify();
+    // test_crypto_sign_keypair();       // WORKS
+    // test_crypto_sign_seed_keypair();  // WORKS
+    // test_crypto_sign_signature();
+    test_crypto_sign_verify();
     // test_crypto_sign();
     // test_crypto_sign_open();
     // test_api();

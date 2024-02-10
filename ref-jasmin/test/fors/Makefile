@@ -16,18 +16,18 @@ PREPROCESSOR ?= ../scripts/preprocessor
 # ------------------------------------------------------------------------------
 
 HASH_LIST     := shake
-PARAMS_LIST   := 128f # 128s 192f 192s 256f 256s
+PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
 THASH_LIST    := simple robust
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST),$(H)_$(P)_$(T))))
 
 # ------------------------------------------------------------------------------
-TESTS      := $(addprefix bin/test_fors_, $(TLIST))
-OUT        := $(addsuffix .out, $(TESTS))
+TESTS := $(addprefix bin/test_fors_, $(TLIST))
+OUT   := $(addsuffix .out, $(TESTS))
 
-GET_HASH       = $(word 1, $(subst _, ,$*))
-GET_PARAM      = $(word 2, $(subst _, ,$*))
-GET_THASH      = $(word 3, $(subst _, ,$*))
+GET_HASH  = $(word 1, $(subst _, ,$*))
+GET_PARAM = $(word 2, $(subst _, ,$*))
+GET_THASH = $(word 3, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
 

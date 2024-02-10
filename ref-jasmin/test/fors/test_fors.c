@@ -161,9 +161,6 @@ void test_fors_sign(void) {
         memset(sig_ref, 0, SPX_BYTES - SPX_N);
         memset(sig_jazz, 0, SPX_BYTES - SPX_N);
 
-        memset(pk_ref, 0, SPX_N);
-        memset(pk_jazz, 0, SPX_N);
-
         randombytes(ctx.pub_seed, SPX_N);
         randombytes(ctx.sk_seed, SPX_N);
         randombytes(msg, SPX_FORS_MSG_BYTES);
