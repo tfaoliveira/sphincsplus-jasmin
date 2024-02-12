@@ -137,12 +137,10 @@ export fn hash_message_jazz(
   reg u32 leaf_idx;
 
   R, pk = __load_args(R, pk, args);
-  tree = [_tree];              // NOTE: we only write these values, we dont read them
-  leaf_idx = (u32)[_leaf_idx]; // NOTE: we only write these values, we dont read them
 
   () = #spill(_digest, _tree, _leaf_idx);
 
-  digest, tree, leaf_idx = __hash_message(digest, tree, leaf_idx, R, pk, msg, msg_len);
+  digest, tree, leaf_idx = _hash_message(digest, R, pk, msg, msg_len);
 
   () = #unspill(_digest, _tree, _leaf_idx);
   

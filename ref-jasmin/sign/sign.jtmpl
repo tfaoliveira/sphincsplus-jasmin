@@ -288,8 +288,6 @@ inline fn __crypto_sign_verify(
   inline u32 k;
 
   s_sig = sig; // TODO: FIXME: Replace with spill
-  s_tree = tree;         // FIXME: Nao percebi pq preciso disto aqui. Se as variaveis ainda nao foram usadas pela 1a vez nao deviam estar live
-  s_idx_leaf = idx_leaf; // FIXME: Nao percebi pq preciso disto aqui. Se as variaveis ainda nao foram usadas pela 1a vez nao deviam estar live
   s_res = res;
   s_msg = msg;
   s_msg_len = msg_len;
@@ -319,9 +317,7 @@ inline fn __crypto_sign_verify(
   // hash_message(mhash, &tree, &idx_leaf, sig, pk, m, mlen, &ctx);
   sig = s_sig;
   randomness = __load_u8_array<SPX_N>(randomness, sig);
-  tree = s_tree;        
-  idx_leaf = s_idx_leaf;
-  mhash, tree, idx_leaf = _hash_message(mhash, tree, idx_leaf, randomness, pk, msg, msg_len);
+  mhash, tree, idx_leaf = _hash_message(mhash, randomness, pk, msg, msg_len);
   s_tree = tree;        
   s_idx_leaf = idx_leaf;
   

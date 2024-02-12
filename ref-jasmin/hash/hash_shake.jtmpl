@@ -86,16 +86,16 @@ inline fn __gen_message_random(
   return R;
 }
 
-
 inline fn __hash_message(
   reg ptr u8[SPX_FORS_MSG_BYTES] digest,
-  reg u64 tree,
-  reg u32 leaf_idx,
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_PK_BYTES] pk,
   reg u64 msg msg_len
 ) -> reg ptr u8[SPX_FORS_MSG_BYTES], reg u64, reg u32
 {
+  reg u64 tree;
+  reg u32 leaf_idx;
+
   // buf_p = [ FORS MSG BYTES | TREE BYTES  | LEAF BYTES]
 
   stack u8[SPX_DGST_BYTES] buf;
@@ -170,8 +170,6 @@ inline fn __hash_message(
 #[returnaddress="stack"]
 fn _hash_message(
   reg ptr u8[SPX_FORS_MSG_BYTES] digest,
-  reg u64 tree,
-  reg u32 leaf_idx,
   reg ptr u8[SPX_N] R,
   reg ptr u8[SPX_PK_BYTES] pk,
   reg u64 msg,
@@ -180,6 +178,8 @@ fn _hash_message(
      reg u64, 
      reg u32
 {
-  digest, tree, leaf_idx = __hash_message(digest, tree, leaf_idx, R, pk, msg, msg_len);
+  reg u64 tree;
+  reg u32 leaf_idx;
+  digest, tree, leaf_idx = __hash_message(digest, R, pk, msg, msg_len);
   return digest, tree, leaf_idx;
 }
