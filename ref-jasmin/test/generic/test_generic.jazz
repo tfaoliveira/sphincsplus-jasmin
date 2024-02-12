@@ -104,7 +104,7 @@ export fn bytes_to_ull_jazz(reg u64 _in) -> reg u64 {
     
     in_p = in; 
     in_p = __load_u8_array<8>(in_p, _in); 
-    res = __bytes_to_ull<8>(res, in_p); 
+    res = __bytes_to_ull<8>(in_p); 
     in = in_p; 
     
     return res; 

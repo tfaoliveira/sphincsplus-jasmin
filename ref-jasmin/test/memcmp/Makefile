@@ -24,6 +24,8 @@ default: $(TESTS)
 run: $(OUT)
 
 # ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
 .PRECIOUS: bin/test_memcmp_%.jpp
 bin/test_memcmp_%.jpp:
 	$(JPP) -I Sphincs:../../ -in test_memcmp.jazz -out $@
@@ -43,8 +45,15 @@ bin/test_memcmp_%.out: bin/test_memcmp_%
 bin/:
 	mkdir -p bin/
 
+check: $(patsubst %.jpp,%.check,$(JPP_FILES))
+
+%.check: %.jpp
+	$(JASMIN) -checkCT -infer $< > /dev/null 2>&1
+
 # ------------------------------------------------------------------------------
 .PHONY: clean
 clean:
 	rm -fr bin/
 	
+debug:
+	echo $(JPP_FILES)

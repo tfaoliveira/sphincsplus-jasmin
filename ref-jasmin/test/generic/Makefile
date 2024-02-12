@@ -65,6 +65,11 @@ bin/test_generic_%.out: bin/test_generic_%
 bin/:
 	mkdir -p bin/
 
+check: $(patsubst %.jpp,%.check,$(JPP_FILES))
+
+%.check: %.jpp
+	$(JASMIN) -checkCT -infer $< > /dev/null 2>&1
+
 # ------------------------------------------------------------------------------
 .PHONY: clean
 clean:

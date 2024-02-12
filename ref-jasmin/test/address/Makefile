@@ -74,6 +74,11 @@ bin/test_address_%: bin/test_address_%.s | bin/
 bin/test_address_%.out: bin/test_address_%
 	@./$<
 
+check: $(patsubst %.jpp,%.check,$(JPP_FILES))
+
+%.check: %.jpp
+	$(JASMIN) -checkCT -infer $< > /dev/null 2>&1
+	
 bin/:
 	mkdir -p bin/
 

@@ -46,8 +46,8 @@ extern int crypto_sign_keypair_jazz(uint8_t *pk, uint8_t *sk);
 #if 0
 extern int crypto_sign_signature_jazz(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk);
 extern int crypto_sign_jazz(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen, const uint8_t *sk);
-extern int crypto_sign_open_jazz(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen, const uint8_t *pk);
 #endif
+extern int crypto_sign_open_jazz(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen, const uint8_t *pk);
 extern int crypto_sign_verify_jazz(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, const uint8_t *pk);
 
 /*
@@ -380,7 +380,7 @@ int main(void) {
     // test_crypto_sign_signature();
     test_crypto_sign_verify(); // WORKS
     // test_crypto_sign();
-    // test_crypto_sign_open();
+    test_crypto_sign_open();
     // test_api();
     printf("Pass sign: { params: %s ; thash: %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;

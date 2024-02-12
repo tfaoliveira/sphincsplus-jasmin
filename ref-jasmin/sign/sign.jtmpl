@@ -469,7 +469,7 @@ inline fn __crypto_sign_open(
     len = SPX_BYTES;
     sm += SPX_BYTES;
     l = (u64)[msg_len];
-    r = __crypto_sign_verify(sm, len, sm, l, pk_p);
+    r = __crypto_sign_verify(sm, sm, l, pk_p); // FIXME: PRObably this is wrong
 
     msg = s_msg; // unspill
     msg_len = s_msg_len; // unspill
