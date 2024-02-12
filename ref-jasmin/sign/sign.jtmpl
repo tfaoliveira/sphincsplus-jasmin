@@ -5,7 +5,6 @@ from Sphincs require "memset/memset.jinc"
 from Sphincs require "merkle/merkle.jtmpl"
 
 //////////////////////// SIGN SEED KEYPAIR
-
 #[returnaddress="stack"]
 fn _crypto_sign_seed_keypair(
   reg ptr u8[SPX_PK_BYTES] pk,
@@ -14,11 +13,6 @@ fn _crypto_sign_seed_keypair(
 ) -> reg ptr u8[SPX_PK_BYTES],
      reg ptr u8[SPX_SK_BYTES]
 {
-  ////
-  stack ptr u8[SPX_PK_BYTES] s_pk;
-  stack ptr u8[SPX_SK_BYTES] s_sk;
-  ////
-
   stack u8[SPX_N] pub_seed;
   stack u8[SPX_N] sk_seed;
 
@@ -82,8 +76,6 @@ inline fn __crypto_sign_seed_keypair(reg u64 _pk _sk _seed) -> reg u64
   reg ptr u8[CRYPTO_SEEDBYTES] seed_p;
 
   reg u64 offset inlen;
-
-  stack u64 s_pk s_sk;
 
   () = #spill(_pk, _sk);
 
@@ -288,7 +280,6 @@ inline fn __crypto_sign_verify(
   inline u32 k;
 
   s_sig = sig; // TODO: FIXME: Replace with spill
-  s_res = res;
   s_msg = msg;
   s_msg_len = msg_len;
 

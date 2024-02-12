@@ -45,8 +45,6 @@ inline fn __merkle_sign(
   steps_p = steps;
   steps_p = __chain_lengths(steps_p, root);
 
-  () = #unspill(sig, pub_seed, sk_seed);
-
   leaf_addr_p = leaf_addr; 
   pk_addr_p = pk_addr;
   
@@ -63,36 +61,17 @@ inline fn __merkle_sign(
 
   // copy_subtree_addr(&info.leaf_addr[0], wots_addr);
   leaf_addr = __copy_subtree_addr(leaf_addr_p, wots_addr);
-  // leaf_addr_p[4:4] = __zero_array_u32<4>(leaf_addr_p[4:4]);
-  // leaf_addr = leaf_addr_p;
 
   // copy_subtree_addr(&info.pk_addr[0], wots_addr);
   pk_addr = __copy_subtree_addr(pk_addr_p, wots_addr);
-  // pk_addr_p[4:4] = __zero_array_u32<4>(pk_addr_p[4:4]);
-  // pk_addr = pk_addr_p;
 
   // info.wots_sign_leaf = idx_leaf;
   wots_sign_leaf = idx_leaf;
 
-  // treehashx1(root, auth_path, ctx, idx_leaf, 0, SPX_TREE_HEIGHT, wots_gen_leafx1, tree_addr, &info);  
-
-
-  //() = #spill(pub_seed, sk_seed, sig);
-  // root = #randombytes(root);
-  // stack u8[SPX_N] debug; debug = #copy_32(pub_seed); debug = #randombytes(debug);
-  // stack u8[SPX_N] debug; debug = #copy_32(sk_seed); debug = #randombytes(debug);
-  // stack u32[1] debug; debug[0] = idx_leaf; debug = #randombytes(debug);
-  // tree_addr = #randombytes(tree_addr);
-  // sig = #randombytes(sig);
-  // stack u32[1] debug; debug[0] = wots_sign_leaf; debug = #randombytes(debug);
-  // steps_p = #randombytes(steps_p);
-  // leaf_addr = #randombytes(leaf_addr);
-  //pk_addr = #randombytes(pk_addr);
-  //() = #unspill(pub_seed, sk_seed, sig);
-  
-  root, tree_addr, sig, _, _ = __treehash_wots(root, pub_seed, sk_seed, 
-                                                             idx_leaf, tree_addr, sig, wots_sign_leaf, 
-                                                             steps_p, leaf_addr, pk_addr);
+  // treehashx1(root, auth_path, ctx, idx_leaf, 0, SPX_TREE_HEIGHT, wots_gen_leafx1, tree_addr, &info);
+  () = #unspill(sig, pub_seed, sk_seed);
+  root, tree_addr, sig, _, _ = __treehash_wots(root, pub_seed, sk_seed, idx_leaf, tree_addr, 
+                                              sig, wots_sign_leaf, steps_p, leaf_addr, pk_addr);
   return sig, root, tree_addr;
 }
 
@@ -110,31 +89,6 @@ fn _merkle_sign(
      reg ptr u32[8]
 {
   sig, root, tree_addr = __merkle_sign(sig, root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
-  return sig, root, tree_addr;
-}
-
-inline fn __merkle_sign_(
-  reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES] sig,
-  reg ptr u8[SPX_N] root,
-  reg ptr u8[SPX_N] pub_seed,
-  reg ptr u8[SPX_N] sk_seed,
-  reg ptr u32[8] wots_addr,
-  reg ptr u32[8] tree_addr,
-  reg u32 idx_leaf
-) -> reg ptr u8[SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES],
-     reg ptr u8[SPX_N], 
-     reg ptr u32[8]
-{
-  () = #spill(root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
-
-  () = #unspill(root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
-
-  sig, root, tree_addr = _merkle_sign(sig, root, pub_seed, sk_seed, wots_addr, tree_addr, idx_leaf);
-
-  sig = sig;
-  root = root;
-  tree_addr = tree_addr;
-
   return sig, root, tree_addr;
 }
 
@@ -158,26 +112,26 @@ inline fn __merkle_gen_root(
 
   // uint32_t top_tree_addr[8] = {0};
   // uint32_t wots_addr[8] = {0};
-
   ?{}, t = #set0_32();
 
-  top_tree_addr_p = top_tree_addr;
-  wots_addr_p = wots_addr;
 
-  for i=0 to 8 { top_tree_addr_p[i] = t; wots_addr_p[i] = t; i+=1; }
+  for i=0 to 8 { top_tree_addr[i] = t; wots_addr[i] = t; i+=1; }
 
   // set_layer_addr(top_tree_addr, SPX_D - 1);
   addr = SPX_D - 1;
+  top_tree_addr_p = top_tree_addr;
   top_tree_addr_p = __set_layer_addr(top_tree_addr_p, addr);
   
   // set_layer_addr(wots_addr, SPX_D - 1);
+  wots_addr_p = wots_addr;
   wots_addr_p = __set_layer_addr(wots_addr_p, addr);
 
   // merkle_sign(auth_path, root, ctx, wots_addr, top_tree_addr, (uint32_t)~0);
   auth_path_p = auth_path;
   t = #NOT_32(t);
   
-  auth_path_p, root, top_tree_addr_p = _merkle_sign(auth_path_p, root, pub_seed, sk_seed, wots_addr_p, top_tree_addr_p, t);
+  _, root, _ = _merkle_sign(auth_path_p, root, pub_seed, sk_seed, 
+                                                    wots_addr_p, top_tree_addr_p, t);
 
   return root;
 }

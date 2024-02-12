@@ -26,10 +26,12 @@
 #define THASH simple
 #endif
 
-// NOTE: for testing purposes, randombytes always outputs the same value, so all the tests are the
-// same
 #ifndef TESTS
 #define TESTS 100
+#endif
+
+#ifndef KEY_GEN_TESTS
+#define KEY_GEN_TESTS 1000
 #endif
 
 #ifndef MAX_MLEN
@@ -39,9 +41,9 @@
 int fors_sign_test_number = 0;
 int fors_pk_from_sig_test_number = 0;
 
-#if 0
 extern int crypto_sign_seed_keypair_jazz(uint8_t *pk, uint8_t *sk, const uint8_t *seed);
 extern int crypto_sign_keypair_jazz(uint8_t *pk, uint8_t *sk);
+#if 0
 extern int crypto_sign_signature_jazz(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk);
 extern int crypto_sign_jazz(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen, const uint8_t *sk);
 extern int crypto_sign_open_jazz(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen, const uint8_t *pk);
@@ -56,7 +58,7 @@ void test_crypto_sign_verify(void);
 void test_crypto_sign(void);
 void test_crypto_sign_open(void);
 void test_api(void);
-
+*/
 
 static void flip_bits(uint8_t *array, size_t len, size_t num_bits_to_flip) {
     size_t random_index;
@@ -75,7 +77,7 @@ static void flip_bits(uint8_t *array, size_t len, size_t num_bits_to_flip) {
 }
 
 void test_crypto_sign_seed_keypair(void) {
-    bool debug = false;
+    bool debug = true;
 
     uint8_t pk_jazz[SPX_PK_BYTES];
     uint8_t sk_jazz[SPX_SK_BYTES];
@@ -87,7 +89,11 @@ void test_crypto_sign_seed_keypair(void) {
 
     int res_ref, res_jazz;
 
-    for (int i = 0; i < TESTS; i++) {
+    for (int i = 0; i < KEY_GEN_TESTS; i++) {
+        if (debug) {
+                printf("[%s %s]: Key gen (w/ seed): Test %d/%d\n", xstr(PARAMS), xstr(THASH), i, KEY_GEN_TESTS);
+            }
+
         memset(pk_jazz, 0, SPX_PK_BYTES);
         memset(sk_jazz, 0, SPX_SK_BYTES);
         memset(pk_ref, 0, SPX_PK_BYTES);
@@ -119,7 +125,7 @@ void test_crypto_sign_seed_keypair(void) {
 }
 
 void test_crypto_sign_keypair(void) {
-    bool debug = false;
+    bool debug = true;
 
     uint8_t pk_jazz[SPX_PK_BYTES];
     uint8_t sk_jazz[SPX_SK_BYTES];
@@ -129,7 +135,11 @@ void test_crypto_sign_keypair(void) {
 
     int res_ref, res_jazz;
 
-    for (int i = 0; i < TESTS; i++) {
+    for (int i = 0; i < KEY_GEN_TESTS; i++) {
+        if (debug) {
+                printf("[%s %s]: Key gen: Test %d/%d\n", xstr(PARAMS), xstr(THASH), i, KEY_GEN_TESTS);
+            }
+
         memset(pk_jazz, 0, SPX_PK_BYTES);
         memset(sk_jazz, 0, SPX_SK_BYTES);
         memset(pk_ref, 0, SPX_PK_BYTES);
@@ -158,6 +168,7 @@ void test_crypto_sign_keypair(void) {
     }
 }
 
+/*
 void test_crypto_sign_signature(void) {
     bool debug = true;
 
@@ -263,8 +274,6 @@ void test_crypto_sign_verify(void) {
         puts("crypto_sign_signature passed the tests on valid signatures");
     }
 
-    #if 0
-    // Test invalid signatures
     for (int i = 0; i < TESTS; i++) {
         for (msg_len = 10; msg_len < MAX_MLEN; msg_len++) {
             if (debug) {
@@ -325,18 +334,17 @@ void test_crypto_sign_verify(void) {
         print_green("[DEBUG] ");
         puts("crypto_sign_signature passed the tests on invalid keypairs");
     }
-    #endif
 }
 
 void test_crypto_sign(void) {
-    bool debug = false;
+    bool debug = true;
 
     for (int i = 0; i < TESTS; i++) {
     }
 }
 
 void test_crypto_sign_open(void) {
-    bool debug = false;
+    bool debug = true;
 
     for (int i = 0; i < TESTS; i++) {
     }
@@ -367,12 +375,10 @@ void test_api() {
 }
 
 int main(void) {
-#if 0
-#endif
-    // test_crypto_sign_keypair();       // WORKS
-    // test_crypto_sign_seed_keypair();  // WORKS
+    test_crypto_sign_keypair();       // WORKS
+    test_crypto_sign_seed_keypair();  // WORKS
     // test_crypto_sign_signature();
-    test_crypto_sign_verify();
+    test_crypto_sign_verify(); // WORKS
     // test_crypto_sign();
     // test_crypto_sign_open();
     // test_api();

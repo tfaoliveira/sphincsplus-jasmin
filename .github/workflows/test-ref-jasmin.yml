@@ -17,6 +17,7 @@ jobs:
           # - wots
           # - wotsx1
           - merkle
+          - sign
     steps:
       - uses: actions/checkout@v4
       - name: Compile tests

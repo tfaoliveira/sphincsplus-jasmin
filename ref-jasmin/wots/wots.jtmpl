@@ -232,17 +232,12 @@ inline fn __wots_pk_from_sig(
   reg u32 chain_addr;
   reg u32 start steps;
 
-  //////
   stack ptr u8[SPX_WOTS_BYTES] s_pk;
   stack u64 s_sig;
-  stack ptr u8[SPX_N] s_pub_seed;
-  //////
 
-  () = #spill(addr);
+  () = #spill(addr, pub_seed);
   s_pk = pk;
   s_sig = sig;
-  s_pub_seed = pub_seed;
-
   // chain_lengths(lengths, msg);
   lengths_p = lengths;
   lengths_p = __chain_lengths(lengths_p, msg);
@@ -261,24 +256,21 @@ inline fn __wots_pk_from_sig(
     pk = s_pk;
     out = pk[i * SPX_N : SPX_N];
 
-    sig = s_sig;
     sig_offset = i * SPX_N;
+    sig = s_sig;
     sig += sig_offset;
 
     start = lengths[i];
     steps = SPX_WOTS_W - 1;
     steps -= lengths[i];  
 
-    pub_seed = s_pub_seed;
-
-    () = #unspill(addr);  
+    () = #unspill(addr, pub_seed);  
     s_pk[i * SPX_N : SPX_N], addr = __gen_chain(out, sig, start, steps, pub_seed, addr);
     () = #spill(addr);
   }
 
   () = #unspill(addr);
   pk = s_pk;
-
 
   return pk, addr;
 }
