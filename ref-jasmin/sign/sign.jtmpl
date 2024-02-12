@@ -422,3 +422,78 @@ inline fn __crypto_sign_verify_(
 
   return r;
 }
+
+inline fn __crypto_sign_open(
+  reg u64 msg,
+  reg u64 msg_len,
+  reg u64 sm,
+  reg u64 sm_len,
+  reg u64 _pk
+) -> reg u64 
+{
+  reg u64 r;
+  stack u8[SPX_PK_BYTES] pk;
+  reg ptr u8[SPX_PK_BYTES] pk_p;
+
+  reg u64 len l;
+  reg u8 val;
+  reg u64 i;
+
+  stack u64 sm_entry; // sm at the entrypoint of the program
+  stack u64 s_msg s_sm s_sm_len s_msg_len; // spill
+
+  // if (smlen < SPX_BYTES) { memset(m, 0, smlen); *mlen = 0; return -1; }
+  if (sm_len < SPX_BYTES)
+  {
+    val = 0;
+    __memset(msg, val, sm_len);
+    (u64)[msg_len] = 0;
+    r = -1;
+  } else {
+    sm_entry = sm;
+    s_sm_len = sm_len; // spill
+    s_sm = sm; // spill
+    s_msg_len = msg_len; // spill
+    s_msg = msg; // spill
+
+    pk_p = pk;
+    pk_p = __load_u8_array<SPX_PK_BYTES>(pk_p, _pk);  
+
+    // *mlen = smlen - SPX_BYTES;
+    len = sm_len;
+    len -= SPX_BYTES;
+    (u64)[msg_len] = len;
+    
+    // if (crypto_sign_verify(sm, SPX_BYTES, sm + SPX_BYTES, (size_t)*mlen, pk))
+    //     memset(m, 0, smlen); *mlen = 0; return -1;
+    len = SPX_BYTES;
+    sm += SPX_BYTES;
+    l = (u64)[msg_len];
+    r = __crypto_sign_verify(sm, len, sm, l, pk_p);
+
+    msg = s_msg; // unspill
+    msg_len = s_msg_len; // unspill
+    
+    if (r != 0) 
+    {
+      val = 0;
+      sm_len = s_sm_len;   // unspill
+      __memset(msg, val, sm_len);
+      (u64)[msg_len] = 0;
+      r = -1;
+    }
+
+    // memmove(m, sm + SPX_BYTES, *mlen);
+    sm = s_sm; // unspill
+    len = (u64)[msg_len];
+    ?{}, i = #set0();
+    while (i < len)
+    {
+      val = (u8)[sm + SPX_BYTES + i];
+      (u8)[msg + i] = val;
+      i += 1;
+    }
+  }
+
+  return r;
+}
