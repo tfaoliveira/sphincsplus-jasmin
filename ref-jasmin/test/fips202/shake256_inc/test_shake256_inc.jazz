@@ -19,36 +19,31 @@ export fn shake256_inc_absorb_jazz(reg u64 _state _in _inlen)
   stack u64[26] state;
   reg ptr u64[26] state_p;
 
-  stack u64 s_state;
+  #declassify state_p = state;
+  #declassify state_p = __load_u64_array<26>(state_p, _state); 
 
-  state_p = state;
-  state_p = __load_u64_array<26>(state_p, _state); 
-
-  s_state = _state;
+  () = #spill(_state);
 
   state_p = __shake256_inc_absorb_(state_p, _in, _inlen);
 
-  _state = s_state;
+  () = #unspill(_state);
   __store_u64_array<26>(state_p, _state);
 }
 
-export fn shake256_inc_finalize_jazz(
-  reg u64 _state
-)
+export fn shake256_inc_finalize_jazz(reg u64 _state)
 {
   stack u64[26] state;
   reg ptr u64[26] state_p;
 
-  stack u64 s_state;
+  #declassify state_p = state;
+  #declassify state_p = __load_u64_array<26>(state_p, _state); 
 
-  state_p = state;
-  state_p = __load_u64_array<26>(state_p, _state); 
-
-  s_state = _state;
+  () = #spill(_state);
 
   state_p = __shake256_inc_finalize(state_p);
 
-  _state = s_state;
+  () = #unspill(_state);
+
   __store_u64_array<26>(state_p, _state);
 }
 
@@ -61,8 +56,8 @@ export fn shake256_inc_squeeze_jazz(
 
   stack u64 s_state;
 
-  state_p = state;
-  state_p = __load_u64_array<26>(state_p, _state); 
+  #declassify state_p = state;
+  #declassify state_p = __load_u64_array<26>(state_p, _state); 
 
   s_state = _state;
 
@@ -75,16 +70,19 @@ export fn shake256_inc_absorb_template_jazz<INLEN>(
   reg u64 _state _in
 )
 {
-  // TODO: fix extra assignment warning
   stack u64[26] state;
   stack u8[INLEN] in;
   stack u64 s_state;
 
-  state = __load_u64_array<26>(state, _state);
-  in = __load_u8_array<INLEN>(in, _in);
-  s_state = _state;
-  state = __shake256_inc_absorb_t<INLEN>(state, in);
-  _state = s_state;
+  #declassify state = __load_u64_array<26>(state, _state);
+  #declassify in = __load_u8_array<INLEN>(in, _in);
+
+  () = #spill(_state);
+
+  #declassify  state = __shake256_inc_absorb_t<INLEN>(state, in);
+  
+  () = #spill(_state);
+
   __store_u64_array<26>(state, _state);
 }//<>
 
@@ -98,12 +96,12 @@ export fn shake256_inc_squeeze_template_jazz<OUTLEN>(
 
   stack u64 s_state s_out;
 
-  state = __load_u64_array<26>(state, _state); 
+  #declassify state = __load_u64_array<26>(state, _state); 
 
   s_state = _state; 
   s_out = _out;
 
-  out, state = __shake256_inc_squeeze_t<OUTLEN>(out, state);
+  #declassify out, state = __shake256_inc_squeeze_t<OUTLEN>(out, state);
 
   _state = s_state;
   _out = s_out;

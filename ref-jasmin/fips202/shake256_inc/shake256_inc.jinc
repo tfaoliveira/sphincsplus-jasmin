@@ -21,7 +21,7 @@ fn __shake256_inc_init(reg ptr u64[26] state) -> reg ptr u64[26] {
 }
 
 inline fn __shake256_inc_init_(
-  reg ptr u64[26] state
+  #flexible reg ptr u64[26] state
 ) -> reg ptr u64[26]
 {
   state = state;
@@ -40,8 +40,9 @@ inline fn __keccak_inc_absorb(
 {
   reg u64 i;
   reg u64 offset_in;
-
-  reg u64 t u v z;
+  
+  reg u64 t u v;
+  reg u64 z;
 
   stack u64 s_inlen s_in s_i s_offset_in s_t s_u s_v s_z;
 
@@ -50,7 +51,7 @@ inline fn __keccak_inc_absorb(
   offset_in = 0;
 
   t = inlen;
-  t += state[25]; // // t holds the value of inlen + state[25]
+  #declassify t += state[25]; // t holds the value of inlen + state[25]
 
   while (t >=u rate) {
     i = 0;
@@ -73,7 +74,7 @@ inline fn __keccak_inc_absorb(
       z += offset_in;
       z += i;
 
-      v = (64u) (u8) [z];
+      #declassify v = (64u) (u8) [z];
       v <<= (u & 63);
 
       state[t] ^= v;
@@ -141,7 +142,7 @@ inline fn __keccak_inc_absorb(
     z += offset_in;
     z += i;
 
-    v = (64u) (u8) [z];
+    #declassify v = (64u) (u8) [z];
     v <<= (u & 63);
 
     state[t] ^= v;
