@@ -1,4 +1,4 @@
 ```
-pip install requests pyyaml yamlfix
+pip install requests pyyaml yamlfix pandas
 ./to_libjade.py
 ```

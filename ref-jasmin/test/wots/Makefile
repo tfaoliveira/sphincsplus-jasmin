@@ -36,7 +36,7 @@ ASM_FILES := $(JPP_FILES:.jpp=.s)
 
 # ------------------------------------------------------------------------------
 
-SOURCES = $(filter-out ../../hash_%.c ../../thash_%.c, $(wildcard ../../*.c)) \
+SOURCES = $(filter-out ../../hash_%.c ../../thash_%.c ../../PQCgenKAT_sign.c ../../rng.c, $(wildcard ../../*.c)) \
           ../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c
 
 TEST_FLAGS = -DTEST_WOTS_BASE_W -DTEST_WOTS_GEN_CHAIN -DTEST_WOTS_CHECKSUM -DTEST_WOTS_CHAIN_LENGTHS -DTEST_WOTS_PK_FROM_SIG 

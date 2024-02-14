@@ -18,7 +18,6 @@ warnings.filterwarnings("ignore", category=UserWarning)  # Ignore yamlfix warnin
 
 
 def get_api_text(fn: list[str], opt: list[str], size: list[int], thash: list[str], params: dict[str, dict[str, str]]):
-    # TODO:
     s = ""
     s += f"#ifndef JADE_SIGN_sphincs_plus_sphincs_plus_{fn}_{size}{opt}_{thash}_amd64_ref_API_H\n"  # O primeiro sphincs_plus é a family, o segundo e sphincs+ qualificado com os p+arametros
     s += f"#define JADE_SIGN_sphincs_plus_sphincs_plus_{fn}_{size}{opt}_{thash}_amd64_ref_API_H\n\n"

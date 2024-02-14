@@ -9,14 +9,14 @@ CFLAGS   ?= -w -g #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning -g# ${JADDFLAGS}# -wunusedvar -wduplicatevar 
+JFLAGS       ?= -nowarning -g ${JADDFLAGS} # -wunusedvar -wduplicatevar 
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
 HASH_LIST   := shake
-PARAMS_LIST := 128f # 128s 192f 192s 256f 256s
+PARAMS_LIST := 128f 192f 256f # 128s 192s 256s 
 THASH_LIST  := simple robust
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
@@ -32,6 +32,7 @@ GET_MSG_LEN = $(word 4, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
 
+JTMPL_FILES := $(addsuffix .jtmpl, $(TESTS))
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 
@@ -42,18 +43,25 @@ SOURCES = ../../hash_$(GET_HASH).c ../../merkle.c ../../wots.c ../../wotsx1.c ..
 default: $(TESTS)
 run: $(OUT)
 
-jpp_files: $(JPP_FILES)
-asm_files: $(ASM_FILES)
+jtmpl_files: $(JTMPL_FILES)
+jpp_files:   $(JPP_FILES)
+asm_files:   $(ASM_FILES)
 
-$(JPP_FILES):
-.PRECIOUS: bin/test_sign_%.jpp
-bin/test_sign_%.jpp: | bin/
+$(JTMPL_FILES):
+.PRECIOUS: bin/test_sign_%.jtmpl
+bin/test_sign_%.jtmpl: | bin/
 	cp test_sign.jazz $@
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --input_file $@ --output_file $@
 
+
+$(JPP_FILES):
+.PRECIOUS: bin/test_sign_%.jpp
+bin/test_sign_%.jpp: bin/test_sign_%.jtmpl
+	$(PREPROCESSOR) --input_file $< --output_file $@
+
+$(ASM_FILES):
 .PRECIOUS: bin/test_sign_%.s
 bin/test_sign_%.s: bin/test_sign_%.jpp
 	$(JASMIN) $(JFLAGS) $< -o $@

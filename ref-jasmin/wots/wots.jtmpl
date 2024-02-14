@@ -240,7 +240,7 @@ inline fn __wots_pk_from_sig(
   s_sig = sig;
   // chain_lengths(lengths, msg);
   lengths_p = lengths;
-  lengths_p = __chain_lengths(lengths_p, msg);
+  lengths_p = _chain_lengths(lengths_p, msg);
   lengths = lengths_p;
 
   // for (i = 0; i < SPX_WOTS_LEN; i++) 

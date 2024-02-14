@@ -7,6 +7,7 @@
         "stdio.h": "c",
         "string.h": "c",
         "address.h": "c",
-        "hash.h": "c"
+        "hash.h": "c",
+        "wrappers.h": "c"
     }
 }

@@ -43,7 +43,7 @@ inline fn __merkle_sign(
 
   // chain_lengths(steps, root);
   steps_p = steps;
-  steps_p = __chain_lengths(steps_p, root);
+  steps_p = _chain_lengths(steps_p, root);
 
   leaf_addr_p = leaf_addr; 
   pk_addr_p = pk_addr;

@@ -67,28 +67,28 @@ int main(void) {
     print("SPX_ADDR_TYPE_WOTSPRF", 5);
     print("SPX_ADDR_TYPE_FORSPRF", 6);
 
-    int haraka = 0, sha2 = 0, shake = 0;
+    // int haraka = 0, sha2 = 0, shake = 0;
 
-#if defined(SPX_HARAKA)
-    haraka = 1;
-#elif defined(SPX_SHA2)
-    sha2 = 1;
-#elif defined(SPX_SHAKE)
-    shake = 1;
-#endif
+// #if defined(SPX_HARAKA)
+//     haraka = 1;
+// #elif defined(SPX_SHA2)
+//     sha2 = 1;
+// #elif defined(SPX_SHAKE)
+//     shake = 1;
+// #endif
 
-    print("SPX_HARAKA", haraka);
-    print("SPX_SHA2", sha2);
-    print("SPX_SHAKE", shake);
+    // print("SPX_HARAKA", haraka);
+    // print("SPX_SHA2", sha2);
+    // print("SPX_SHAKE", shake);
 
-#if defined(SPX_SHA512)
-    print("SPX_SHA512", SPX_SHA512);
-#endif
+// #if defined(SPX_SHA512)
+//     print("SPX_SHA512", SPX_SHA512);
+// #endif
 
     // parameters from api.h
-    print("CRYPTO_SECRETKEYBYTES", SPX_SK_BYTES);
-    print("CRYPTO_PUBLICKEYBYTES", SPX_PK_BYTES);
-    print("CRYPTO_BYTES", SPX_BYTES);
+    // print("CRYPTO_SECRETKEYBYTES", SPX_SK_BYTES);
+    // print("CRYPTO_PUBLICKEYBYTES", SPX_PK_BYTES);
+    // print("CRYPTO_BYTES", SPX_BYTES);
     print("CRYPTO_SEEDBYTES", 3 * SPX_N);
 
 #if defined(SPX_SHAKE)
