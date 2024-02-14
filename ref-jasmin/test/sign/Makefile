@@ -9,14 +9,14 @@ CFLAGS   ?= -w -g #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning -g ${JADDFLAGS} -lazy-regalloc# -wunusedvar -wduplicatevar 
+JFLAGS       ?= -nowarning -g# ${JADDFLAGS}# -wunusedvar -wduplicatevar 
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
 HASH_LIST   := shake
-PARAMS_LIST := 128f 128s 192f 192s 256f 256s
+PARAMS_LIST := 128f # 128s 192f 192s 256f 256s
 THASH_LIST  := simple robust
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))

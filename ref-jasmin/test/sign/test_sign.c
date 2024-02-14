@@ -43,11 +43,11 @@ int fors_pk_from_sig_test_number = 0;
 
 extern int crypto_sign_seed_keypair_jazz(uint8_t *pk, uint8_t *sk, const uint8_t *seed);
 extern int crypto_sign_keypair_jazz(uint8_t *pk, uint8_t *sk);
-#if 0
 extern int crypto_sign_signature_jazz(uint8_t *sig, size_t *siglen, const uint8_t *m, size_t mlen, const uint8_t *sk);
+#if 0
 extern int crypto_sign_jazz(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen, const uint8_t *sk);
-#endif
 extern int crypto_sign_open_jazz(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen, const uint8_t *pk);
+#endif
 extern int crypto_sign_verify_jazz(const uint8_t *sig, size_t siglen, const uint8_t *m, size_t mlen, const uint8_t *pk);
 
 /*
@@ -168,7 +168,6 @@ void test_crypto_sign_keypair(void) {
     }
 }
 
-/*
 void test_crypto_sign_signature(void) {
     bool debug = true;
 
@@ -221,16 +220,10 @@ void test_crypto_sign_signature(void) {
             assert(signature_length_jazz == signature_length_ref);
             assert(signature_length_jazz == CRYPTO_BYTES);
 
-            if (memcmp(sig_ref, sig_jazz, CRYPTO_BYTES) != 0) {
-                fprint_str_u8("sig_ref.txt", "sig", sig_ref, CRYPTO_BYTES);
-                fprint_str_u8("sig_jazz.txt", "sig", sig_jazz, CRYPTO_BYTES);
-            }
-
             assert(memcmp(sig_ref, sig_jazz, CRYPTO_BYTES) == 0);
         }
     }
 }
-*/
 
 void test_crypto_sign_verify(void) {
     bool debug = true;
@@ -375,12 +368,12 @@ void test_api() {
 }
 
 int main(void) {
-    test_crypto_sign_keypair();       // WORKS
-    test_crypto_sign_seed_keypair();  // WORKS
-    // test_crypto_sign_signature();
-    test_crypto_sign_verify(); // WORKS
+    // test_crypto_sign_keypair();       // WORKS
+    // test_crypto_sign_seed_keypair();  // WORKS
+    test_crypto_sign_signature();
+    // test_crypto_sign_verify(); // WORKS
     // test_crypto_sign();
-    test_crypto_sign_open();
+    // test_crypto_sign_open();
     // test_api();
     printf("Pass sign: { params: %s ; thash: %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;

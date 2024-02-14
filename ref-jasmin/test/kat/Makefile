@@ -1,7 +1,5 @@
 # -*- Makefile -*-
 
-# -*- Makefile -*-
-
 JASMIN       ?= jasminc
 JFLAGS       ?= -nowarning -g ${JADDFLAGS}
 
@@ -10,4 +8,4 @@ bin/:
 
 .PHONY: clean
 clean:
-	rm -rf bin/
+	rm -rf bin/ 

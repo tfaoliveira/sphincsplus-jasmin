@@ -65,8 +65,8 @@ inline fn __gen_message_random(
   reg ptr u64[26] shake_state_p;
 
   () = #spill(R, sk_prf, optrand, msg, msg_len);
-  shake_state_p = shake_state;
 
+  shake_state_p = shake_state;
   shake_state_p = __shake256_inc_init_(shake_state_p);
 
   () = #unspill(sk_prf);

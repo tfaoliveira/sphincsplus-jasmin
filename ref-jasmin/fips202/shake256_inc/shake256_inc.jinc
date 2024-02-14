@@ -21,7 +21,7 @@ fn __shake256_inc_init(reg ptr u64[26] state) -> reg ptr u64[26] {
 }
 
 inline fn __shake256_inc_init_(
-  #flexible reg ptr u64[26] state
+  reg ptr u64[26] state
 ) -> reg ptr u64[26]
 {
   state = state;
