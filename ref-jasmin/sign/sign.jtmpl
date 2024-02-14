@@ -516,21 +516,48 @@ inline fn __crypto_sign_verify_(
   return r;
 }
 
-inline fn __crypto_sign_open(
-  reg u64 msg,
-  reg u64 msg_len,
-  reg u64 sm,
-  reg u64 sm_len,
-  reg u64 _pk
-) -> reg u64 
+inline fn __crypto_sign(reg u64 sm _smlen m mlen _sk) -> reg u64
+{
+  reg u64 r;
+  reg u64 sig_len t;
+  reg u8 v;
+  reg u64 i;
+
+  _smlen = _smlen;
+
+  () = #spill(sm, m, mlen, _smlen);
+
+  _ = ___crypto_sign_signature_(sm, _smlen, m, mlen, _sk);
+
+
+  () = #unspill(sm, m, mlen, _smlen);
+
+  // memmove(sm + SPX_BYTES, m, mlen);
+  i=0;
+  while (i < mlen)
+  {
+    v = (u8)[m + i];
+    (u8)[sm + SPX_BYTES] = v;
+    i += 1;
+  }
+
+  // *smlen = siglen + mlen;
+  t = SPX_BYTES;
+  t += mlen;
+  (u64)[_smlen] = t;
+  ?{}, r = #set0();
+  return r;
+}
+
+inline fn __crypto_sign_open(reg u64 msg msg_len sm sm_len _pk) -> reg u64 
 {
   reg u64 r;
   stack u8[SPX_PK_BYTES] pk;
   reg ptr u8[SPX_PK_BYTES] pk_p;
 
   reg u64 len l;
-  reg u8 val;
   reg u64 i;
+  reg u8 val;
 
   stack u64 sm_entry; // sm at the entrypoint of the program
   stack u64 s_msg s_sm s_sm_len s_msg_len; // spill
@@ -538,14 +565,17 @@ inline fn __crypto_sign_open(
   // if (smlen < SPX_BYTES) { memset(m, 0, smlen); *mlen = 0; return -1; }
   if (sm_len < SPX_BYTES)
   {
-    val = 0;
-    __memset(msg, val, sm_len);
+    // memset(m, 0, smlen);
+    __memset(msg, 0, sm_len);
+
+    // *mlen = 0;
     (u64)[msg_len] = 0;
+    
+    // return -1;
     r = -1;
   } else {
     sm_entry = sm;
     s_sm_len = sm_len; // spill
-    s_sm = sm; // spill
     s_msg_len = msg_len; // spill
     s_msg = msg; // spill
 
@@ -561,8 +591,11 @@ inline fn __crypto_sign_open(
     //     memset(m, 0, smlen); *mlen = 0; return -1;
     len = SPX_BYTES;
     sm += SPX_BYTES;
+    () = #spill(sm);
     l = (u64)[msg_len];
-    r = __crypto_sign_verify(sm, sm, l, pk_p); // FIXME: PRObably this is wrong
+
+    // NOTE: The 2nd argument in ref is not here because at this point the length of the signature is always SPX_BYTES
+    r = __crypto_sign_verify(sm_entry, sm, l, pk_p);
 
     msg = s_msg; // unspill
     msg_len = s_msg_len; // unspill
@@ -577,12 +610,12 @@ inline fn __crypto_sign_open(
     }
 
     // memmove(m, sm + SPX_BYTES, *mlen);
-    sm = s_sm; // unspill
+    () = #unspill(sm);
     len = (u64)[msg_len];
     ?{}, i = #set0();
     while (i < len)
     {
-      val = (u8)[sm + SPX_BYTES + i];
+      val = (u8)[sm + i]; // at this point sm was already updated with  + SPX_BYTES
       (u8)[msg + i] = val;
       i += 1;
     }

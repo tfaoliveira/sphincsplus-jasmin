@@ -30,7 +30,12 @@ export fn crypto_sign_verify_jazz(reg u64 _sig sig_len m m_len _pk) -> reg u64
   return r;
 }
 
-// Sign here
+export fn crypto_sign_jazz(reg u64 sm smlen m mlen _sk) -> reg u64
+{
+  reg u64 r;
+  r = __crypto_sign(sm, smlen, m, mlen, _sk);
+  return r;
+}
 
 export fn crypto_sign_open_jazz(reg u64 msg msg_len sm sm_len _pk) -> reg u64
 {

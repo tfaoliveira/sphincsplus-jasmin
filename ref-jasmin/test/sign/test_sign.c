@@ -91,8 +91,8 @@ void test_crypto_sign_seed_keypair(void) {
 
     for (int i = 0; i < KEY_GEN_TESTS; i++) {
         if (debug) {
-                printf("[%s %s]: Key gen (w/ seed): Test %d/%d\n", xstr(PARAMS), xstr(THASH), i, KEY_GEN_TESTS);
-            }
+            printf("[%s %s]: Key gen (w/ seed): Test %d/%d\n", xstr(PARAMS), xstr(THASH), i, KEY_GEN_TESTS);
+        }
 
         memset(pk_jazz, 0, SPX_PK_BYTES);
         memset(sk_jazz, 0, SPX_SK_BYTES);
@@ -137,8 +137,8 @@ void test_crypto_sign_keypair(void) {
 
     for (int i = 0; i < KEY_GEN_TESTS; i++) {
         if (debug) {
-                printf("[%s %s]: Key gen: Test %d/%d\n", xstr(PARAMS), xstr(THASH), i, KEY_GEN_TESTS);
-            }
+            printf("[%s %s]: Key gen: Test %d/%d\n", xstr(PARAMS), xstr(THASH), i, KEY_GEN_TESTS);
+        }
 
         memset(pk_jazz, 0, SPX_PK_BYTES);
         memset(sk_jazz, 0, SPX_SK_BYTES);
@@ -187,10 +187,8 @@ void test_crypto_sign_signature(void) {
     size_t signature_length_ref;
     size_t signature_length_jazz;
 
-    uint8_t seed[CRYPTO_SEEDBYTES];
-
     for (int i = 0; i < TESTS; i++) {
-        for (msg_len = 1; msg_len <= MAX_MLEN; msg_len++) { 
+        for (msg_len = 1; msg_len <= MAX_MLEN; msg_len++) {
             if (debug) {
                 printf("[%s %s]: Sign Signature: Test %d/%d [len=%d]\n", xstr(PARAMS), xstr(THASH), i, TESTS, msg_len);
             }
@@ -244,7 +242,8 @@ void test_crypto_sign_verify(void) {
     for (int i = 0; i < TESTS; i++) {
         for (msg_len = 1; msg_len <= MAX_MLEN; msg_len++) {
             if (debug) {
-                printf("[%s %s]: Verify valid signatures: Test %d/%d [len=%d]\n", xstr(PARAMS), xstr(THASH), i, TESTS, msg_len);
+                printf("[%s %s]: Verify valid signatures: Test %d/%d [len=%d]\n", xstr(PARAMS), xstr(THASH), i, TESTS,
+                       msg_len);
             }
 
             // Generate a valid key pair
@@ -270,7 +269,8 @@ void test_crypto_sign_verify(void) {
     for (int i = 0; i < TESTS; i++) {
         for (msg_len = 10; msg_len < MAX_MLEN; msg_len++) {
             if (debug) {
-                printf("[%s %s]: Verify invalid signatures: Test %d/%d [len=%d]\n", xstr(PARAMS), xstr(THASH), i, TESTS, msg_len);
+                printf("[%s %s]: Verify invalid signatures: Test %d/%d [len=%d]\n", xstr(PARAMS), xstr(THASH), i, TESTS,
+                       msg_len);
             }
 
             // generate a valid key pair
@@ -305,7 +305,7 @@ void test_crypto_sign_verify(void) {
             // generate a valid key pair
             crypto_sign_keypair(pk, sk);
 
-            // Generate a random message and the respective signature
+            // Generate a random message
             randombytes(m, msg_len);
 
             // Generate a valid signature
@@ -332,14 +332,81 @@ void test_crypto_sign_verify(void) {
 void test_crypto_sign(void) {
     bool debug = true;
 
+    uint8_t pk_jazz[SPX_PK_BYTES];  // ignored (used to generate a valid keypair)
+    uint8_t sk_jazz[SPX_SK_BYTES];
+
+    uint8_t pk_ref[SPX_PK_BYTES];  // ignored (used to generate a valid keypair)
+    uint8_t sk_ref[SPX_SK_BYTES];
+
+    uint8_t m_jazz[MAX_MLEN] = {0};
+    uint8_t m_ref[MAX_MLEN] = {0};
+    
+    size_t message_length;
+
+    uint8_t sig_ref[CRYPTO_BYTES];
+    uint8_t sig_jazz[CRYPTO_BYTES];
+
+    size_t signature_length_ref;
+    size_t signature_length_jazz;
+
+    int res_ref, res_jazz;
+
     for (int i = 0; i < TESTS; i++) {
     }
 }
 
 void test_crypto_sign_open(void) {
+    // TODO: improve test
     bool debug = true;
 
+    uint8_t pk_jazz[SPX_PK_BYTES];  // ignored (used to generate a valid keypair)
+    uint8_t sk_jazz[SPX_SK_BYTES];
+
+    uint8_t pk_ref[SPX_PK_BYTES];  // ignored (used to generate a valid keypair)
+    uint8_t sk_ref[SPX_SK_BYTES];
+
+    uint8_t m_jazz[MAX_MLEN] = {0};
+    uint8_t m_ref[MAX_MLEN] = {0};
+    size_t msg_len_ref, msg_len_jazz;
+
+    uint8_t sig_ref[CRYPTO_BYTES];
+    uint8_t sig_jazz[CRYPTO_BYTES];
+
+    size_t signature_length_ref;
+    size_t signature_length_jazz;
+
+    int res_ref, res_jazz;
+
     for (int i = 0; i < TESTS; i++) {
+        for (size_t msg_len = 1; msg_len <= MAX_MLEN; msg_len++) {
+            if (debug) {
+                printf("[%s %s]: Sign Open: Test %d/%d [len=%d]\n", xstr(PARAMS), xstr(THASH), i, TESTS, msg_len);
+            }
+
+            // generate a valid key pair
+            crypto_sign_keypair(pk_ref, sk_ref);
+            memcpy(pk_jazz, pk_ref, CRYPTO_PUBLICKEYBYTES);
+            memcpy(sk_jazz, sk_ref, CRYPTO_SECRETKEYBYTES);
+
+            // Generate a random message
+            randombytes(m_ref, msg_len);
+            memcpy(m_jazz, m_ref, msg_len);
+
+            signature_length_ref = CRYPTO_BYTES;
+            signature_length_jazz = CRYPTO_BYTES;
+
+            memset(sig_ref, 0, CRYPTO_BYTES);
+            memset(sig_jazz, 0, CRYPTO_BYTES);
+
+            assert(!memcmp(m_jazz, m_ref, msg_len));
+            assert(!memcmp(pk_jazz, pk_ref, CRYPTO_PUBLICKEYBYTES));
+
+            res_ref = crypto_sign_open(m_ref, &msg_len_jazz, sig_ref, signature_length_ref, pk_ref);
+            res_jazz = crypto_sign_open(m_jazz, &msg_len_ref, sig_jazz, signature_length_jazz, pk_jazz);
+
+            assert(res_jazz == res_ref);
+            assert(msg_len_jazz == msg_len_ref);
+        }
     }
 }
 
@@ -370,10 +437,10 @@ void test_api() {
 int main(void) {
     // test_crypto_sign_keypair();       // WORKS
     // test_crypto_sign_seed_keypair();  // WORKS
-    test_crypto_sign_signature();
+    // test_crypto_sign_signature(); // WORKS
     // test_crypto_sign_verify(); // WORKS
-    // test_crypto_sign();
-    // test_crypto_sign_open();
+    test_crypto_sign();
+    // test_crypto_sign_open(); // WORKS
     // test_api();
     printf("Pass sign: { params: %s ; thash: %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;
