@@ -51,6 +51,8 @@ print("#" * 150)
 
 print("compiling with -lea\n\n")
 
+data = []
+
 subprocess.run(
     ["make", "-C", "../ref-jasmin/test/sign", "clean"],
     stdout=subprocess.DEVNULL,

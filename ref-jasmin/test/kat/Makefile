@@ -9,14 +9,14 @@ CFLAGS   ?= -w -g #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 # NOTE: -Wvla was removed for CFLAGS due to the usage of SPX_VLA
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -nowarning -g# ${JADDFLAGS}# -wunusedvar -wduplicatevar 
+JFLAGS       ?= -nowarning ${JADDFLAGS}
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # ------------------------------------------------------------------------------
 
 HASH_LIST   := shake
-PARAMS_LIST := 128f # 128s 192f 192s 256f 256s
+PARAMS_LIST := 128f 192f 256f# 128s  192s  256s
 THASH_LIST  := simple robust
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(H)_$(P)_$(T))))
@@ -57,7 +57,7 @@ bin/PQC_sign_kat_jasmin_%.s: bin/PQC_sign_kat_jasmin_%.jpp
 $(TESTS):
 bin/PQC_sign_kat_jasmin_%: bin/PQC_sign_kat_jasmin_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
-	-I../common -I../../ -I../../params ../../PQCgenKAT_sign.c $< ../../rng.c -lcrypto
+	-I../common -I../../ -I../../params PQCgenKAT_sign.c rng.c $< -lcrypto
 
 bin/PQC_sign_kat_jasmin_%.out: bin/PQC_sign_kat_jasmin_%
 	@./$<
