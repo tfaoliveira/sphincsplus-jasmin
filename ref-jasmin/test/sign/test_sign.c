@@ -57,7 +57,6 @@ void test_crypto_sign_signature(void);
 void test_crypto_sign_verify(void);
 void test_crypto_sign(void);
 void test_crypto_sign_open(void);
-void test_api(void);
 */
 
 static void flip_bits(uint8_t *array, size_t len, size_t num_bits_to_flip) {
@@ -410,38 +409,13 @@ void test_crypto_sign_open(void) {
     }
 }
 
-void test_api() {
-    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
-    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
-
-    uint8_t signature[CRYPTO_BYTES];
-    size_t signature_length;
-
-    uint8_t message[MAX_MLEN];
-    size_t message_length;
-
-    int res;
-
-    for (int i = 0; i < TESTS; i++) {
-        for (message_length = 10; message_length < MAX_MLEN; message_length++) {
-            randombytes(message, message_length);
-
-            crypto_sign_keypair(public_key, secret_key);
-            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-            res = crypto_sign_verify(signature, signature_length, message, message_length, public_key);
-            assert(res == 0);
-        }
-    }
-}
-
 int main(void) {
-    // test_crypto_sign_keypair();       // WORKS
-    // test_crypto_sign_seed_keypair();  // WORKS
-    // test_crypto_sign_signature(); // WORKS
-    // test_crypto_sign_verify(); // WORKS
-    test_crypto_sign();
-    // test_crypto_sign_open(); // WORKS
-    // test_api();
+    test_crypto_sign_keypair();       // WORKS
+    test_crypto_sign_seed_keypair();  // WORKS
+    test_crypto_sign_signature(); // WORKS
+    test_crypto_sign_verify(); // WORKS
+    // test_crypto_sign();
+    // test_crypto_sign_open(); 
     printf("Pass sign: { params: %s ; thash: %s }\n", xstr(PARAMS), xstr(THASH));
     return 0;
 }
