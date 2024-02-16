@@ -46,6 +46,7 @@ run: $(OUT)
 jtmpl_files: $(JTMPL_FILES)
 jpp_files:   $(JPP_FILES)
 asm_files:   $(ASM_FILES)
+checksafety: $(addprefix checksafety_, $(TLIST))
 
 $(JTMPL_FILES):
 .PRECIOUS: bin/test_sign_%.jtmpl
@@ -74,6 +75,9 @@ bin/test_sign_%: bin/test_sign_%.s | bin/
 
 bin/test_sign_%.out: bin/test_sign_%
 	@./$<
+
+checksafety_%: bin/test_sign_%.jpp
+	$(JASMIN) -checksafety $<
 
 bin/:
 	mkdir -p bin/

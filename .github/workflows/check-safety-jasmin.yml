@@ -1,0 +1,21 @@
+name: Check safety for jasmin-ref implementation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ref-jasmin
+  pull_request:
+
+jobs:
+  test:
+    runs-on: [self-hosted, linux, X64, amd64-main]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate jasmin files from jtmpl
+        run:
+          JASMIN=$(which_jasminc) make -C ref-jasmin/test/sign jpp_files
+      - name: Check Safety
+        run:
+          JASMIN=$(which_jasminc) make -C ref-jasmin/test/sign checksafety
+          
