@@ -21,6 +21,7 @@ jobs:
         run:
           JASMIN=$(which_jasminc) make -C ref-jasmin/test/${{ matrix.directory }}
       - name: Run tests
+        timeout-minutes: 1380 # 23h
         run:
           JASMIN=$(which_jasminc) make -C ref-jasmin/test/${{ matrix.directory }} run
           
