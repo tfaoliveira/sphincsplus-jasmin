@@ -1,4 +1,4 @@
-name: Check safety for jasmin-ref implementation
+name: Check constant time for jasmin-ref implementation
 
 on:
   workflow_dispatch:
@@ -35,7 +35,7 @@ jobs:
       - name: Generate jasmin files from jtmpl
         run:
           JASMIN=$(which_jasminc) make -C ref-jasmin/test/${{ matrix.directory }} jpp_files
-      - name: Check Safety
+      - name: Check constant time
         run:
           JASMIN=$(which_jasminc) make -C ref-jasmin/test/${{ matrix.directory }} checkct
           
