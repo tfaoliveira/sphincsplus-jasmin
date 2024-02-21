@@ -1,0 +1,40 @@
+require "../../../fips202x4/fips202_4x.jtmpl"
+
+export fn KeccakF1600_StatePermute4x_jazz(reg u64 _state) {
+    stack u256[25] state;
+
+    inline int i;
+    reg u256 t;
+
+    for i=0 to 25 { t = (u256)[_state + 32*i]; state[i]=t; }
+    
+    state = _KeccakF1600_StatePermute4x(state);
+
+    for i=0 to 25 { t = state[i]; (u256)[_state + 32*i] = t;  }
+}
+
+// args is a (void *)
+// export fn shake256_x4_jazz<INLEN, OUTLEN>(reg u64 args) 
+// {
+//     reg u64 _in1 _in2 _in3 _in4;
+//     stack u8[INLEN] in1 in2 in3 in4;
+//     
+//     reg u64 _out1 _out2 _out3 _out4;
+//     stack u8[OUTLEN] out1 out2 out3 out4;
+// 
+//     reg u64 offset;
+// 
+//     _in1 = (u64) [args];
+//     _in2 = (u64) [args + 8*1];
+//     _in3 = (u64) [args + 8*2];
+//     _in4 = (u64) [args + 8*3];
+// 
+//     _out1 = (u64) [args + 8*4];
+//     _out2 = (u64) [args + 8*5];
+//     _out3 = (u64) [args + 8*6];
+//     _out4 = (u64) [args + 8*7];
+// 
+//     () = #spill(_out1, _out2, _out3, _out4);
+// 
+//     () = #unspill(_out1, _out2, _out3, _out4);
+// }//<>
