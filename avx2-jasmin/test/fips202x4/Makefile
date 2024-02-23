@@ -1,9 +1,9 @@
 
 # -*- Makefile -*-
 
-AS       ?= as
-CC       ?= clang
-CFLAGS   ?= -Wall -Wextra -Wpedantic -Wmissing-prototypes -O3 -std=c99 -march=native -fomit-frame-pointer -flto
+AS     ?= as
+CC     ?= clang
+CFLAGS ?= -Wall -Wextra -Wpedantic -Wmissing-prototypes -O3 -std=c99 -march=native -fomit-frame-pointer -flto
 
 JASMIN       ?= jasminc
 JFLAGS       ?= -nowarning ${JADDFLAGS}
@@ -29,6 +29,7 @@ run: $(OUT)
 
 jpp_files: $(JPP_FILES)
 asm: $(ASM_FILES)
+checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
 
 $(JPP_FILES):
 .PRECIOUS: bin/test_fips202_4x_%.jpp
@@ -49,6 +50,9 @@ bin/test_fips202_%: bin/test_fips202_%.s | bin/
 
 bin/test_fips202_%.out: bin/test_fips202_%
 	@./$<
+
+%.check: %.jpp
+	$(JASMIN) -checkCT -infer $< > $@
 
 bin/:
 	mkdir -p $@

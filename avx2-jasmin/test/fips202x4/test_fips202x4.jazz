@@ -1,16 +1,50 @@
 require "../../../fips202x4/fips202_4x.jtmpl"
+require "../../../memcpy/memcpy.jtmpl" // I have no idea why but without this import, the KeccakF1600_StatePermute4x_jazz export function is not the in the jpp
 
 export fn KeccakF1600_StatePermute4x_jazz(reg u64 _state) {
-    stack u256[25] state;
+  stack u256[25] state;
 
-    inline int i;
-    reg u256 t;
+  inline int i;
+  reg u256 t;
 
-    for i=0 to 25 { t = (u256)[_state + 32*i]; state[i]=t; }
+  for i=0 to 25 { t = (u256)[_state + 32*i]; state[i]=t; }
     
-    state = _KeccakF1600_StatePermute4x(state);
+  state = _KeccakF1600_StatePermute4x(state);
 
-    for i=0 to 25 { t = state[i]; (u256)[_state + 32*i] = t;  }
+  for i=0 to 25 { t = state[i]; (u256)[_state + 32*i] = t; }
+}
+
+// absorb 4 message of identical length in parallel
+// export fn keccak_absorb4x<INLEN>(reg u64 args) 
+// {
+//   stack u256[25] state;
+//   stack u8[INLEN] in0 in1 in2 in3;
+// }//<>
+
+export fn shake256_squeezeblock4x_jazz(reg u64 _h0 _h1 _h2 _h3 _state)
+{
+  stack u256[25] state;
+  stack u8[SHAKE256_RATE] h0 h1 h2 h3;
+
+  inline int i;
+  reg u256 t;
+  reg u8 u;
+
+  for i=0 to SHAKE256_RATE {  u = (u8) [_h0 + i]; h0[i] = u;
+                              u = (u8) [_h1 + i]; h1[i] = u;
+                              u = (u8) [_h2 + i]; h2[i] = u;
+                              u = (u8) [_h3 + i]; h3[i] = u; }
+
+  for i=0 to 25 { t = (u256)[_state + 32*i]; state[i]=t; }
+  
+  state, h0, h1, h2, h3 = __shake256_squeezeblock4x(state, h0, h1, h2, h3);
+
+  for i=0 to SHAKE256_RATE {  u = h0[i]; (u8) [_h0 + i] = u;
+                              u = h1[i]; (u8) [_h1 + i] = u;
+                              u = h2[i]; (u8) [_h2 + i] = u;
+                              u = h3[i]; (u8) [_h3 + i] = u; }
+
+  for i=0 to 25 { t = state[i]; (u256)[_state + 32*i] = t; }
 }
 
 // args is a (void *)
