@@ -4,6 +4,7 @@ param int SHA3_256_RATE = 136;
 param int SHA3_512_RATE = 72;
 
 u64[4] shake_sep = {9223372036854775808, 9223372036854775808, 9223372036854775808, 9223372036854775808};
+u256 SHAKE_SEP = (4u64)[0x8000000000000000, 0x8000000000000000, 0x8000000000000000, 0x8000000000000000];
 
 u256 rho56 = 0x181F1E1D1C1B1A191017161514131211080F0E0D0C0B0A090007060504030201;
 u256 rho8 = 0x1E1D1C1B1A19181F16151413121110170E0D0C0B0A09080F0605040302010007;
@@ -1292,6 +1293,93 @@ fn _KeccakF1600_StatePermute4x(reg ptr u256[25] A_4x) -> reg ptr u256[25]
     return A_4x;
 }
 
+
+#[returnaddress="stack"]
+fn _shake256_absorb4x<INLEN>(
+    reg ptr u256[25] s, 
+    reg ptr u8[INLEN] m0 m1 m2 m3
+) -> reg ptr u256[25]
+{
+	inline int i;
+    reg u256 t0 t1;
+    reg u64 t64;
+    reg u8 t8;
+    reg u64 offset; // so we can use while instead of for
+    reg u64 inlen;
+
+    stack u8[200] t0 t1 t2 t3;
+    reg u8 zero;
+
+    inlen = INLEN;
+    offset = 0;
+
+    while (inlen >= SHAKE256_RATE)
+    {
+        for i = 0 to SHAKE256_RATE / 8
+        {
+            t64 = m0[u64 i + offset];
+            s[u64 4 * i] ^= t64;
+    
+            t64 = m1[u64 i + offset];
+            s[u64 4 * i + 1] ^= t64;
+    
+            t64 = m2[u64 i + offset];
+            s[u64 4 * i + 2] ^= t64;
+            
+            t64 = m3[u64 i + offset];
+            s[u64 4 * i + 3] ^= t64;
+        }
+
+        s = _KeccakF1600_StatePermute4x(s);
+
+        inlen -= SHAKE256_RATE;
+        offset += SHAKE256_RATE;
+    }
+
+    ?{}, zero = #set0_8();
+    for i = 0 to SHAKE256_RATE {
+        t0[i] = zero;
+        t1[i] = zero;
+        t2[i] = zero;
+        t3[i] = zero;
+    }
+
+    for i = 0 to INLEN 
+    {
+        t8 = m0[i]; t0[i] = t8;
+        t8 = m1[i]; t1[i] = t8;
+        t8 = m2[i]; t2[i] = t8;
+        t8 = m3[i]; t3[i] = t8;
+    }
+
+    t0[INLEN] = 0x1F;
+    t1[INLEN] = 0x1F;
+    t2[INLEN] = 0x1F;
+    t3[INLEN] = 0x1F;
+
+    t0[SHAKE256_RATE - 1] |= 128;
+    t1[SHAKE256_RATE - 1] |= 128;
+    t2[SHAKE256_RATE - 1] |= 128;
+    t3[SHAKE256_RATE - 1] |= 128;
+
+    for i = 0 to SHAKE256_RATE / 8
+    {
+        t64 = t0[u64 i];
+        s[u64 4 * i] ^= t64;
+    
+        t64 = t1[u64 i];
+        s[u64 4 * i + 1] ^= t64;
+    
+        t64 = t2[u64 i];
+        s[u64 4 * i + 2] ^= t64;
+            
+        t64 = t3[u64 i];
+        s[u64 4 * i + 3] ^= t64;
+    }
+
+	return s;
+}//<>
+
 inline
 fn __shake256_squeezeblock4x(reg ptr u256[25] state, reg ptr u8[SHAKE256_RATE] h0 h1 h2 h3) -> reg ptr u256[25], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE]
 {
@@ -1314,6 +1402,24 @@ fn __shake256_squeezeblock4x(reg ptr u256[25] state, reg ptr u8[SHAKE256_RATE] h
   return state, h0, h1, h2, h3;
 }
 
+fn __shake256_squeezeblocks_4x(
+    reg ptr u256[25] state, 
+    reg u64 nblocks,
+    reg ptr u8[SHAKE256_RATE] h0 h1 h2 h3
+) -> reg ptr u256[25], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE]
+{
+  inline int rate_shift;
+  rate_shift = SHA3_256_RATE >> 3;
+
+  while (nblocks > 0)
+  {
+    () = #spill(nblocks);
+    state, h0, h1, h2, h3 = __shake256_squeezeblock4x(state, h0, h1, h2, h3);
+    () = #unspill(nblocks);
+    nblocks -= 1;
+  }
+  return state, h0, h1, h2, h3;
+}
 
 fn _shake256x4<OUTLEN,INLEN>(reg ptr u256[25] state, )
 {

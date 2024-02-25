@@ -36,7 +36,7 @@ $(JPP_FILES):
 bin/test_fips202_4x_%.jpp: | bin/
 	cp test_fips202x4.jazz $@
 	$(JPP) -in $@ -out $@
-	$(PREPROCESSOR) --input_file $@ --output_file $@
+	$(PREPROCESSOR) --input_file $@ --output_file $@ --task "fn:keccak_absorb4x_jazz p:INLEN:$(word 2, $(subst _, ,$*))"
 
 .PRECIOUS: bin/test_fips202_4x_%.s
 bin/test_fips202_4x_%.s: bin/test_fips202_4x_%.jpp

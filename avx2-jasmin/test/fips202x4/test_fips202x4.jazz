@@ -14,12 +14,31 @@ export fn KeccakF1600_StatePermute4x_jazz(reg u64 _state) {
   for i=0 to 25 { t = state[i]; (u256)[_state + 32*i] = t; }
 }
 
-// absorb 4 message of identical length in parallel
-// export fn keccak_absorb4x<INLEN>(reg u64 args) 
-// {
-//   stack u256[25] state;
-//   stack u8[INLEN] in0 in1 in2 in3;
-// }//<>
+export fn keccak_absorb4x_jazz<INLEN>(reg u64 _state _in0 _in1 _in2 _in3) 
+{
+  stack u256[25] state;
+  stack u8[INLEN] in0 in1 in2 in3;
+
+  inline int i;
+  reg u256 t;
+  reg u8 t8;
+
+  for i=0 to 25 { t = (u256)[_state + 32*i]; state[i] = t; }
+  for i=0 to INLEN {
+    t8 = (u8)[_in0 + i]; in0[i] = t8;
+    t8 = (u8)[_in1 + i]; in1[i] = t8;
+    t8 = (u8)[_in2 + i]; in2[i] = t8;
+    t8 = (u8)[_in3 + i]; in3[i] = t8;
+  }
+
+  () = #spill(_state);
+
+  state = _shake256_absorb4x<INLEN>(state, in0, in1, in2, in3);
+
+  // store the state
+  () = #unspill(_state);
+  for i=0 to 25 { t = state[i]; (u256)[_state + 32*i] = t; }
+}//<>
 
 export fn shake256_squeezeblock4x_jazz(reg u64 _h0 _h1 _h2 _h3 _state)
 {
@@ -46,6 +65,33 @@ export fn shake256_squeezeblock4x_jazz(reg u64 _h0 _h1 _h2 _h3 _state)
 
   for i=0 to 25 { t = state[i]; (u256)[_state + 32*i] = t; }
 }
+
+export fn shake256_squeezeblocks_4x_jazz(reg u64 _h0 _h1 _h2 _h3 nblocks _state)
+{
+  stack u256[25] state;
+  stack u8[SHAKE256_RATE] h0 h1 h2 h3;
+
+  inline int i;
+  reg u256 t;
+  reg u8 u;
+
+  for i=0 to SHAKE256_RATE {  u = (u8) [_h0 + i]; h0[i] = u;
+                              u = (u8) [_h1 + i]; h1[i] = u;
+                              u = (u8) [_h2 + i]; h2[i] = u;
+                              u = (u8) [_h3 + i]; h3[i] = u; }
+
+  for i=0 to 25 { t = (u256)[_state + 32*i]; state[i]=t; }
+  
+  state, h0, h1, h2, h3 = __shake256_squeezeblocks_4x(state, nblocks, h0, h1, h2, h3);
+
+  for i=0 to SHAKE256_RATE {  u = h0[i]; (u8) [_h0 + i] = u;
+                              u = h1[i]; (u8) [_h1 + i] = u;
+                              u = h2[i]; (u8) [_h2 + i] = u;
+                              u = h3[i]; (u8) [_h3 + i] = u; }
+
+  for i=0 to 25 { t = state[i]; (u256)[_state + 32*i] = t; }
+}
+
 
 // args is a (void *)
 // export fn shake256_x4_jazz<INLEN, OUTLEN>(reg u64 args) 
