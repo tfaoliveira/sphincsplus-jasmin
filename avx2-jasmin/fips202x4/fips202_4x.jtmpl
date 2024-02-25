@@ -1381,7 +1381,14 @@ fn _shake256_absorb4x<INLEN>(
 }//<>
 
 inline
-fn __shake256_squeezeblock4x(reg ptr u256[25] state, reg ptr u8[SHAKE256_RATE] h0 h1 h2 h3) -> reg ptr u256[25], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE]
+fn __shake256_squeezeblock4x(
+    reg ptr u256[25] state, 
+    reg ptr u8[SHAKE256_RATE] h0 h1 h2 h3
+) -> reg ptr u256[25], 
+     reg ptr u8[SHAKE256_RATE], 
+     reg ptr u8[SHAKE256_RATE], 
+     reg ptr u8[SHAKE256_RATE], 
+     reg ptr u8[SHAKE256_RATE]
 {
   reg u256 t256;
   reg u128 t128;
@@ -1402,26 +1409,52 @@ fn __shake256_squeezeblock4x(reg ptr u256[25] state, reg ptr u8[SHAKE256_RATE] h
   return state, h0, h1, h2, h3;
 }
 
-fn __shake256_squeezeblocks_4x(
+#[returnaddress="stack"]
+fn _shake256_squeezeblocks_4x<OUTLEN>(
     reg ptr u256[25] state, 
-    reg u64 nblocks,
-    reg ptr u8[SHAKE256_RATE] h0 h1 h2 h3
-) -> reg ptr u256[25], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE], reg ptr u8[SHAKE256_RATE]
+    reg ptr u8[OUTLEN] h0 h1 h2 h3
+) -> reg ptr u256[25], 
+     reg ptr u8[OUTLEN], 
+     reg ptr u8[OUTLEN], 
+     reg ptr u8[OUTLEN], 
+     reg ptr u8[OUTLEN]
 {
-  inline int rate_shift;
-  rate_shift = SHA3_256_RATE >> 3;
+// TODO: Needs improvements
+  reg ptr u8[SHAKE256_RATE] buf0 buf1 buf2 buf3;
+  inline int NBLOCKS; NBLOCKS = OUTLEN / SHAKE256_RATE;
+  inline int i j;
 
-  while (nblocks > 0)
-  {
-    () = #spill(nblocks);
-    state, h0, h1, h2, h3 = __shake256_squeezeblock4x(state, h0, h1, h2, h3);
-    () = #unspill(nblocks);
-    nblocks -= 1;
+    // 
+    // each H consists of nblocks of length OUTLEN / SHAKE256_RATE
+    // 
+    // This means that nblocks = OUTLEN / SHAKE256_RATE
+
+  j = 0;
+  for i=NBLOCKS downto 0 {
+    state, h0[j * SHAKE256_RATE : SHAKE256_RATE], 
+           h1[j * SHAKE256_RATE : SHAKE256_RATE], 
+           h2[j * SHAKE256_RATE : SHAKE256_RATE], 
+           h3[j * SHAKE256_RATE : SHAKE256_RATE] = __shake256_squeezeblock4x(
+            state, 
+            h0[j * SHAKE256_RATE : SHAKE256_RATE], 
+            h1[j * SHAKE256_RATE : SHAKE256_RATE], 
+            h2[j * SHAKE256_RATE : SHAKE256_RATE], 
+            h3[j * SHAKE256_RATE : SHAKE256_RATE]);
+    j += 1;
   }
-  return state, h0, h1, h2, h3;
-}
 
-fn _shake256x4<OUTLEN,INLEN>(reg ptr u256[25] state, )
+  return state, h0, h1, h2, h3;
+}//<>
+
+fn _shake256x4<OUTLEN,INLEN>(
+    reg ptr u256[25] state,
+    reg ptr u8[INLEN] in0 in1 in2 in3,
+    reg ptr u8[OUTLEN] out0, out1, out2, out3
+) -> reg ptr u256[25],   // state
+     reg ptr u8[OUTLEN], // out0
+     reg ptr u8[OUTLEN], // out1
+     reg ptr u8[OUTLEN], // out2
+     reg ptr u8[OUTLEN]  // out3
 {
   stack u8[SHAKE256_RATE] t0 t1 t2 t3;
 
@@ -1433,6 +1466,10 @@ fn _shake256x4<OUTLEN,INLEN>(reg ptr u256[25] state, )
   for i=0 to 25 { state[i] = zero; }
 
   // absorb 4 message of identical length in parallel
+  state = _shake256_absorb4x<INLEN>(state, in0, in1, in2, in3);
 
   // squeeze output  
-}
+  state, out0, out1, out2, out3 = _shake256_squeezeblocks_4x<OUTLEN>(state, in0, in1, in2, in3, out0, out1, out2, out3);
+
+  return state, out0, out1, out2, out3;
+}//<>

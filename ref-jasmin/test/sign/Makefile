@@ -28,7 +28,6 @@ OUT   := $(addsuffix .out, $(TESTS))
 GET_HASH    = $(word 1, $(subst _, ,$*))
 GET_PARAM   = $(word 2, $(subst _, ,$*))
 GET_THASH   = $(word 3, $(subst _, ,$*))
-GET_MSG_LEN = $(word 4, $(subst _, ,$*))
 
 # ------------------------------------------------------------------------------
 
@@ -47,6 +46,7 @@ jtmpl_files: $(JTMPL_FILES)
 jpp_files:   $(JPP_FILES)
 asm_files:   $(ASM_FILES)
 checksafety: $(addprefix checksafety_, $(TLIST))
+checkct:     $(addprefix checkct_, $(TLIST))
 
 $(JTMPL_FILES):
 .PRECIOUS: bin/test_sign_%.jtmpl
@@ -78,6 +78,9 @@ bin/test_sign_%.out: bin/test_sign_%
 
 checksafety_%: bin/test_sign_%.jpp
 	$(JASMIN) -checksafety $<
+
+checkct_%: bin/test_sign_%.jpp
+	$(JASMIN) -checkCT -infer $<
 
 bin/:
 	mkdir -p bin/

@@ -8,6 +8,9 @@
         "string.h": "c",
         "address.h": "c",
         "hash.h": "c",
-        "wrappers.h": "c"
+        "wrappers.h": "c",
+        "keccakp-1600-times4-snp.h": "c",
+        "fips202x4.h": "c",
+        "immintrin.h": "c"
     }
 }
