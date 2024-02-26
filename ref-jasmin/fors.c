@@ -48,6 +48,7 @@ struct fors_gen_leaf_info {
 };
 
 // NOTE: This function is no longer static because we use it in wrappers.c
+//       We also need to add it to the header file
 void fors_gen_leafx1(unsigned char *leaf, const spx_ctx *ctx, uint32_t addr_idx, void *info) {
     struct fors_gen_leaf_info *fors_info = info;
     uint32_t *fors_leaf_addr = fors_info->leaf_addrx;

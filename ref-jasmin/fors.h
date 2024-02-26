@@ -29,4 +29,6 @@ void fors_pk_from_sig(unsigned char *pk,
                       const spx_ctx* ctx,
                       const uint32_t fors_addr[8]);
 
+void fors_gen_leafx1(unsigned char *leaf, const spx_ctx *ctx, uint32_t addr_idx, void *info);
+
 #endif
