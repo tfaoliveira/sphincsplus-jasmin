@@ -1300,12 +1300,12 @@ fn _shake256_absorb4x<INLEN>(
     reg ptr u8[INLEN] m0 m1 m2 m3
 ) -> reg ptr u256[25]
 {
+    /*
 	inline int i;
-    reg u256 t0 t1;
     reg u64 t64;
-    reg u8 t8;
-    reg u64 offset; // so we can use while instead of for
+    reg u64 offset;
     reg u64 inlen;
+    reg u64 j index;
 
     stack u8[200] t0 t1 t2 t3;
     reg u8 zero;
@@ -1344,18 +1344,19 @@ fn _shake256_absorb4x<INLEN>(
         t3[i] = zero;
     }
 
+    // TODO: FIXME: The code commented below should work
     for i = 0 to INLEN 
     {
-        t8 = m0[i]; t0[i] = t8;
-        t8 = m1[i]; t1[i] = t8;
-        t8 = m2[i]; t2[i] = t8;
-        t8 = m3[i]; t3[i] = t8;
+        t0[i] = m0[i + offset];
+        t1[i] = m1[i + offset];
+        t2[i] = m2[i + offset];
+        t3[i] = m3[i + offset];
     }
 
-    t0[INLEN] = 0x1F;
-    t1[INLEN] = 0x1F;
-    t2[INLEN] = 0x1F;
-    t3[INLEN] = 0x1F;
+    t0[INLEN - 1] = 0x1F;
+    t1[INLEN - 1] = 0x1F;
+    t2[INLEN - 1] = 0x1F;
+    t3[INLEN - 1] = 0x1F;
 
     t0[SHAKE256_RATE - 1] |= 128;
     t1[SHAKE256_RATE - 1] |= 128;
@@ -1366,7 +1367,6 @@ fn _shake256_absorb4x<INLEN>(
     {
         t64 = t0[u64 i];
         s[u64 4 * i] ^= t64;
-    
         t64 = t1[u64 i];
         s[u64 4 * i + 1] ^= t64;
     
@@ -1376,7 +1376,7 @@ fn _shake256_absorb4x<INLEN>(
         t64 = t3[u64 i];
         s[u64 4 * i + 3] ^= t64;
     }
-
+    */
 	return s;
 }//<>
 
@@ -1449,7 +1449,7 @@ fn _shake256_squeezeblocks_4x<OUTLEN>(
 fn _shake256x4<OUTLEN,INLEN>(
     reg ptr u256[25] state,
     reg ptr u8[INLEN] in0 in1 in2 in3,
-    reg ptr u8[OUTLEN] out0, out1, out2, out3
+    reg ptr u8[OUTLEN] out0 out1 out2 out3
 ) -> reg ptr u256[25],   // state
      reg ptr u8[OUTLEN], // out0
      reg ptr u8[OUTLEN], // out1
@@ -1458,7 +1458,7 @@ fn _shake256x4<OUTLEN,INLEN>(
 {
   stack u8[SHAKE256_RATE] t0 t1 t2 t3;
 
-  inline int i;
+  inline int i offset;
   reg u256 zero;
 
   // zero state
@@ -1469,7 +1469,17 @@ fn _shake256x4<OUTLEN,INLEN>(
   state = _shake256_absorb4x<INLEN>(state, in0, in1, in2, in3);
 
   // squeeze output  
-  state, out0, out1, out2, out3 = _shake256_squeezeblocks_4x<OUTLEN>(state, in0, in1, in2, in3, out0, out1, out2, out3);
+  state, out0, out1, out2, out3 = _shake256_squeezeblocks_4x<OUTLEN>(state, out0, out1, out2, out3);
+
+  offset = (OUTLEN / SHAKE256_RATE) * SHAKE256_RATE;
+
+  if (OUTLEN % SHAKE256_RATE != 0) {
+    state, t0, t1, t2, t3 = _shake256_squeezeblocks_4x<SHAKE256_RATE>(state, t0, t1, t2, t3);
+    for i=0 to OUTLEN % SHAKE256_RATE { out0[offset + i] = t0[i];
+                                        out1[offset + i] = t1[i];
+                                        out2[offset + i] = t2[i];
+                                        out3[offset + i] = t3[i]; }
+  }
 
   return state, out0, out1, out2, out3;
 }//<>

@@ -64,27 +64,48 @@ export fn shake256_squeezeblocks_4x_jazz<OUTLEN>(reg u64 _h0 _h1 _h2 _h3 _state)
 
 
 // args is a (void *)
-// export fn shake256_x4_jazz<INLEN, OUTLEN>(reg u64 args) 
-// {
-//     reg u64 _in1 _in2 _in3 _in4;
-//     stack u8[INLEN] in1 in2 in3 in4;
-//     
-//     reg u64 _out1 _out2 _out3 _out4;
-//     stack u8[OUTLEN] out1 out2 out3 out4;
-// 
-//     reg u64 offset;
-// 
-//     _in1 = (u64) [args];
-//     _in2 = (u64) [args + 8*1];
-//     _in3 = (u64) [args + 8*2];
-//     _in4 = (u64) [args + 8*3];
-// 
-//     _out1 = (u64) [args + 8*4];
-//     _out2 = (u64) [args + 8*5];
-//     _out3 = (u64) [args + 8*6];
-//     _out4 = (u64) [args + 8*7];
-// 
-//     () = #spill(_out1, _out2, _out3, _out4);
-// 
-//     () = #unspill(_out1, _out2, _out3, _out4);
-// }//<>
+export fn shake256_x4_jazz<INLEN, OUTLEN>(reg u64 args) 
+{
+    reg u64 _in0 _in1 _in2 _in3;
+    stack u8[INLEN] in0 in1 in2 in3;
+    
+    reg u64 _out0 _out1 _out2 _out3;
+    stack u8[OUTLEN] out0 out1 out2 out3;
+
+    reg u64 _state;
+    stack u256[25] state;
+
+    reg u64 offset;
+
+    reg u8 t;
+
+    inline int i;
+
+    _in0 = (u64) [args + 8*0]; // pointers to the in arrays 
+    _in1 = (u64) [args + 8*1]; // pointers to the in arrays
+    _in2 = (u64) [args + 8*2]; // pointers to the in arrays
+    _in3 = (u64) [args + 8*3]; // pointers to the in arrays
+
+    _out0 = (u64) [args + 8*4]; // pointers to the out arrays
+    _out1 = (u64) [args + 8*5]; // pointers to the out arrays
+    _out2 = (u64) [args + 8*6]; // pointers to the out arrays
+    _out3 = (u64) [args + 8*7]; // pointers to the out arrays
+
+    // load in
+    for i=0 to INLEN { in0[i] = (u8) [_in0 + i];
+                       in1[i] = (u8) [_in1 + i];
+                       in2[i] = (u8) [_in2 + i];
+                       in3[i] = (u8) [_in3 + i]; }
+
+    () = #spill(_out0, _out1, _out2, _out3);
+
+    state, out0, out1, out2, out3 = _shake256x4<OUTLEN, INLEN>(state, in0, in1, in2, in3, out0, out1, out2, out3);
+
+    () = #unspill(_out0, _out1, _out2, _out3);
+
+    // store out
+    for i=0 to OUTLEN { (u8) [_out0 + i] = out0[i];
+                        (u8) [_out1 + i] = out1[i];
+                        (u8) [_out2 + i] = out2[i];
+                        (u8) [_out3 + i] = out3[i]; }
+}//<>
