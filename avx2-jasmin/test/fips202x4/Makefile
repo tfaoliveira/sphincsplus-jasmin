@@ -37,6 +37,8 @@ checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
 	$(AS) $< -o $@
 
 
+SOURCES := ../../fips202x4.c
+
 $(JPP_FILES):
 .PRECIOUS: bin/test_fips202_4x_%.jpp
 bin/test_fips202_4x_%.jpp: | bin/
@@ -54,8 +56,8 @@ bin/test_fips202_4x_%.s: bin/test_fips202_4x_%.jpp
 $(TESTS):
 bin/test_fips202_%: bin/test_fips202_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DOUTLEN=$(GET_OUTLEN) -DINLEN=$(GET_INLEN) \
-	-I../common/ -I../../../shake-avx2/ -I../../../shake-avx2/keccak4x \
-	test_fips202x4.c $< ../../../shake-avx2/fips202x4.c ../common/print.c
+	-I../common/ -I../../ -I../../keccak4x ../common/print.c ../common/notrandombytes.c \
+	test_fips202x4.c $<  $(SOURCES)
 
 bin/test_fips202_%.out: bin/test_fips202_%
 	@./$<

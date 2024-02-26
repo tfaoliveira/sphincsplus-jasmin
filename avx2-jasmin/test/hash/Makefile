@@ -50,6 +50,8 @@ checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
 
 # ------------------------------------------------------------------------------
 
+SOURCES := ../../hash_shakex4.c ../../fips202x4.c
+
 $(JPP_FILES):
 .PRECIOUS: bin/test_hash4x_%.jpp
 bin/test_hash4x_%.jpp: | bin/
@@ -65,7 +67,7 @@ bin/test_hash4x_%.s: bin/test_hash4x_%.jpp
 $(TESTS):
 bin/test_hash4x_%: bin/test_hash4x_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
-	-I../common/ -I../../params ../common/print.c ../common/notrandombytes.c \
+	-I../common/ -I../../ -I../../keccak4x ../common/print.c ../common/notrandombytes.c \
 	test_hash4x.c $< 
 
 bin/test_hash4x_%.out: bin/test_hash4x_%

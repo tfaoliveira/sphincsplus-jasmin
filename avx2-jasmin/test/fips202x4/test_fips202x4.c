@@ -9,7 +9,7 @@
 #include "KeccakP-1600-times4-SIMD256.c"
 #include "fips202x4.h"
 #include "macros.h"
-#include "randombytes.c"
+#include "randombytes.h"
 #include "print.h"
 
 #ifndef TESTS

@@ -1,5 +1,23 @@
 from Sphincs require "fips202x4/fips202_4x.jtmpl"
 
+// FIXME: Ha alguma instrucao para nao ter q fazer isto a mao?
+inline fn _mm256_set_epi32(reg u32 e0 e1 e2 e3 e4 e5 e6 e7) -> reg u256 {
+    reg u256 t;
+    stack u256[1] a;
+
+    a[u32 0] = e0;
+    a[u32 1] = e1;
+    a[u32 2] = e2;
+    a[u32 3] = e3;
+    a[u32 4] = e4;
+    a[u32 5] = e5;
+    a[u32 6] = e6;
+    a[u32 7] = e7;
+
+    t = a[0];
+    return t;
+}
+
 fn _prf_addrx4(
     reg ptr u8[SPX_N] out0,
     reg ptr u8[SPX_N] out1,
@@ -10,45 +28,64 @@ fn _prf_addrx4(
     reg ptr u32[4*8] addr
 ) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N]
 {
-    reg u256[25] state;
-    stack u256[25] state_s;
+    stack u256[25] state;
+    reg u256 t;
     inline int i;
 
-    stack u64 val; // value to broadcast
+    stack u64 val zero; // value to broadcast
     
     // for (int i = 0; i < SPX_N/8; i++) { state[i] = _mm256_set1_epi64x(((int64_t*)ctx->pub_seed)[i]); }
-    for i=0 to SPX_N / 8 { state[i] = #VPBROADCAST_4u64(pub_seed[u64 i]); }
+    for i=0 to SPX_N / 8 { 
+        t = #VPBROADCAST_4u64(pub_seed[u64 i]); 
+        state[i] = t;
+    }
 
-    // FIXME: TODO: I dont know which intrinsic to use here
+    // FIXME: TODO: Can I do this using intrinsics?
+    for i=0 to 4 {
+        // state[SPX_N/8+i] = _mm256_set_epi32(addrx4[3*8+1+2*i], addrx4[3*8+2*i], addrx4[2*8+1+2*i], addrx4[2*8+2*i], addrx4[8+1+2*i], addrx4[8+2*i], addrx4[1+2*i], addrx4[2*i]);
+        t = _mm256_set_epi32(addr[3*8+1+2*i], addr[3*8+2*i], addr[2*8+1+2*i], addr[2*8+2*i], addr[8+1+2*i], addr[8+2*i], addr[1+2*i], addr[2*i]);
+        state[SPX_N/8+i] = t;
+    }
 
     // for (int i = 0; i < SPX_N/8; i++) { state[SPX_N/8+i+4] = _mm256_set1_epi64x(((int64_t*)ctx->sk_seed)[i]); }
-    for i=0 to SPX_N / 8 { state[SPX_N/8 + i + 4] = #VPBROADCAST_4u64(sk_seed[u64 i]); }
+    for i=0 to SPX_N / 8 { 
+        t = #VPBROADCAST_4u64(sk_seed[u64 i]); 
+        state[SPX_N/8 + i + 4] = t;
+    }
 
     // state[SPX_N/4+4] = _mm256_set1_epi64x(0x1f);
     val = 0x1F;
-    state[SPX_N/4 + 4] = #VPBROADCAST_4u64(val);
+    t = #VPBROADCAST_4u64(val);
+    state[SPX_N/4 + 4] = t;
 
     // for (int i = SPX_N/4+5; i < 16; i++) { state[i] = _mm256_set1_epi64x(0); }
-    val = 0;
-    for i=SPX_N/4+5 to 16 { state[i] = #VPBROADCAST_4u64(val); }
+    zero = 0;
+    for i=SPX_N/4+5 to 16 { 
+        t = #VPBROADCAST_4u64(zero); 
+        state[i] = t;
+    }
 
     // state[16] = _mm256_set1_epi64x((long long)(0x80ULL << 56));
     val = 0x80;
     val <<= 56;
-    state[16] = #VPBROADCAST_4u64(val);
+    t = #VPBROADCAST_4u64(val);
+    state[16] = t;
 
     // for (int i = 17; i < 25; i++) { state[i] = _mm256_set1_epi64x(0); }
-    val = 0;
-    for i=17 to 25 { state[i] = #VPBROADCAST_4u64(val); }
+    for i=17 to 25 { 
+        t = #VPBROADCAST_4u64(zero); 
+        state[i] = t;
+    }
     
-    // state_s = #copy(state);                         // FIXME: array expansion: cannot expand variable state (the default scale must be used)
-    // state_s = _KeccakF1600_StatePermute4x(state_s); // FIXME: array expansion: cannot expand variable state (the default scale must be used) 
+    // KeccakP1600times4_PermuteAll_24rounds(&state[0]);
+    state = _KeccakF1600_StatePermute4x(state);
 
-    for  i=0 to SPX_N/8 {
-        out0[u64 i] = #VPEXTR_64(state[i], 0);
-        out1[u64 i] = #VPEXTR_64(state[i], 1);
-        out2[u64 i] = #VPEXTR_64(state[i], 2);
-        out3[u64 i] = #VPEXTR_64(state[i], 3);
+    for i=0 to SPX_N/8 {
+        t = state[i];
+        out0[u64 i] = #VPEXTR_64(t, 0);
+        out1[u64 i] = #VPEXTR_64(t, 1);
+        out2[u64 i] = #VPEXTR_64(t, 2);
+        out3[u64 i] = #VPEXTR_64(t, 3);
     }
 
     return out0, out1, out2, out3;

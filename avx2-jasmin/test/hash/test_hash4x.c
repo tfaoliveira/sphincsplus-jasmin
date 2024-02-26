@@ -9,6 +9,7 @@
 #include "macros.h"
 #include "print.h"
 #include "randombytes.h"
+#include "hashx4.h"
 
 #define SPX_N 16
 
