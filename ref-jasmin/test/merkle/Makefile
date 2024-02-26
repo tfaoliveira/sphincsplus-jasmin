@@ -35,6 +35,7 @@ GET_THASH = $(word 3, $(subst _, ,$*))
 
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
+OBJ_FILES := $(ASM_FILES:.s=.o)
 
 # ------------------------------------------------------------------------------
 
@@ -50,6 +51,15 @@ run: $(OUT)
 
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
+obj_files: $(OBJ_FILES)
+
+# ------------------------------------------------------------------------------
+
+%.o: %.s
+	$(AS) $< -o $@
+
+
+# ------------------------------------------------------------------------------
 
 $(JPP_FILES):
 .PRECIOUS: bin/test_merkle_%.jpp

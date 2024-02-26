@@ -1,4 +1,5 @@
 # ------------------------------------------------------------------------------
+AS       ?= as
 CC       ?= clang
 CFLAGS   ?= -w -g #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 	          -Wundef -Wshadow -Wcast-align -Wpointer-arith \
@@ -34,6 +35,7 @@ GET_THASH   = $(word 3, $(subst _, ,$*))
 JTMPL_FILES := $(addsuffix .jtmpl, $(TESTS))
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
+OBJ_FILES := $(ASM_FILES:.s=.o)
 
 SOURCES = ../../hash_$(GET_HASH).c ../../merkle.c ../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c \
 		  ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c ../../fors.c ../../sign.c ../../wrappers.c
@@ -45,8 +47,13 @@ run: $(OUT)
 jtmpl_files: $(JTMPL_FILES)
 jpp_files:   $(JPP_FILES)
 asm_files:   $(ASM_FILES)
+obj_files:   $(OBJ_FILES)
+
 checksafety: $(addprefix checksafety_, $(TLIST))
 checkct:     $(addprefix checkct_, $(TLIST))
+
+%.o: %.s
+	$(AS) $< -o $@
 
 $(JTMPL_FILES):
 .PRECIOUS: bin/test_sign_%.jtmpl
@@ -77,10 +84,10 @@ bin/test_sign_%.out: bin/test_sign_%
 	@./$<
 
 checksafety_%: bin/test_sign_%.jpp
-	$(JASMIN) -checksafety $<
+	$(JASMIN) $(JFLAGS) -checksafety $<
 
 checkct_%: bin/test_sign_%.jpp
-	$(JASMIN) -checkCT -infer $<
+	$(JASMIN) $(JFLAGS) -checkCT -infer $<
 
 bin/:
 	mkdir -p bin/

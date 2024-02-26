@@ -37,6 +37,7 @@ GET_INBLOCKS = $(word 4, $(subst _, ,$*))
 
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
+OBJ_FILES := $(ASM_FILES:.s=.o)
 
 # ------------------------------------------------------------------------------
 
@@ -45,10 +46,21 @@ SOURCES = $(filter-out ../../thash_%.c, $(wildcard ../../*.c)) ../../thash_$(GET
 TEST_FLAGS = -DTEST_THASH -DTEST_THASH_INPLACE
 
 # ------------------------------------------------------------------------------
+
 default: $(TESTS)
 run: $(OUT)
+
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
+obj_files: $(OBJ_FILES)
+
+# ------------------------------------------------------------------------------
+
+%.o: %.s
+	$(AS) $< -o $@
+
+
+# ------------------------------------------------------------------------------
 
 $(JPP_FILES):
 .PRECIOUS: bin/test_thash_%.jpp

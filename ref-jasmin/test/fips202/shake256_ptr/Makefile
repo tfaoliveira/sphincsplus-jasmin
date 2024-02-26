@@ -12,6 +12,10 @@ JFLAGS   ?= -nowarning ${JADDFLAGS}
 # ------------------------------------------------------------------------------
 default: bin/test_shake256_ptr
 run: bin/test_shake256_ptr.out
+obj_files: bin/test_shake256_ptr.o
+
+%.o: %.s
+	$(AS) $< -o $@
 
 .PRECIOUS: bin/test_shake256_ptr.s
 bin/test_shake256_ptr.s: test_shake256_ptr.jazz | bin/
