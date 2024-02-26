@@ -12,6 +12,7 @@ inline fn __memcpy_u8u32<OUTLEN,INLEN>(
   reg u64 i;
 
   i = 0;
+  #bounded
   while( i < INLEN*4 )
   { t = in[u8 i];
     out[offset] = t;
@@ -67,6 +68,7 @@ inline fn __memcpy_u8u8<OUTLEN,INLEN>(
   reg u64 i;
 
   i = 0;
+  #bounded
   while( i < INLEN )
   { t = in[i];
     out[offset] = t;
@@ -124,6 +126,7 @@ inline fn __memcpy_u8u8_2<OUTLEN,INLEN>(
   reg u64 i;
 
   i = 0;
+  #bounded
   while( i < bytes )
   { t = in[in_offset];
     out[out_offset] = t;
@@ -189,6 +192,7 @@ inline fn __memcpy_u8u8p<OUTLEN>(
   reg u64 i;
 
   i = 0;
+  #bounded
   while( i < inlen )
   { t = (u8)[in + i];
     out[offset] = t;
@@ -243,6 +247,7 @@ inline fn __memcpy_u8pu8<INLEN>(
   reg u64 i;
 
   i = 0;
+  #bounded
   while (i < INLEN) {
     t = in[i];
     (u8) [out + offset] = t;

@@ -11,8 +11,6 @@
 #include "randombytes.h"
 #include "hashx4.h"
 
-#define SPX_N 16
-
 #ifndef TESTS
 #define TESTS 1000
 #endif
@@ -50,6 +48,8 @@ int main(void) {
 
     uint64_t addr[4 * 8] = {0};
 
+    spx_ctx ctx;
+
     for (int i = 0; i < TESTS; i++) {
         randombytes(out0_ref, SPX_N);
         randombytes(out1_ref, SPX_N);
@@ -62,19 +62,23 @@ int main(void) {
         memcpy(out3_jazz, out3_ref, SPX_N);
 
         randombytes(pub_seed, SPX_N);
+        memcpy(ctx.pub_seed, pub_seed, SPX_N);
+
         randombytes(sk_seed, SPX_N);
+        memcpy(ctx.sk_seed, sk_seed, SPX_N);
 
         randombytes((uint8_t *)addr, 4 * 8 * sizeof(uint32_t));
 
+        prf_addrx4(out0_ref, out1_ref, out2_ref, out3_ref, &ctx, addr);
         prf_addrx4_jazz_wrapper(out0_jazz, out1_jazz, out2_jazz, out3_jazz, pub_seed, sk_seed, addr);
 
-        // assert(memcmp(out0_ref, out0_jazz, SPX_N) == 0);
-        // assert(memcmp(out1_ref, out1_jazz, SPX_N) == 0);
-        // assert(memcmp(out2_ref, out2_jazz, SPX_N) == 0);
-        // assert(memcmp(out3_ref, out3_jazz, SPX_N) == 0);
+        assert(memcmp(out0_ref, out0_jazz, SPX_N) == 0);
+        assert(memcmp(out1_ref, out1_jazz, SPX_N) == 0);
+        assert(memcmp(out2_ref, out2_jazz, SPX_N) == 0);
+        assert(memcmp(out3_ref, out3_jazz, SPX_N) == 0);
     }
 
-    printf("Pass Hash 4x\n");
+    printf("[%s]: Pass Hash 4x\n", xstr(PARAMS));
 
     return 0;
 }

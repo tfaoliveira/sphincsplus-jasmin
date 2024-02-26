@@ -1,0 +1,21 @@
+u256 zero = 0;
+
+inline fn _mm256_set_epi32(reg u32 e0 e1 e2 e3 e4 e5 e6 e7) -> reg u256 {
+    reg u256 t;
+    stack u256[1] a;
+
+    t = zero;
+    a[0] = t;
+
+    a[u32 0] = e7;
+    a[u32 1] = e6;
+    a[u32 2] = e5;
+    a[u32 3] = e4;
+    a[u32 4] = e3;
+    a[u32 5] = e2;
+    a[u32 6] = e1;
+    a[u32 7] = e0;
+
+    t = a[0];
+    return t;
+}

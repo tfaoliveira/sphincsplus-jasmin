@@ -9,17 +9,6 @@
 
 // ////////////////////////////////////////////////////////////////////////////
 
-static void print_green(const char *format, ...) {
-    printf("\033[1;32m");
-    va_list args;
-    va_start(args, format);
-    vprintf(format, args);
-    va_end(args);
-    printf("\033[0m");
-}
-
-// ////////////////////////////////////////////////////////////////////////////
-
 #define ROTATE(v, c) ((v << c) | (v >> (32 - c)))
 #define QUARTERROUND(a, b, c, d) \
     a = a + b;                   \

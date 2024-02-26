@@ -13,9 +13,10 @@ export fn prf_addrx4_jazz(reg u64 args) {
     inline int i;
     reg u8 t;
 
-    pub_seed_ptr = (u64) [args + 8*4];
-    sk_seed_ptr  = (u64) [args + 8*5];
-    addr_ptr     = (u64) [args + 8*6];
+    // We need these declassify, otherwise jasminc -checkCT -infer rejects the program
+    #declassify pub_seed_ptr = (u64) [args + 8*4];
+    #declassify sk_seed_ptr  = (u64) [args + 8*5];
+    #declassify addr_ptr     = (u64) [args + 8*6];
 
     for i=0 to SPX_N { 
         pub_seed[i] = (u8) [pub_seed_ptr + i];
@@ -30,10 +31,10 @@ export fn prf_addrx4_jazz(reg u64 args) {
 
     () = #unspill(args);
 
-    out0_ptr = (u64) [args + 8*0]; 
-    out1_ptr = (u64) [args + 8*1]; 
-    out2_ptr = (u64) [args + 8*2]; 
-    out3_ptr = (u64) [args + 8*3];
+    #declassify out0_ptr = (u64) [args + 8*0]; 
+    #declassify out1_ptr = (u64) [args + 8*1]; 
+    #declassify out2_ptr = (u64) [args + 8*2]; 
+    #declassify out3_ptr = (u64) [args + 8*3];
     
     for i=0 to SPX_N {
         (u8) [out0_ptr + i] = out0[i];

@@ -1,22 +1,5 @@
 from Sphincs require "fips202x4/fips202_4x.jtmpl"
-
-// FIXME: Ha alguma instrucao para nao ter q fazer isto a mao?
-inline fn _mm256_set_epi32(reg u32 e0 e1 e2 e3 e4 e5 e6 e7) -> reg u256 {
-    reg u256 t;
-    stack u256[1] a;
-
-    a[u32 0] = e0;
-    a[u32 1] = e1;
-    a[u32 2] = e2;
-    a[u32 3] = e3;
-    a[u32 4] = e4;
-    a[u32 5] = e5;
-    a[u32 6] = e6;
-    a[u32 7] = e7;
-
-    t = a[0];
-    return t;
-}
+from Sphincs require "avx2_utils/utils.jinc"
 
 fn _prf_addrx4(
     reg ptr u8[SPX_N] out0,
@@ -30,6 +13,7 @@ fn _prf_addrx4(
 {
     stack u256[25] state;
     reg u256 t;
+    reg u128 r0 r1; 
     inline int i;
 
     stack u64 val zero; // value to broadcast
@@ -82,10 +66,11 @@ fn _prf_addrx4(
 
     for i=0 to SPX_N/8 {
         t = state[i];
-        out0[u64 i] = #VPEXTR_64(t, 0);
-        out1[u64 i] = #VPEXTR_64(t, 1);
-        out2[u64 i] = #VPEXTR_64(t, 2);
-        out3[u64 i] = #VPEXTR_64(t, 3);
+        r0 = #VEXTRACTI128(t, 1);         // TODO: See what these instructions do
+        out0[u64 i] = #VPEXTR_64(t, 0);   // TODO: See what these instructions do
+        out1[u64 i] = #VPEXTR_64(t, 1);   // TODO: See what these instructions do
+        out2[u64 i] = #VPEXTR_64(r0, 0);  // TODO: See what these instructions do
+        out3[u64 i] = #VPEXTR_64(r0, 1);  // TODO: See what these instructions do
     }
 
     return out0, out1, out2, out3;

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 
 void print_info(const char *algname, const char *arch, const char *impl);
 void print_u8(const uint8_t *a, size_t l);
@@ -10,6 +11,8 @@ void print_u8s(const uint8_t *a, size_t l);
 void print_str_u8(const char *str, const uint8_t *a, size_t l);
 void print_str_c_u8(const char *str, uint64_t c, const uint8_t *a, size_t l);
 void print_str_c_c_u8(const char *str, uint64_t c1, uint64_t c2, const uint8_t *a, size_t l);
+void fprint_u8(FILE *file, const uint8_t *a, size_t l);
+void fprint_str_u8(const char *filepath, const char *str, const uint8_t *a, size_t l);
 
 #endif
 
