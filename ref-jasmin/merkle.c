@@ -22,7 +22,7 @@
  */
 void merkle_sign(uint8_t *sig, unsigned char *root, const spx_ctx *ctx, uint32_t wots_addr[8], uint32_t tree_addr[8],
                  uint32_t idx_leaf) {
-    unsigned char *auth_path = sig + SPX_WOTS_BYTES;
+    // unsigned char *auth_path = sig + SPX_WOTS_BYTES;
     struct leaf_info_x1 info = {0};
     unsigned steps[SPX_WOTS_LEN];
 

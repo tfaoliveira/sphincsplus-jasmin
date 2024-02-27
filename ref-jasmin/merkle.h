@@ -2,7 +2,7 @@
 #define MERKLE_H_
 
 #include <stdint.h>
-#include <context.h>
+#include "context.h"
 
 /* Generate a Merkle signature (WOTS signature followed by the Merkle */
 /* authentication path) */

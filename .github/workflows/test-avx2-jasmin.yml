@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         directory:
-            - fips202x4
+            - hash4x
     steps:
       - uses: actions/checkout@v4
       - name: Compile tests

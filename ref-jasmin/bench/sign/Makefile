@@ -1,6 +1,6 @@
 # -*- Makefile -*-
 
-CC     = gcc
+CC     ?= clang
 CFLAGS ?= -Wall -Wextra -Wpedantic -Wmissing-prototypes -O3 -std=c99 -march=native -fomit-frame-pointer -flto -O3
 
 JASMIN       ?= jasminc
@@ -18,7 +18,7 @@ JASMIN_TESTS := $(addprefix bin/bench_jasmin_sign_, $(TLIST))
 OUT_JASMIN   := $(addsuffix .out, $(JASMIN_TESTS))
 
 REF_TESTS    := $(addprefix bin/bench_ref_sign_, $(TLIST))
-OUT_REF      := OUT_JASMIN   := $(addsuffix .out, $(REF_TESTS))
+OUT_REF      := $(addsuffix .out, $(REF_TESTS))
 
 GET_HASH    = $(word 1, $(subst _, ,$*))
 GET_PARAM   = $(word 2, $(subst _, ,$*))
@@ -26,10 +26,12 @@ GET_THASH   = $(word 3, $(subst _, ,$*))
 
 JPP_FILES := $(addsuffix .jpp, $(JASMIN_TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
-OBJ_FILES := $(ASM_FILES:.s=.o)
+
+JASMIN_OBJ_FILES := $(ASM_FILES:.s=.o)
+REF_OBJ_FILES    := $(addsuffix .o, $(REF_TESTS))
 
 SOURCES = ../../hash_$(GET_HASH).c ../../merkle.c ../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c \
-		  ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c ../../fors.c ../../sign.c
+		  ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c ../../fors.c ../../sign.c 
 
 all:     $(JASMIN_TESTS)
 default: $(JASMIN_TESTS)
@@ -37,6 +39,11 @@ run:     $(OUT_JASMIN)
 
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
+obj_files: $(JASMIN_OBJ_FILES) $(REF_OBJ_FILES)
+
+obj_ref: $(REF_OBJ_FILES)
+
+ref: $(REF_TESTS)
 
 $(JPP_FILES):
 .PRECIOUS: bin/bench_jasmin_sign_%.jpp
@@ -60,11 +67,16 @@ bin/bench_jasmin_sign_%: bin/bench_jasmin_sign_%.s | bin/ csv/
 	-I../common -I../../ -I../../params bench_sign.c $< \
 	../common/print.c ../common/macros.h ../common/notrandombytes.c ../../api.h
 
+$(REF_OBJ_FILES):
+bin/bench_ref_sign_%.o:
+	$(CC) $(CFLAGS) -c -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	-I../common ../../sign.c -o $@ 
+
 $(REF_TESTS):
-bin/bench_ref_sign_%: bin/bench_jasmin_sign_%.s | bin/ csv/
-	$(CC) $(CFLAGS) -o $@ \
-	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
-	-I../common -I../../ -I../../params bench_sign.c $< $(SOURCES) ../../api.h
+bin/bench_ref_sign_%: bin/ csv/
+	$(CC) $(CFLAGS) -o $@ bench_sign.c -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	-I../common -I../../ -I../../params \
+	../../api.h ../common/macros.h $(SOURCES) ../common/notrandombytes.c ../../wrappers.c
 
 
 bin/bench_jasmin_sign_%.out: bin/bench_jasmin_sign_% | csv/
