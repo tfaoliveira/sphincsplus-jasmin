@@ -12,7 +12,7 @@
 #define str(s) #s
 #define xstr(s) str(s)
 
-#define TIMINGS 10000
+#define TIMINGS 100
 
 #ifndef HASH
 #define HASH shake
@@ -53,6 +53,7 @@ static void write_values_keygen(uint64_t values[2][TIMINGS], const char **op_str
         strcat(filename, xstr(THASH));
         strcat(filename, "_");
         strcat(filename, op_str[op]);
+        strcat(filename, ".csv");
 
         f = fopen(filename, "w");
 
@@ -63,6 +64,46 @@ static void write_values_keygen(uint64_t values[2][TIMINGS], const char **op_str
             // Write the values
             for (size_t i = 0; i < TIMINGS - 1; i++) {
                 fprintf(f, "%" PRIu64 "\n", values[op][i]);
+            }
+            fclose(f);
+        }
+
+        // Clear the filename array
+        memset(filename, 0, sizeof(filename));
+    }
+}
+
+static void write_values_sign_verify(uint64_t values[2][MAX_MLEN][TIMINGS], const char **op_str, size_t msg_len) {
+    int op;
+    FILE *f;
+    char filename[800];
+    char len_str[100];
+
+    snprintf(len_str, sizeof(len_str), "%zu", msg_len);
+
+    size_t index = msg_len - 1;
+
+    // write the values for each loop & operation
+    for (op = 0; op < 2; op++) {
+        strcat(filename, "bench_sphincs_plus_");
+        strcat(filename, xstr(PARAM));
+        strcat(filename, "_");
+        strcat(filename, xstr(THASH));
+        strcat(filename, "_");
+        strcat(filename, op_str[op]);
+        strcat(filename, "_");
+        strcat(filename, len_str);
+        strcat(filename, ".csv");
+
+        f = fopen(filename, "w");
+
+        if (f != NULL) {
+            for (size_t i = 0; i < TIMINGS - 1; i++) {
+                values[op][index][i] = values[op][index][i + 1] - values[op][index][i];
+            }
+            // Write the values
+            for (size_t i = 0; i < TIMINGS - 1; i++) {
+                fprintf(f, "%" PRIu64 "\n", values[op][index][i]);
             }
             fclose(f);
         }
@@ -92,10 +133,7 @@ int main(void) {
 
     size_t index;
 
-    char *op_str[] = {"crypto_sign_seed_keypair.csv", "crypto_sign_keypair.csv", "crypto_sign_signature.csv",
-                      "crypto_sign_verify.csv"};
-
-    puts("Comecou o warmup");
+    char *op_str[] = {"crypto_sign_seed_keypair", "crypto_sign_keypair", "crypto_sign_signature", "crypto_sign_verify"};
 
     for (i = 0; i < 10; i++) {
 #ifdef BENCH_JASMIN
@@ -110,8 +148,6 @@ int main(void) {
         res = crypto_sign_verify(sig, CRYPTO_BYTES, m, msg_len, pk);
 #endif
     }
-
-    puts("Acabou o warmup");
 
     // crypto_sign_seed_keypair
     for (i = 0; i < TIMINGS; i++) {
@@ -139,25 +175,23 @@ int main(void) {
 
     write_values_keygen(values_keygen, op_str);
 
-    // Sign
     for (int mlen = 1; mlen <= MAX_MLEN; mlen++) {
+        // Sign
         for (i = 0; i < TIMINGS; i++) {
             cycles[i] = cpucycles();
-            #ifdef BENCH_JASMIN
+#ifdef BENCH_JASMIN
             res = crypto_sign_signature_jazz(sig, &siglen, m, msg_len, sk);
 #else
             res = crypto_sign_signature(sig, &siglen, m, msg_len, sk);
 #endif
-
         }
+
         index = mlen - 1;
         for (size_t j = 0; j < TIMINGS; j++) {
             values_sign_verify[0][index][j] = cycles[j];
-        }  // memcpy(values_sign_verify[0][index], cycles, sizeof(cycles)); causes a segfault
-    }
+        }
 
-    // Verify
-    for (int mlen = 1; mlen <= MAX_MLEN; mlen++) {
+        // Verify
         for (i = 0; i < TIMINGS; i++) {
             cycles[i] = cpucycles();
 #ifdef BENCH_JASMIN
@@ -166,10 +200,13 @@ int main(void) {
             res = crypto_sign_verify(sig, CRYPTO_BYTES, m, msg_len, sk);
 #endif
         }
+
         index = mlen - 1;
         for (size_t j = 0; j < TIMINGS; j++) {
             values_sign_verify[1][index][j] = cycles[j];
-        }  // memcpy(values_sign_verify[1][index], cycles, sizeof(cycles)); causes a segfault
+        }
+
+        write_values_sign_verify(values_sign_verify, op_str + 2, mlen);
     }
 
     printf("Benchmarks for %s %s\n", xstr(PARAMS), xstr(THASH));
