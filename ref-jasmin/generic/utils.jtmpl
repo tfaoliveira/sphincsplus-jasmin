@@ -9,29 +9,6 @@ inline fn __zero_array_u32<INLEN>(reg ptr u32[INLEN] a) -> reg ptr u32[INLEN]
   return a;
 }//<>
 
-inline fn _zero_array_u8<INLEN>(reg ptr u8[INLEN] a) -> reg ptr u8[INLEN]
-{
-  reg u8 t;
-  reg u64 i;
-
-  t = 0;
-  i = 0;
-  while (i < INLEN) {
-    a[i] = t;
-    i += 1;
-  }
-
-  return a;
-}//<>
-
-inline fn __zero_array_u8<INLEN>(reg ptr u8[INLEN] a) -> reg ptr u8[INLEN]
-{
-  a = a;
-  a = _zero_array_u8<INLEN>(a);
-  a = a;
-  return a;
-}//<>
-
 // Used in wots
 inline fn __ull_to_bytes(
   reg ptr u8[8] out,
