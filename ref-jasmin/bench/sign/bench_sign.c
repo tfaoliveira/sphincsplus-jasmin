@@ -26,8 +26,9 @@
 #define THASH simple
 #endif
 
+// TODO: Change this
 #ifndef MAX_MLEN
-#define MAX_MLEN 128
+#define MAX_MLEN 64
 #endif
 
 extern int crypto_sign_seed_keypair_jazz(uint8_t *pk, uint8_t *sk, const uint8_t *seed);
@@ -39,7 +40,7 @@ static void write_values_keygen(uint64_t values[2][TIMINGS], const char **op_str
     // OP = 2; KEY GEN WITH SEED AND WITHOUT SEED
     int op;
     FILE *f;
-    char filename[100];
+    char filename[100] = {0};
 
     // write the values for each loop & operation
     for (op = 0; op < 2; op++) {
@@ -76,7 +77,7 @@ static void write_values_keygen(uint64_t values[2][TIMINGS], const char **op_str
 static void write_values_sign_verify(uint64_t values[2][MAX_MLEN][TIMINGS], const char **op_str, size_t msg_len) {
     int op;
     FILE *f;
-    char filename[800];
+    char filename[900] = {0};
     char len_str[100];
 
     snprintf(len_str, sizeof(len_str), "%zu", msg_len);
@@ -179,7 +180,7 @@ int main(void) {
 
     write_values_keygen(values_keygen, op_str);
 
-    for (int mlen = 1; mlen <= MAX_MLEN; mlen++) {
+    for (int mlen = 64; mlen <= MAX_MLEN; mlen++) { // TODO: Change this
         // Sign
         for (i = 0; i < TIMINGS; i++) {
             cycles[i] = cpucycles();
