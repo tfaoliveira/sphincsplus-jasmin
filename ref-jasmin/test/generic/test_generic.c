@@ -281,7 +281,7 @@ void test_zero_array_u32(void) {
         randombytes1((uint8_t *)in, INLEN * sizeof(uint32_t));
         zero_array_u32_jazz(in);
 
-        if (memcmp(in, zero, INLEN * sizeof(uint32_t) != 0)) {
+        if (memcmp(in, zero, INLEN * sizeof(uint32_t)) != 0) {
             print_str_u8("in (jasmin)", (uint8_t *)in, INLEN * sizeof(uint32_t));
         }
 
