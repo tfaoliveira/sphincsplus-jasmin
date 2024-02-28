@@ -1300,25 +1300,23 @@ fn _shake256_absorb4x<INLEN>(
     reg ptr u8[INLEN] m0 m1 m2 m3
 ) -> reg ptr u256[25]
 {
-    /*
 	inline int i;
     reg u64 t64;
-    reg u64 offset;
-    reg u64 inlen;
+    reg u64 inlen offset;
     reg u64 j index;
 
     stack u8[200] t0 t1 t2 t3;
-    reg u8 zero;
+    inline u64 zero;
+    zero = 0;
 
     inlen = INLEN;
     offset = 0;
-
     while (inlen >= SHAKE256_RATE)
     {
         for i = 0 to SHAKE256_RATE / 8
         {
             t64 = m0[u64 i + offset];
-            s[u64 4 * i] ^= t64;
+            s[u64 4 * i + 0] ^= t64;
     
             t64 = m1[u64 i + offset];
             s[u64 4 * i + 1] ^= t64;
@@ -1336,27 +1334,31 @@ fn _shake256_absorb4x<INLEN>(
         offset += SHAKE256_RATE;
     }
 
-    ?{}, zero = #set0_8();
-    for i = 0 to SHAKE256_RATE {
-        t0[i] = zero;
-        t1[i] = zero;
-        t2[i] = zero;
-        t3[i] = zero;
+    // SHAKE256_RATE (136) is divisible by 8 so we dont need the for i=0 to SHAKE256_RATE % 8 part
+    for i = 0 to SHAKE256_RATE / 8 {
+        t0[u64 i] = zero;
+        t1[u64 i] = zero;
+        t2[u64 i] = zero;
+        t3[u64 i] = zero;
     }
 
-    // TODO: FIXME: The code commented below should work
-    for i = 0 to INLEN 
-    {
-        t0[i] = m0[i + offset];
-        t1[i] = m1[i + offset];
-        t2[i] = m2[i + offset];
-        t3[i] = m3[i + offset];
+    j=0;
+    while(j < inlen) {
+        index = offset;
+        index += j;
+
+        t0[j] = m0[index];
+        t1[j] = m1[index];
+        t2[j] = m2[index];
+        t3[j] = m3[index];
+
+        j += 1;
     }
 
-    t0[INLEN - 1] = 0x1F;
-    t1[INLEN - 1] = 0x1F;
-    t2[INLEN - 1] = 0x1F;
-    t3[INLEN - 1] = 0x1F;
+    t0[j] = 0x1F;
+    t1[j] = 0x1F;
+    t2[j] = 0x1F;
+    t3[j] = 0x1F;
 
     t0[SHAKE256_RATE - 1] |= 128;
     t1[SHAKE256_RATE - 1] |= 128;
@@ -1376,7 +1378,7 @@ fn _shake256_absorb4x<INLEN>(
         t64 = t3[u64 i];
         s[u64 4 * i + 3] ^= t64;
     }
-    */
+
 	return s;
 }//<>
 

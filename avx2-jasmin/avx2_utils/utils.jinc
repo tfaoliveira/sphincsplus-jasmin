@@ -14,3 +14,16 @@ inline fn _mm256_set_epi32(reg u32 e0 e1 e2 e3 e4 e5 e6 e7) -> reg u256 {
     t = a[0];
     return t;
 }
+
+inline fn _mm256_set_epi64x(reg u64 e0 e1 e2 e3) -> reg u256 {
+    stack u256[1] t;
+    reg u256 res;
+
+    t[u64 0] = e3;
+    t[u64 1] = e2;
+    t[u64 2] = e1;
+    t[u64 3] = e0;
+
+    res = t[0];
+    return res;
+}

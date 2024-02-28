@@ -14,11 +14,13 @@
 #endif
 
 extern void mm256_set_epi32_jazz(const void *);
+extern void mm256_set_epi64x_jazz(uint64_t, uint64_t, uint64_t, uint64_t, __m256i*);
 
 __m256i mm256_set_epi32_jazz_wrapper(uint32_t e0, uint32_t e1, uint32_t e2, uint32_t e3, uint32_t e4, uint32_t e5,
                                      uint32_t e6, uint32_t e7);
 
 void test_mm256_set_epi32_jazz(void);
+void test_mm256_set_epi64x_jazz(void);
 
 __m256i mm256_set_epi32_jazz_wrapper(uint32_t e0, uint32_t e1, uint32_t e2, uint32_t e3, uint32_t e4, uint32_t e5,
                                      uint32_t e6, uint32_t e7) {
@@ -81,8 +83,44 @@ void test_mm256_set_epi32_jazz(void) {
     }
 }
 
+void test_mm256_set_epi64x_jazz(void) {
+uint64_t e0, e1, e2, e3;
+    __m256i res_ref, res_jazz;
+
+    for (int i = 0; i < TESTS; i++) {
+        memset(&res_ref, 0, sizeof(__m256i));
+        memset(&res_jazz, 0, sizeof(__m256i));
+
+        randombytes((uint8_t *)&e0, sizeof(uint64_t));
+        randombytes((uint8_t *)&e1, sizeof(uint64_t));
+        randombytes((uint8_t *)&e2, sizeof(uint64_t));
+        randombytes((uint8_t *)&e3, sizeof(uint64_t));
+
+        res_ref = _mm256_set_epi64x(e0, e1, e2, e3);
+        mm256_set_epi64x_jazz(e0, e1, e2, e3, &res_jazz);
+
+        if (memcmp(&res_ref, &res_jazz, sizeof(__m256i)) != 0) {
+            print_str_u8("e0", (uint8_t *)&e0, sizeof(uint64_t));
+            print_str_u8("e1", (uint8_t *)&e1, sizeof(uint64_t));
+            print_str_u8("e2", (uint8_t *)&e2, sizeof(uint64_t));
+            print_str_u8("e3", (uint8_t *)&e3, sizeof(uint64_t));
+
+            puts("\n\n");
+
+            print_str_u8("ref", (uint8_t *)&res_ref, sizeof(__m256i));
+            print_str_u8("jazz", (uint8_t *)&res_jazz, sizeof(__m256i));
+        }
+
+        assert(memcmp(&res_ref, &res_jazz, sizeof(__m256i)) == 0);
+    }
+}
+
 int main(void) {
     test_mm256_set_epi32_jazz();
     puts("[mm256_set_epi32_jazz] Pass");
+
+    test_mm256_set_epi64x_jazz();
+    puts("[mm256_set_epi64x_jazz] Pass");
+
     return 0;
 }

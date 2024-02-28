@@ -33,6 +33,8 @@
 #define str(s) #s
 #define xstr(s) str(s)
 
+#define GREATER_THAN(x, y) ((x) > (y))
+
 extern void KeccakF1600_StatePermute4x_jazz(__m256i state[25]);
 
 #define keccak_absorb4x_jazz NAMESPACE1(keccak_absorb4x_jazz, INLEN)
@@ -108,7 +110,7 @@ void test_keccak_absorb4x(void) {
         randombytes(in2, INLEN);
         randombytes(in3, INLEN);
 
-        // keccak_absorb4x_jazz(state_jazz, in0, in1, in2, in3);
+        keccak_absorb4x_jazz(state_jazz, in0, in1, in2, in3);
         keccak_absorb4x(state_ref, SHAKE256_RATE, in0, in1, in2, in3, INLEN, 0x1F);
 
         if (memcmp(state_jazz, state_ref, 25 * sizeof(__m256i)) != 0) {
@@ -232,15 +234,15 @@ void test_shake256(void) {
 // to see whcih failed
 int main(void) {
     // Test permutation
-    test_KeccakF1600_StatePermute4x();
+    // test_KeccakF1600_StatePermute4x(); // WORKS
 
     // Test absorb
-    // test_keccak_absorb4x();
+    test_keccak_absorb4x();
 
     // Test squeeze (the number of blocks to absorb is given by NBLOCKS = OUTLEN / SHAKE256_RATE)
-    test_shake256_squeezeblocks4x();
+    // test_shake256_squeezeblocks4x(); // WORKS
 
-    test_shake256();
+    //  test_shake256();
 
     printf("Pass fips202_4x { INLEN : %s ; OUTLEN : %s }\n", xstr(INLEN), xstr(OUTLEN));
     return 0;

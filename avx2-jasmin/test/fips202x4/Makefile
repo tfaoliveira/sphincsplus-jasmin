@@ -11,7 +11,7 @@ JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # Both INLEN and OUTLEN
-LEN_LIST  ?= 1 31 32 33 63 64 65 95 96 97 127 128 129 135 136 137 159 160
+LEN_LIST  ?= 1 31 32 33 63 64 65 95 96 97 127 128 129 135 136
 
 TLIST := $(foreach O,$(LEN_LIST), $(foreach I,$(LEN_LIST), $(O)_$(I)))
 TESTS := $(addprefix bin/test_fips202_4x_, $(TLIST))

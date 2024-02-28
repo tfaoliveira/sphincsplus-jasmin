@@ -81,15 +81,15 @@ export fn shake256_x4_jazz<INLEN, OUTLEN>(reg u64 args)
 
     inline int i;
 
-    _in0 = (u64) [args + 8*0]; // pointers to the in arrays 
-    _in1 = (u64) [args + 8*1]; // pointers to the in arrays
-    _in2 = (u64) [args + 8*2]; // pointers to the in arrays
-    _in3 = (u64) [args + 8*3]; // pointers to the in arrays
+    #declassify _in0 = (u64) [args + 8*0]; // pointers to the in arrays 
+    #declassify _in1 = (u64) [args + 8*1]; // pointers to the in arrays
+    #declassify _in2 = (u64) [args + 8*2]; // pointers to the in arrays
+    #declassify _in3 = (u64) [args + 8*3]; // pointers to the in arrays
 
-    _out0 = (u64) [args + 8*4]; // pointers to the out arrays
-    _out1 = (u64) [args + 8*5]; // pointers to the out arrays
-    _out2 = (u64) [args + 8*6]; // pointers to the out arrays
-    _out3 = (u64) [args + 8*7]; // pointers to the out arrays
+    #declassify _out0 = (u64) [args + 8*4]; // pointers to the out arrays
+    #declassify _out1 = (u64) [args + 8*5]; // pointers to the out arrays
+    #declassify _out2 = (u64) [args + 8*6]; // pointers to the out arrays
+    #declassify _out3 = (u64) [args + 8*7]; // pointers to the out arrays
 
     // load in
     for i=0 to INLEN { in0[i] = (u8) [_in0 + i];
