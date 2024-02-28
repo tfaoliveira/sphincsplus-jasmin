@@ -1,0 +1,55 @@
+
+export fn thash<INBLOCKS>(reg u64 args) 
+{
+    reg u64 out0_ptr out1_ptr out2_ptr out3_ptr in0_ptr in1_ptr in2_ptr in3_ptr pub_seed_ptr addrx4_ptr;
+
+    stack u8[SPX_N] out0 out1 out2 out3;
+    stack u8[INBLOCKS * SPX_N] in0 in1 in2 in3;
+    stack u8[SPX_N] pub_seed;
+    stack u32[4*8] addrx4;
+
+    inline int i;
+
+    #declassify out0_ptr = (u64)[args + 8 * 0];
+    #declassify out1_ptr = (u64)[args + 8 * 1];
+    #declassify out2_ptr = (u64)[args + 8 * 2];
+    #declassify out3_ptr = (u64)[args + 8 * 3];
+
+    for i = 0 to SPX_N {
+        out0[i] = (u8)[out0_ptr + i];
+        out1[i] = (u8)[out1_ptr + i];
+        out2[i] = (u8)[out2_ptr + i];
+        out3[i] = (u8)[out3_ptr + i];
+    }
+
+    #declassify in0_ptr = (u64)[args + 8 * 4];
+    #declassify in1_ptr = (u64)[args + 8 * 5];
+    #declassify in2_ptr = (u64)[args + 8 * 6];
+    #declassify in3_ptr = (u64)[args + 8 * 7];
+
+    for i = 0 to INBLOCKS * SPX_N {
+        in0[i] = (u8)[in0_ptr + i];
+        in1[i] = (u8)[in1_ptr + i];
+        in2[i] = (u8)[in2_ptr + i];
+        in3[i] = (u8)[in3_ptr + i];
+    }
+
+    () = #spill(out0_ptr, out1_ptr, out2_ptr, out3_ptr);
+
+    #declassify pub_seed_ptr = (u64)[args + 8 * 8];
+    for i = 0 to SPX_N { pub_seed[i] = (u8)[pub_seed_ptr + i]; }
+
+    #declassify addrx4_ptr = (u64)[args + 9 * 9];
+    for i = 0 to 4 * 8 { addrx4[i] = (u32)[addrx4_ptr + 4 * i]; }
+
+    out0, out1, out2, out3 = __thash<INBLOCKS>(out0, out1, out2, out3, in0, in1, in2, in3, pub_seed, addrx4);
+
+    () = #unspill(out0_ptr, out1_ptr, out2_ptr, out3_ptr);
+
+    for i = 0 to SPX_N {
+            (u8)[out0_ptr + i] = out0[i];
+            (u8)[out1_ptr + i] = out1[i];
+            (u8)[out2_ptr + i] = out2[i];
+            (u8)[out3_ptr + i] = out3[i];
+    }
+}//<>

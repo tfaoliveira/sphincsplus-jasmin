@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "fips202.h"
+#include "print.h"
 
 #define NROUNDS 24
 #define ROL(a, offset) ((a << offset) ^ (a >> (64 - offset)))
@@ -32,8 +33,7 @@ extern void KeccakP1600times4_PermuteAll_24rounds(__m256i *s);
 #define KeccakF1600_StatePermute4x KeccakP1600times4_PermuteAll_24rounds
 
 void keccak_absorb4x(__m256i *s, unsigned int r, const unsigned char *m0, const unsigned char *m1,
-                            const unsigned char *m2, const unsigned char *m3, unsigned long long int mlen,
-                            unsigned char p) {
+                     const unsigned char *m2, const unsigned char *m3, unsigned long long int mlen, unsigned char p) {
     unsigned long long i;
     unsigned char t0[200];
     unsigned char t1[200];
@@ -83,12 +83,11 @@ void keccak_absorb4x(__m256i *s, unsigned int r, const unsigned char *m0, const 
     t3[r - 1] |= 128;
 
     for (i = 0; i < r / 8; ++i) {
-         ss[4 * i + 0] ^= load64(t0 + 8 * i);
-         ss[4 * i + 1] ^= load64(t1 + 8 * i);
-         ss[4 * i + 2] ^= load64(t2 + 8 * i);
-         ss[4 * i + 3] ^= load64(t3 + 8 * i);
+        ss[4 * i + 0] ^= load64(t0 + 8 * i);
+        ss[4 * i + 1] ^= load64(t1 + 8 * i);
+        ss[4 * i + 2] ^= load64(t2 + 8 * i);
+        ss[4 * i + 3] ^= load64(t3 + 8 * i);
     }
-
 }
 
 void keccak_squeezeblocks4x(unsigned char *h0, unsigned char *h1, unsigned char *h2, unsigned char *h3,
@@ -149,8 +148,8 @@ void shake128x4(unsigned char *out0, unsigned char *out1, unsigned char *out2, u
 }
 
 void shake256x4(unsigned char *out0, unsigned char *out1, unsigned char *out2, unsigned char *out3,
-                unsigned long long outlen, unsigned char *in0, unsigned char *in1, unsigned char *in2,
-                unsigned char *in3, unsigned long long inlen) {
+                unsigned long long outlen, unsigned char *in0, const unsigned char *in1, const unsigned char *in2,
+                const unsigned char *in3, unsigned long long inlen) {
     __m256i s[25];
     unsigned char t0[SHAKE256_RATE];
     unsigned char t1[SHAKE256_RATE];
@@ -164,21 +163,26 @@ void shake256x4(unsigned char *out0, unsigned char *out1, unsigned char *out2, u
     /* absorb 4 message of identical length in parallel */
     keccak_absorb4x(s, SHAKE256_RATE, in0, in1, in2, in3, inlen, 0x1F);
 
+    print_str_u8("state ref", (uint8_t *)s, 25 * sizeof(__m256i));
+
     /* Squeeze output */
     keccak_squeezeblocks4x(out0, out1, out2, out3, outlen / SHAKE256_RATE, s, SHAKE256_RATE);
 
-    out0 += (outlen / SHAKE256_RATE) * SHAKE256_RATE;
-    out1 += (outlen / SHAKE256_RATE) * SHAKE256_RATE;
-    out2 += (outlen / SHAKE256_RATE) * SHAKE256_RATE;
-    out3 += (outlen / SHAKE256_RATE) * SHAKE256_RATE;
+    // out0 += (outlen / SHAKE256_RATE) * SHAKE256_RATE;
+    // out1 += (outlen / SHAKE256_RATE) * SHAKE256_RATE;
+    // out2 += (outlen / SHAKE256_RATE) * SHAKE256_RATE;
+    // out3 += (outlen / SHAKE256_RATE) * SHAKE256_RATE;
 
+    /*
     if (outlen % SHAKE256_RATE) {
         keccak_squeezeblocks4x(t0, t1, t2, t3, 1, s, SHAKE256_RATE);
         for (i = 0; i < outlen % SHAKE256_RATE; i++) {
+            print_str_u8("t1 ref", t1, SHAKE256_RATE);
             out0[i] = t0[i];
-            out1[i] = t1[i];
-            out2[i] = t2[i];
-            out3[i] = t3[i];
+            // out1[i] = t1[i];
+            // out2[i] = t2[i];
+            // out3[i] = t3[i];
         }
     }
+    */
 }

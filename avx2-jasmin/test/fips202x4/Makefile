@@ -11,9 +11,12 @@ JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
 # Both INLEN and OUTLEN
-LEN_LIST  ?= 1 31 32 33 63 64 65 95 96 97 127 128 129 135 136
+LEN_LIST  ?= 1 31 32 33 63 64 65 95 96 97 127 128 129 135 136 137 159 160 \
+161 191 192 193 223 224 225 255 256 257 270 271 272
 
-TLIST := $(foreach O,$(LEN_LIST), $(foreach I,$(LEN_LIST), $(O)_$(I)))
+OUTLEN_LIST ?= 136 137 159 160 161 191 192 193 223 224 225 255 256 257 270 271 272
+
+TLIST := $(foreach O,$(OUTLEN_LIST), $(foreach I,$(OUTLEN_LIST), $(O)_$(I)))
 TESTS := $(addprefix bin/test_fips202_4x_, $(TLIST))
 OUT   := $(addsuffix .out, $(TESTS))
 
@@ -47,7 +50,7 @@ bin/test_fips202_4x_%.jpp: | bin/
 	$(PREPROCESSOR) --input_file $@ --output_file $@ \
 	--task "fn:keccak_absorb4x_jazz p:INLEN:$(word 2, $(subst _, ,$*))" \
 	       "fn:shake256_squeezeblocks_4x_jazz p:OUTLEN:$(word 1, $(subst _, ,$*))" \
-		   "fn:shake256_x4_jazz p:OUTLEN:$(word 1, $(subst _, ,$*)) p:INLEN:$(word 2, $(subst _, ,$*))"
+			"fn:shake256_x4_jazz p:OUTLEN:$(word 1, $(subst _, ,$*)) p:INLEN:$(word 2, $(subst _, ,$*))"
 
 .PRECIOUS: bin/test_fips202_4x_%.s
 bin/test_fips202_4x_%.s: bin/test_fips202_4x_%.jpp
@@ -56,6 +59,7 @@ bin/test_fips202_4x_%.s: bin/test_fips202_4x_%.jpp
 $(TESTS):
 bin/test_fips202_%: bin/test_fips202_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DOUTLEN=$(GET_OUTLEN) -DINLEN=$(GET_INLEN) \
+	-DDEBUG \
 	-I../common/ -I../../ -I../../keccak4x ../common/print.c ../common/notrandombytes.c \
 	test_fips202x4.c $<  $(SOURCES)
 

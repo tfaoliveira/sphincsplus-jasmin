@@ -7,15 +7,14 @@ void keccak_squeezeblocks4x(unsigned char *h0, unsigned char *h1, unsigned char 
                             unsigned long long int nblocks, __m256i *s, unsigned int r);
 
 void keccak_absorb4x(__m256i *s, unsigned int r, const unsigned char *m0, const unsigned char *m1,
-                            const unsigned char *m2, const unsigned char *m3, unsigned long long int mlen,
-                            unsigned char p);
+                     const unsigned char *m2, const unsigned char *m3, unsigned long long int mlen, unsigned char p);
 
 void shake128x4(unsigned char *out0, unsigned char *out1, unsigned char *out2, unsigned char *out3,
                 unsigned long long outlen, unsigned char *in0, unsigned char *in1, unsigned char *in2,
                 unsigned char *in3, unsigned long long inlen);
 
 void shake256x4(unsigned char *out0, unsigned char *out1, unsigned char *out2, unsigned char *out3,
-                unsigned long long outlen, unsigned char *in0, unsigned char *in1, unsigned char *in2,
-                unsigned char *in3, unsigned long long inlen);
+                unsigned long long outlen, unsigned char *in0, const unsigned char *in1, const unsigned char *in2,
+                const unsigned char *in3, unsigned long long inlen);
 
 #endif

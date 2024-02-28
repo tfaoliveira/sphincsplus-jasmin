@@ -1448,20 +1448,22 @@ fn _shake256_squeezeblocks_4x<OUTLEN>(
   return state, h0, h1, h2, h3;
 }//<>
 
+#[returnaddress="stack"]
 fn _shake256x4<OUTLEN,INLEN>(
-    reg ptr u256[25] state,
     reg ptr u8[INLEN] in0 in1 in2 in3,
     reg ptr u8[OUTLEN] out0 out1 out2 out3
-) -> reg ptr u256[25],   // state
-     reg ptr u8[OUTLEN], // out0
-     reg ptr u8[OUTLEN], // out1
-     reg ptr u8[OUTLEN], // out2
-     reg ptr u8[OUTLEN]  // out3
+) -> reg ptr u8[OUTLEN],
+     reg ptr u8[OUTLEN],
+     reg ptr u8[OUTLEN],
+     reg ptr u8[OUTLEN] 
 {
   stack u8[SHAKE256_RATE] t0 t1 t2 t3;
 
   inline int i offset;
   reg u256 zero;
+  stack u256[25] state;
+
+  stack u64[4*25] debug_buffer;
 
   // zero state
   ?{}, zero = #set0_256(); 
@@ -1470,18 +1472,24 @@ fn _shake256x4<OUTLEN,INLEN>(
   // absorb 4 message of identical length in parallel
   state = _shake256_absorb4x<INLEN>(state, in0, in1, in2, in3);
 
+  for i=0 to 4*25 { debug_buffer[i] = state[u64 i]; } 
+  debug_buffer = #randombytes(debug_buffer);
+
+
   // squeeze output  
-  state, out0, out1, out2, out3 = _shake256_squeezeblocks_4x<OUTLEN>(state, out0, out1, out2, out3);
+  // state, out0, out1, out2, out3 = _shake256_squeezeblocks_4x<OUTLEN>(state, out0, out1, out2, out3);
+  // offset = (OUTLEN / SHAKE256_RATE) * SHAKE256_RATE;
 
-  offset = (OUTLEN / SHAKE256_RATE) * SHAKE256_RATE;
-
+    /*
   if (OUTLEN % SHAKE256_RATE != 0) {
     state, t0, t1, t2, t3 = _shake256_squeezeblocks_4x<SHAKE256_RATE>(state, t0, t1, t2, t3);
     for i=0 to OUTLEN % SHAKE256_RATE { out0[offset + i] = t0[i];
-                                        out1[offset + i] = t1[i];
-                                        out2[offset + i] = t2[i];
-                                        out3[offset + i] = t3[i]; }
-  }
+  //                                       out1[offset + i] = t1[i];
+  //                                       out2[offset + i] = t2[i];
+                                          out3[offset + i] = t3[i];  }
 
-  return state, out0, out1, out2, out3;
+  }
+                                         */
+
+  return out0, out1, out2, out3;
 }//<>

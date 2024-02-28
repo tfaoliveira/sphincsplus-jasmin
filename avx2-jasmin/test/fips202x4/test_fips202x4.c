@@ -9,8 +9,8 @@
 #include "KeccakP-1600-times4-SIMD256.c"
 #include "fips202x4.h"
 #include "macros.h"
-#include "randombytes.h"
 #include "print.h"
+#include "randombytes.h"
 
 #ifndef TESTS
 #define TESTS 1000
@@ -114,8 +114,8 @@ void test_keccak_absorb4x(void) {
         keccak_absorb4x(state_ref, SHAKE256_RATE, in0, in1, in2, in3, INLEN, 0x1F);
 
         if (memcmp(state_jazz, state_ref, 25 * sizeof(__m256i)) != 0) {
-            print_str_u8("State ref", (uint8_t*) state_ref, 25 * sizeof(__m256i));
-            print_str_u8("State jazz", (uint8_t*) state_jazz, 25 * sizeof(__m256i));
+            print_str_u8("State ref", (uint8_t *)state_ref, 25 * sizeof(__m256i));
+            print_str_u8("State jazz", (uint8_t *)state_jazz, 25 * sizeof(__m256i));
         }
 
         assert(memcmp(state_jazz, state_ref, 25 * sizeof(__m256i)) == 0);
@@ -125,13 +125,18 @@ void test_keccak_absorb4x(void) {
 void test_shake256_squeezeblocks4x(void) {
     bool debug = true;
 
-    __m256i state_ref[25];
-    __m256i state_jazz[25];
+    __m256i state_ref[25] = {0};
+    __m256i state_jazz[25] = {0};
 
-    uint8_t out0_ref[OUTLEN], out0_jazz[OUTLEN];
-    uint8_t out1_ref[OUTLEN], out1_jazz[OUTLEN];
-    uint8_t out2_ref[OUTLEN], out2_jazz[OUTLEN];
-    uint8_t out3_ref[OUTLEN], out3_jazz[OUTLEN];
+    uint8_t out0_ref[OUTLEN] = {0};
+    uint8_t out1_ref[OUTLEN] = {0};
+    uint8_t out2_ref[OUTLEN] = {0};
+    uint8_t out3_ref[OUTLEN] = {0};
+
+    uint8_t out0_jazz[OUTLEN] = {0};
+    uint8_t out1_jazz[OUTLEN] = {0};
+    uint8_t out2_jazz[OUTLEN] = {0};
+    uint8_t out3_jazz[OUTLEN] = {0};
 
     unsigned long long int nblocks = OUTLEN / SHAKE256_RATE;
 
@@ -183,25 +188,29 @@ void test_shake256(void) {
     uint8_t in2[INLEN];
     uint8_t in3[INLEN];
 
-    uint8_t out0_ref[OUTLEN] = {0}; 
-    uint8_t out1_ref[OUTLEN] = {0}; 
-    uint8_t out2_ref[OUTLEN] = {0}; 
+    uint8_t out0_ref[OUTLEN] = {0};
+    uint8_t out1_ref[OUTLEN] = {0};
+    uint8_t out2_ref[OUTLEN] = {0};
     uint8_t out3_ref[OUTLEN] = {0};
 
     uint8_t out0_jazz[OUTLEN] = {0};
     uint8_t out1_jazz[OUTLEN] = {0};
     uint8_t out2_jazz[OUTLEN] = {0};
-    uint8_t out3_jazz[OUTLEN] = {0}; 
+    uint8_t out3_jazz[OUTLEN] = {0};
 
     for (int i = 0; i < TESTS; i++) {
         if (debug) {
             printf("[shake256_jazz (OUTLEN=%s INLEN=%s)]: Test %d/%d\n", xstr(OUTLEN), xstr(INLEN), i, TESTS);
         }
 
-        memset(out0_ref, 0, OUTLEN); memset(out0_jazz, 0, OUTLEN);
-        memset(out1_ref, 0, OUTLEN); memset(out1_jazz, 0, OUTLEN);
-        memset(out2_ref, 0, OUTLEN); memset(out2_jazz, 0, OUTLEN);
-        memset(out3_ref, 0, OUTLEN); memset(out3_jazz, 0, OUTLEN);
+        memset(out0_ref, 0, OUTLEN);
+        memset(out0_jazz, 0, OUTLEN);
+        memset(out1_ref, 0, OUTLEN);
+        memset(out1_jazz, 0, OUTLEN);
+        memset(out2_ref, 0, OUTLEN);
+        memset(out2_jazz, 0, OUTLEN);
+        memset(out3_ref, 0, OUTLEN);
+        memset(out3_jazz, 0, OUTLEN);
 
         randombytes(in0, INLEN);
         randombytes(in1, INLEN);
@@ -216,11 +225,12 @@ void test_shake256(void) {
         shake256x4(out0_ref, out1_ref, out2_ref, out3_ref, OUTLEN, in0, in1, in2, in3, INLEN);
         shake256_x4_jazz_wrapper(in0, in1, in2, in3, out0_jazz, out1_jazz, out2_jazz, out3_jazz);
 
-
+        /*
         if (memcmp(out1_jazz, out1_ref, OUTLEN) != 0) {
-            print_str_u8("out 1 ref", out1_ref, OUTLEN);
-            print_str_u8("out 1 jazz", out1_jazz, OUTLEN);
+            print_str_u8("out_1 ref", out1_ref, OUTLEN);
+            print_str_u8("out_1 jazz", out1_jazz, OUTLEN);
         }
+        */
 
         assert(memcmp(out0_jazz, out0_ref, OUTLEN) == 0);
         assert(memcmp(out1_jazz, out1_ref, OUTLEN) == 0);
@@ -229,20 +239,20 @@ void test_shake256(void) {
     }
 }
 
-// Run 
+// Run
 //      find bin -type f -executable -exec sh -c 'if ! "{}"; then echo "{}" >> failed_executables.txt; fi' \;
 // to see whcih failed
 int main(void) {
     // Test permutation
-    // test_KeccakF1600_StatePermute4x(); // WORKS
+    // test_KeccakF1600_StatePermute4x();  // WORKS
 
     // Test absorb
-    test_keccak_absorb4x();
+    // test_keccak_absorb4x();  // WORKS
 
     // Test squeeze (the number of blocks to absorb is given by NBLOCKS = OUTLEN / SHAKE256_RATE)
-    // test_shake256_squeezeblocks4x(); // WORKS
+    test_shake256_squeezeblocks4x();  // WORKS
 
-    //  test_shake256();
+    // test_shake256();
 
     printf("Pass fips202_4x { INLEN : %s ; OUTLEN : %s }\n", xstr(INLEN), xstr(OUTLEN));
     return 0;

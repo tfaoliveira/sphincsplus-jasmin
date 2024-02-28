@@ -97,9 +97,15 @@ export fn shake256_x4_jazz<INLEN, OUTLEN>(reg u64 args)
                        in2[i] = (u8) [_in2 + i];
                        in3[i] = (u8) [_in3 + i]; }
 
+    // load out (debug)
+    for i=0 to OUTLEN { out0[i] = (u8) [_out0 + i];
+                        out1[i] = (u8) [_out1 + i];
+                        out2[i] = (u8) [_out2 + i];
+                        out3[i] = (u8) [_out3 + i]; }
+
     () = #spill(_out0, _out1, _out2, _out3);
 
-    state, out0, out1, out2, out3 = _shake256x4<OUTLEN, INLEN>(state, in0, in1, in2, in3, out0, out1, out2, out3);
+    out0, out1, out2, out3 = _shake256x4<OUTLEN, INLEN>(in0, in1, in2, in3, out0, out1, out2, out3);
 
     () = #unspill(_out0, _out1, _out2, _out3);
 
