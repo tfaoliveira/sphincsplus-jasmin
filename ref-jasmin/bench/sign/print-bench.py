@@ -8,7 +8,7 @@ import itertools
 
 import statistics
 
-impls: list[str] = ["jasmin"]
+impls: list[str] = ["jasmin", "ref"]
 options:list[str] = ["f"] # "s"
 sizes:list[int] = [128, 192, 256]
 thashes:list[str] = ['robust', 'simple']

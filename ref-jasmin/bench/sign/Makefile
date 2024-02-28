@@ -67,16 +67,16 @@ bin/bench_jasmin_sign_%.s: bin/bench_jasmin_sign_%.jpp
 	$(JASMIN) $(JFLAGS) $< -o $@
 
 $(JASMIN_TESTS):
-bin/bench_jasmin_sign_%: bin/bench_jasmin_sign_%.s | csv/
+bin/bench_jasmin_sign_%: bin/bench_jasmin_sign_%.s csv/
 	$(CC) $(CFLAGS) -o $@ \
-	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) -DBENCH_JASMIN \
+	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) -DPARAM=$(GET_PARAM) -DBENCH_JASMIN \
 	-I../common -I../../ -I../../params bench_sign.c $< \
 	../common/print.c ../common/macros.h ../common/notrandombytes.c ../../api.h
 
 $(REF_OBJ_FILES):
 .PRECIOUS: bin/bench_ref_sign_%.o
 bin/bench_ref_sign_%.o:
-	$(CC) $(CFLAGS) -c -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	$(CC) $(CFLAGS) -c -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DPARAM=$(GET_PARAM) \
 	-I../common ../../sign.c -o $@ 
 
 $(JASMIN_OBJ_FILES):
@@ -86,19 +86,19 @@ bin/bench_jasmin_sign_%.o: bin/bench_jasmin_sign_%.s
 
 $(REF_TESTS):
 bin/bench_ref_sign_%: csv/
-	$(CC) $(CFLAGS) -o $@ bench_sign.c -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
+	$(CC) $(CFLAGS) -o $@ bench_sign.c -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) -DPARAM=$(GET_PARAM) \
 	-I../common -I../../ -I../../params \
 	../../api.h ../common/macros.h $(SOURCES) ../common/notrandombytes.c ../../wrappers.c
 
-bin/bench_jasmin_sign_%.out: bin/bench_jasmin_sign_% | csv/
+bin/bench_jasmin_sign_%.out: bin/bench_jasmin_sign_% csv/
 	@echo "Running benchmarks: $(subst bin/bench_,, $<)"
 	@./$<
-	mv *.csv csv/
+	@mv *.csv csv/
 
 bin/bench_ref_sign_%.out: bin/bench_ref_sign_% | csv/
 	@echo "Running benchmarks: $(subst bin/bench_,, $<)"
 	@./$<
-	mv *.csv csv/
+	@mv *.csv csv/
 
 bin/:
 	mkdir -p $@

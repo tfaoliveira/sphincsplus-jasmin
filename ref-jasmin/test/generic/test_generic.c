@@ -267,7 +267,6 @@ static uint64_t stupid_byteArrayToUint64(uint8_t byteArray[8]) {
 void test_bytes_to_ull(void) {
 #define MAX_LEN 8  // 8*8 = 64 (um uint64_t = um array de 8 uint8_t)
     bool debug = true;
-    
 
     // TODO:
 
@@ -279,9 +278,14 @@ void test_zero_array_u32(void) {
     uint32_t zero[INLEN] = {0};
 
     for (int i = 0; i < TESTS; i++) {
-        randombytes1((uint8_t *)in, INLEN);
+        randombytes1((uint8_t *)in, INLEN * sizeof(uint32_t));
         zero_array_u32_jazz(in);
-        assert(memcmp(in, zero, INLEN) == 0);
+
+        if (memcmp(in, zero, INLEN * sizeof(uint32_t) != 0)) {
+            print_str_u8("in (jasmin)", (uint8_t *)in, INLEN * sizeof(uint32_t));
+        }
+
+        assert(memcmp(in, zero, INLEN * sizeof(uint32_t)) == 0);
     }
 }
 

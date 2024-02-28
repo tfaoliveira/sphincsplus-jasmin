@@ -39,33 +39,33 @@ export fn wots_gen_leafx1_jazz(reg u64 args)
 
   args = args;
 
-  pub_seed_ptr = (u64) [args + 8*1];
+  #declassify pub_seed_ptr = (u64) [args + 8*1];
   pub_seed_p   = pub_seed;
   pub_seed_p   = __load_u8_array<SPX_N>(pub_seed_p, pub_seed_ptr);
 
-  sk_seed_ptr = (u64) [args + 8*2];
+  #declassify sk_seed_ptr = (u64) [args + 8*2];
   sk_seed_p   = sk_seed;
   sk_seed_p   = __load_u8_array<SPX_N>(sk_seed_p, sk_seed_ptr);
 
-  _ptr_    = (u64) [args + 8*3];
+  #declassify _ptr_    = (u64) [args + 8*3];
   leaf_idx = (u32) [_ptr_];
 
-  wots_sig_ptr = (u64) [args + 8*4];
+  #declassify wots_sig_ptr = (u64) [args + 8*4];
   wots_sig_p   = wots_sig;
   wots_sig_p   = __load_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(wots_sig_p, wots_sig_ptr);
 
-  _ptr_          = (u64) [args + 8*5];
+  #declassify _ptr_          = (u64) [args + 8*5];
   wots_sign_leaf = (u32) [_ptr_];
 
-  wots_steps_ptr = (u64) [args + 8*6];
+  #declassify wots_steps_ptr = (u64) [args + 8*6];
   wots_steps_p   = wots_steps;
   wots_steps_p   = __load_u32_array<SPX_WOTS_LEN>(wots_steps_p, wots_steps_ptr);
 
-  leaf_addr_ptr = (u64) [args + 8*7];
+  #declassify leaf_addr_ptr = (u64) [args + 8*7];
   leaf_addr_p   = leaf_addr;
   leaf_addr_p   = __load_u32_array<8>(leaf_addr_p, leaf_addr_ptr);
 
-  pk_addr_ptr = (u64) [args + 8*8];
+  #declassify pk_addr_ptr = (u64) [args + 8*8];
   pk_addr_p   = pk_addr;
   pk_addr_p   = __load_u32_array<8>(pk_addr_p, pk_addr_ptr);
 
@@ -78,7 +78,7 @@ export fn wots_gen_leafx1_jazz(reg u64 args)
 
   () = #unspill(args, wots_sig_ptr, leaf_addr_ptr, pk_addr_ptr);
 
-  dest_ptr = (64u)[args + 8*0];
+  #declassify dest_ptr = (64u)[args + 8*0];
 
   __store_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(wots_sig_p, wots_sig_ptr);
   __store_u8_array<SPX_N>(dest_p, dest_ptr);
@@ -129,33 +129,33 @@ export fn treehash_wots_jazz(reg u64 args)
   reg u64 pk_addr_ptr;
   stack u32[8] pk_addr; // struct info
 
-  root_ptr = (u64) [args + 8*0];
+  #declassify root_ptr = (u64) [args + 8*0];
 
-  pub_seed_ptr = (u64) [args + 8*1];
+  #declassify pub_seed_ptr = (u64) [args + 8*1];
   pub_seed = __load_u8_array<SPX_N>(pub_seed, pub_seed_ptr);
 
-  sk_seed_ptr = (u64) [args + 8*2];
+  #declassify sk_seed_ptr = (u64) [args + 8*2];
   sk_seed = __load_u8_array<SPX_N>(sk_seed, sk_seed_ptr);
 
-  leaf_idx_ptr = (u64) [args + 8*3];
+  #declassify leaf_idx_ptr = (u64) [args + 8*3];
   leaf_idx = (u32) [leaf_idx_ptr];
 
-  tree_addr_ptr = (u64) [args + 8*4];
+  #declassify tree_addr_ptr = (u64) [args + 8*4];
   tree_addr = __load_u32_array<8>(tree_addr, tree_addr_ptr);
 
-  wots_sig_ptr = (u64) [args + 8*5];
+  #declassify wots_sig_ptr = (u64) [args + 8*5];
   sig = __load_u8_array<SPX_TREE_HEIGHT * SPX_N + SPX_WOTS_BYTES>(sig, wots_sig_ptr);
 
-  wots_sign_leaf_ptr = (u64) [args + 8*6];
+  #declassify wots_sign_leaf_ptr = (u64) [args + 8*6];
   wots_sign_leaf = (u32) [wots_sign_leaf_ptr];
 
-  wots_steps_ptr = (u64) [args + 8*7];
+  #declassify wots_steps_ptr = (u64) [args + 8*7];
   wots_steps = __load_u32_array<SPX_WOTS_LEN>(wots_steps, wots_steps_ptr);
 
-  leaf_addr_ptr = (u64) [args + 8*8];
+  #declassify leaf_addr_ptr = (u64) [args + 8*8];
   leaf_addr = __load_u32_array<8>(leaf_addr, leaf_addr_ptr);
 
-  pk_addr_ptr = (u64) [args + 8*9];
+  #declassify pk_addr_ptr = (u64) [args + 8*9];
   pk_addr = __load_u32_array<8>(pk_addr, pk_addr_ptr);
 
   // Below this point, args is no longer live

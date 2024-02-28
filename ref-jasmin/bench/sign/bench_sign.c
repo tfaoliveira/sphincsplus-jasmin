@@ -14,18 +14,6 @@
 
 #define TIMINGS 100
 
-#ifndef HASH
-#define HASH shake
-#endif
-
-#ifndef PARAM
-#define PARAM 128f
-#endif
-
-#ifndef THASH
-#define THASH simple
-#endif
-
 // TODO: Change this
 #ifndef MAX_MLEN
 #define MAX_MLEN 64

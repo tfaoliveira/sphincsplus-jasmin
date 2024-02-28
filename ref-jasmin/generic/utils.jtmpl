@@ -1,14 +1,12 @@
 inline fn __zero_array_u32<INLEN>(reg ptr u32[INLEN] a) -> reg ptr u32[INLEN]
 {
-  reg u32 t;
-  reg u64 i;
+  inline int i;
+  inline u64 zero_64; zero_64 = 0;
+  inline u32 zero_32; zero_32 = 0;
 
-  t = 0;
-  i = 0;
-  while (i < INLEN) {
-    a[i] = t;
-    i += 1;
-  }
+  // INLEN / 2 because 1 u32 =) 4 bytes and 1 u64 = 8 bytes
+  for i=0 to INLEN / 2 { a[u64 i] = zero_64; }
+  for i=0 to INLEN { a[i] = zero_32; }
 
   return a;
 }//<>
