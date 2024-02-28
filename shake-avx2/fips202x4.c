@@ -42,6 +42,7 @@ void keccak_absorb4x(__m256i *s, unsigned int r, const unsigned char *m0, const 
 
     unsigned long long *ss = (unsigned long long *)s;
 
+    /*
     while (mlen >= r) {
         for (i = 0; i < r / 8; ++i) {
             ss[4 * i + 0] ^= load64(m0 + 8 * i);
@@ -64,13 +65,14 @@ void keccak_absorb4x(__m256i *s, unsigned int r, const unsigned char *m0, const 
         t2[i] = 0;
         t3[i] = 0;
     }
+
     for (i = 0; i < mlen; ++i) {
         t0[i] = m0[i];
         t1[i] = m1[i];
         t2[i] = m2[i];
         t3[i] = m3[i];
     }
-
+    
     t0[i] = p;
     t1[i] = p;
     t2[i] = p;
@@ -80,13 +82,14 @@ void keccak_absorb4x(__m256i *s, unsigned int r, const unsigned char *m0, const 
     t1[r - 1] |= 128;
     t2[r - 1] |= 128;
     t3[r - 1] |= 128;
-
+   
     for (i = 0; i < r / 8; ++i) {
-        ss[4 * i + 0] ^= load64(t0 + 8 * i);
-        ss[4 * i + 1] ^= load64(t1 + 8 * i);
-        ss[4 * i + 2] ^= load64(t2 + 8 * i);
-        ss[4 * i + 3] ^= load64(t3 + 8 * i);
+         ss[4 * i + 0] ^= load64(t0 + 8 * i);
+         ss[4 * i + 1] ^= load64(t1 + 8 * i);
+         ss[4 * i + 2] ^= load64(t2 + 8 * i);
+         ss[4 * i + 3] ^= load64(t3 + 8 * i);
     }
+    */
 }
 
 void keccak_squeezeblocks4x(unsigned char *h0, unsigned char *h1, unsigned char *h2, unsigned char *h3,

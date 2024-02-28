@@ -85,7 +85,11 @@ static void write_values_sign_verify(uint64_t values[2][MAX_MLEN][TIMINGS], cons
 
     // write the values for each loop & operation
     for (op = 0; op < 2; op++) {
-        strcat(filename, "bench_sphincs_plus_");
+        #ifdef BENCH_JASMIN
+        strcat(filename, "bench_jasmin_sphincs_plus_");
+#else
+        strcat(filename, "bench_ref_sphincs_plus_");
+#endif
         strcat(filename, xstr(PARAM));
         strcat(filename, "_");
         strcat(filename, xstr(THASH));

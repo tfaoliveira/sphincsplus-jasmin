@@ -11,6 +11,12 @@
         "wrappers.h": "c",
         "keccakp-1600-times4-snp.h": "c",
         "fips202x4.h": "c",
-        "immintrin.h": "c"
+        "immintrin.h": "c",
+        "stdlib.h": "c",
+        "assert.h": "c",
+        "macros.h": "c",
+        "hashx4.h": "c",
+        "randombytes.h": "c",
+        "*.tcc": "c"
     }
 }

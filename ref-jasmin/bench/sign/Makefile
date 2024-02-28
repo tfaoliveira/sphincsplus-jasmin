@@ -1,5 +1,7 @@
 # -*- Makefile -*-
 
+AS ?= as
+
 CC     ?= clang
 CFLAGS ?= -Wall -Wextra -Wpedantic -Wmissing-prototypes -O3 -std=c99 -march=native -fomit-frame-pointer -flto -O3
 
@@ -33,12 +35,16 @@ REF_OBJ_FILES    := $(addsuffix .o, $(REF_TESTS))
 SOURCES = ../../hash_$(GET_HASH).c ../../merkle.c ../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c \
 		  ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c ../../fors.c ../../sign.c 
 
-all:     $(JASMIN_TESTS)
+all:     $(JASMIN_TESTS) $(REF_TESTS) $(JASMIN_OBJ_FILES) $(REF_OBJ_FILES)
 default: $(JASMIN_TESTS)
-run:     $(OUT_JASMIN)
+
+run_ref:    $(OUT_REF)
+run_jasmin: $(OUT_JASMIN)
+run:        $(OUT_JASMIN) $(OUT_REF)
 
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
+
 obj_files: $(JASMIN_OBJ_FILES) $(REF_OBJ_FILES)
 
 obj_ref: $(REF_OBJ_FILES)
@@ -53,7 +59,6 @@ bin/bench_jasmin_sign_%.jpp: | bin/
 	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
 	$(PREPROCESSOR) --input_file $@ --output_file $@
-	
 
 $(ASM_FILES):
 .PRECIOUS: bin/bench_jasmin_sign_%.s
@@ -68,16 +73,21 @@ bin/bench_jasmin_sign_%: bin/bench_jasmin_sign_%.s | bin/ csv/
 	../common/print.c ../common/macros.h ../common/notrandombytes.c ../../api.h
 
 $(REF_OBJ_FILES):
+.PRECIOUS: bin/bench_ref_sign_%.o
 bin/bench_ref_sign_%.o:
 	$(CC) $(CFLAGS) -c -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
 	-I../common ../../sign.c -o $@ 
+
+$(JASMIN_OBJ_FILES):
+.PRECIOUS: bin/bench_jasmin_sign_%.o
+bin/bench_jasmin_sign_%.o: bin/bench_jasmin_sign_%.s
+	$(AS) $(ASFLAGS) $< -o $@
 
 $(REF_TESTS):
 bin/bench_ref_sign_%: bin/ csv/
 	$(CC) $(CFLAGS) -o $@ bench_sign.c -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) \
 	-I../common -I../../ -I../../params \
 	../../api.h ../common/macros.h $(SOURCES) ../common/notrandombytes.c ../../wrappers.c
-
 
 bin/bench_jasmin_sign_%.out: bin/bench_jasmin_sign_% | csv/
 	@./$<
@@ -96,6 +106,11 @@ csv/:
 .PHONY: clean
 clean:
 	rm -rf bin/ csv/
+	rm -rf *.csv # Intermediate files that were not yet moved to csv/
+
+.PHONY: clean_csv
+clean_csv:
+	rm -rf *.csv csv/
 
 .PHONY: clean_executables
 clean_executables:
