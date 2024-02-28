@@ -29,7 +29,6 @@ inline fn __thash<INBLOCKS>(
     stack u8[SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N] buf0 buf1 buf2 buf3;
 
     if (INBLOCKS == 1 || INBLOCKS == 2) { // statically resolved if
-
         () = #spill(out0, out1, out2, out3);
 
         // for (int i = 0; i < SPX_N/8; i++) { state[i] = _mm256_set1_epi64x(((int64_t*)ctx->pub_seed)[i]); }
