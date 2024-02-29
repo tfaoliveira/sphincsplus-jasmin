@@ -1302,44 +1302,47 @@ fn _shake256_absorb4x<INLEN>(
 {
 	inline int i;
     reg u64 t64;
-    reg u64 inlen offset;
+    reg u64 inlen offset offset_64;
     reg u64 j index;
 
     stack u8[200] t0 t1 t2 t3;
-    inline u64 zero;
-    zero = 0;
 
     inlen = INLEN;
     offset = 0;
+    offset_64 = 0;
+
     while (inlen >= SHAKE256_RATE)
     {
         for i = 0 to SHAKE256_RATE / 8
         {
-            t64 = m0[u64 i + offset];
+            t64 = m0[u64 i + offset_64];
             s[u64 4 * i + 0] ^= t64;
     
-            t64 = m1[u64 i + offset];
+            t64 = m1[u64 i + offset_64];
             s[u64 4 * i + 1] ^= t64;
     
-            t64 = m2[u64 i + offset];
+            t64 = m2[u64 i + offset_64];
             s[u64 4 * i + 2] ^= t64;
             
-            t64 = m3[u64 i + offset];
+            t64 = m3[u64 i + offset_64];
             s[u64 4 * i + 3] ^= t64;
         }
 
         s = _KeccakF1600_StatePermute4x(s);
 
         inlen -= SHAKE256_RATE;
+        offset_64 += SHAKE256_RATE / 8; // NOTE: Dirty fix (is it?). The offset is  SHAKE256_RATE but scaled to u64 it becomes SHAKE256_RATE
         offset += SHAKE256_RATE;
     }
 
+    /*
+
     // SHAKE256_RATE (136) is divisible by 8 so we dont need the for i=0 to SHAKE256_RATE % 8 part
-    for i = 0 to SHAKE256_RATE / 8 {
-        t0[u64 i] = zero;
-        t1[u64 i] = zero;
-        t2[u64 i] = zero;
-        t3[u64 i] = zero;
+    for i = 0 to SHAKE256_RATE / 8  {
+        t0[u64 i] = 0;
+        t1[u64 i] = 0;
+        t2[u64 i] = 0;
+        t3[u64 i] = 0;
     }
 
     j=0;
@@ -1368,48 +1371,22 @@ fn _shake256_absorb4x<INLEN>(
     for i = 0 to SHAKE256_RATE / 8
     {
         t64 = t0[u64 i];
-        s[u64 4 * i] ^= t64;
+        s[u64 4 * i + 0] ^= t64;
+
         t64 = t1[u64 i];
         s[u64 4 * i + 1] ^= t64;
-    
+
         t64 = t2[u64 i];
         s[u64 4 * i + 2] ^= t64;
-            
+
         t64 = t3[u64 i];
         s[u64 4 * i + 3] ^= t64;
     }
 
+    */
+
 	return s;
 }//<>
-
-inline
-fn __shake256_squeezeblock4x(
-    reg ptr u256[25] state, 
-    reg ptr u8[SHAKE256_RATE] h0 h1 h2 h3
-) -> reg ptr u256[25], 
-     reg ptr u8[SHAKE256_RATE], 
-     reg ptr u8[SHAKE256_RATE], 
-     reg ptr u8[SHAKE256_RATE], 
-     reg ptr u8[SHAKE256_RATE]
-{
-  reg u256 t256;
-  reg u128 t128;
-  inline int i;
-
-  state = _KeccakF1600_StatePermute4x(state);
-
-	for i = 0 to (SHAKE256_RATE / 8) {
-    t256 = state[i];
-    t128 = (128u)t256;
-		h0[u64 i] = #VMOVLPD(t128);
-		h1[u64 i] = #VMOVHPD(t128);
-    t128 = #VEXTRACTI128(t256, 1);
-		h2[u64 i] = #VMOVLPD(t128);
-		h3[u64 i] = #VMOVHPD(t128);
-	}
-
-  return state, h0, h1, h2, h3;
-}
 
 #[returnaddress="stack"]
 fn _shake256_squeezeblocks_4x<OUTLEN>(
@@ -1424,25 +1401,31 @@ fn _shake256_squeezeblocks_4x<OUTLEN>(
 // TODO: Needs improvements
   reg ptr u8[SHAKE256_RATE] buf0 buf1 buf2 buf3;
   inline int NBLOCKS; NBLOCKS = OUTLEN / SHAKE256_RATE;
-  inline int i j;
+  inline int i;
 
-    // 
-    // each H consists of nblocks of length OUTLEN / SHAKE256_RATE
-    // 
-    // This means that nblocks = OUTLEN / SHAKE256_RATE
+  reg u64 nblocks offset_64;
 
-  j = 0;
-  for i=NBLOCKS downto 0 {
-    state, h0[j * SHAKE256_RATE : SHAKE256_RATE], 
-           h1[j * SHAKE256_RATE : SHAKE256_RATE], 
-           h2[j * SHAKE256_RATE : SHAKE256_RATE], 
-           h3[j * SHAKE256_RATE : SHAKE256_RATE] = __shake256_squeezeblock4x(
-            state, 
-            h0[j * SHAKE256_RATE : SHAKE256_RATE], 
-            h1[j * SHAKE256_RATE : SHAKE256_RATE], 
-            h2[j * SHAKE256_RATE : SHAKE256_RATE], 
-            h3[j * SHAKE256_RATE : SHAKE256_RATE]);
-    j += 1;
+  reg u256 t256;
+  reg u128 t128;
+
+  nblocks = NBLOCKS;
+
+  offset_64 = 0;
+
+  while (nblocks > 0) {
+    state = _KeccakF1600_StatePermute4x(state);
+    for i = 0 to SHAKE256_RATE / 8 {
+        t256 = state[i];
+        t128 = t256;
+		h0[u64 i + offset_64] = #VMOVLPD(t128);
+		h1[u64 i + offset_64] = #VMOVHPD(t128);
+
+        t128 = #VEXTRACTI128(t256, 1);
+		h2[u64 i + offset_64] = #VMOVLPD(t128);
+		h3[u64 i + offset_64] = #VMOVHPD(t128);
+	}
+    nblocks -= 1;
+    offset_64 += SHAKE256_RATE / 8; // offset scaled to u64
   }
 
   return state, h0, h1, h2, h3;
@@ -1466,30 +1449,30 @@ fn _shake256x4<OUTLEN,INLEN>(
   stack u64[4*25] debug_buffer;
 
   // zero state
-  ?{}, zero = #set0_256(); 
-  for i=0 to 25 { state[i] = zero; }
-
+  ?{}, zero = #set0_256();
+  reg u256 t;
+  for i=0 to 25 { t = state[i]; t = #VPXOR_256(t, t); state[i] = t; }
+  
   // absorb 4 message of identical length in parallel
   state = _shake256_absorb4x<INLEN>(state, in0, in1, in2, in3);
 
-  for i=0 to 4*25 { debug_buffer[i] = state[u64 i]; } 
-  debug_buffer = #randombytes(debug_buffer);
-
-
   // squeeze output  
-  // state, out0, out1, out2, out3 = _shake256_squeezeblocks_4x<OUTLEN>(state, out0, out1, out2, out3);
-  // offset = (OUTLEN / SHAKE256_RATE) * SHAKE256_RATE;
+  state, out0, out1, out2, out3 = _shake256_squeezeblocks_4x<OUTLEN>(state, out0, out1, out2, out3);
 
-    /*
-  if (OUTLEN % SHAKE256_RATE != 0) {
+  offset = (OUTLEN / SHAKE256_RATE) * SHAKE256_RATE;
+    
+  if ((OUTLEN % SHAKE256_RATE) == 0) {
     state, t0, t1, t2, t3 = _shake256_squeezeblocks_4x<SHAKE256_RATE>(state, t0, t1, t2, t3);
-    for i=0 to OUTLEN % SHAKE256_RATE { out0[offset + i] = t0[i];
+
+
+    // for i=0 to OUTLEN % SHAKE256_RATE { out0[offset + i] = t0[i];
   //                                       out1[offset + i] = t1[i];
   //                                       out2[offset + i] = t2[i];
-                                          out3[offset + i] = t3[i];  }
+       //                                    out3[offset + i] = t3[i];  }
 
   }
-                                         */
+  
+  state = #randombytes(state);
 
   return out0, out1, out2, out3;
 }//<>

@@ -75,3 +75,7 @@ bin/:
 .PHONY: clean
 clean:
 	rm -rf bin/
+
+.PHONY: clean_executables
+clean_executables:
+	find bin/ -type f -executable -delete

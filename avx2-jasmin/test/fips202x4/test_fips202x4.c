@@ -183,10 +183,15 @@ void test_shake256(void) {
     // __m256i state_ref[25];
     __m256i state_jazz[25];
 
-    uint8_t in0[INLEN];
-    uint8_t in1[INLEN];
-    uint8_t in2[INLEN];
-    uint8_t in3[INLEN];
+    uint8_t in0_ref[INLEN];
+    uint8_t in1_ref[INLEN];
+    uint8_t in2_ref[INLEN];
+    uint8_t in3_ref[INLEN];
+
+    uint8_t in0_jazz[INLEN];
+    uint8_t in1_jazz[INLEN];
+    uint8_t in2_jazz[INLEN];
+    uint8_t in3_jazz[INLEN];
 
     uint8_t out0_ref[OUTLEN] = {0};
     uint8_t out1_ref[OUTLEN] = {0};
@@ -205,32 +210,38 @@ void test_shake256(void) {
 
         memset(out0_ref, 0, OUTLEN);
         memset(out0_jazz, 0, OUTLEN);
+
         memset(out1_ref, 0, OUTLEN);
         memset(out1_jazz, 0, OUTLEN);
+        
         memset(out2_ref, 0, OUTLEN);
         memset(out2_jazz, 0, OUTLEN);
+        
         memset(out3_ref, 0, OUTLEN);
         memset(out3_jazz, 0, OUTLEN);
 
-        randombytes(in0, INLEN);
-        randombytes(in1, INLEN);
-        randombytes(in2, INLEN);
-        randombytes(in3, INLEN);
+        randombytes(in0_ref, INLEN);
+        randombytes(in1_ref, INLEN);
+        randombytes(in2_ref, INLEN);
+        randombytes(in3_ref, INLEN);
+
+        memcpy(in0_jazz, in0_ref, INLEN);
+        memcpy(in1_jazz, in1_ref, INLEN);
+        memcpy(in2_jazz, in2_ref, INLEN);
+        memcpy(in3_jazz, in3_ref, INLEN);        
 
         assert(memcmp(out0_jazz, out0_ref, OUTLEN) == 0);
         assert(memcmp(out1_jazz, out1_ref, OUTLEN) == 0);
         assert(memcmp(out2_jazz, out2_ref, OUTLEN) == 0);
         assert(memcmp(out3_jazz, out3_ref, OUTLEN) == 0);
 
-        shake256x4(out0_ref, out1_ref, out2_ref, out3_ref, OUTLEN, in0, in1, in2, in3, INLEN);
-        shake256_x4_jazz_wrapper(in0, in1, in2, in3, out0_jazz, out1_jazz, out2_jazz, out3_jazz);
+        assert(memcmp(in0_jazz, in0_ref, INLEN) == 0);
+        assert(memcmp(in1_jazz, in1_ref, INLEN) == 0);
+        assert(memcmp(in2_jazz, in2_ref, INLEN) == 0);
+        assert(memcmp(in3_jazz, in3_ref, INLEN) == 0);
 
-        /*
-        if (memcmp(out1_jazz, out1_ref, OUTLEN) != 0) {
-            print_str_u8("out_1 ref", out1_ref, OUTLEN);
-            print_str_u8("out_1 jazz", out1_jazz, OUTLEN);
-        }
-        */
+        shake256x4(out0_ref, out1_ref, out2_ref, out3_ref, OUTLEN, in0_ref, in1_ref, in2_ref, in3_ref, INLEN);
+        shake256_x4_jazz_wrapper(in0_jazz, in1_jazz, in2_jazz, in3_jazz, out0_jazz, out1_jazz, out2_jazz, out3_jazz);
 
         assert(memcmp(out0_jazz, out0_ref, OUTLEN) == 0);
         assert(memcmp(out1_jazz, out1_ref, OUTLEN) == 0);
@@ -244,15 +255,15 @@ void test_shake256(void) {
 // to see whcih failed
 int main(void) {
     // Test permutation
-    // test_KeccakF1600_StatePermute4x();  // WORKS
+    test_KeccakF1600_StatePermute4x();  // WORKS
 
     // Test absorb
-    // test_keccak_absorb4x();  // WORKS
+    test_keccak_absorb4x();  // WORKS
 
     // Test squeeze (the number of blocks to absorb is given by NBLOCKS = OUTLEN / SHAKE256_RATE)
     test_shake256_squeezeblocks4x();  // WORKS
 
-    // test_shake256();
+    test_shake256();
 
     printf("Pass fips202_4x { INLEN : %s ; OUTLEN : %s }\n", xstr(INLEN), xstr(OUTLEN));
     return 0;

@@ -18,17 +18,17 @@ export fn keccak_absorb4x_jazz<INLEN>(reg u64 _state _in0 _in1 _in2 _in3)
 {
   stack u256[25] state;
   stack u8[INLEN] in0 in1 in2 in3;
+  reg u256 t;
 
   inline int i;
-  reg u256 t;
-  reg u8 t8;
 
   for i=0 to 25 { t = (u256)[_state + 32*i]; state[i] = t; }
+  
   for i=0 to INLEN {
-    t8 = (u8)[_in0 + i]; in0[i] = t8;
-    t8 = (u8)[_in1 + i]; in1[i] = t8;
-    t8 = (u8)[_in2 + i]; in2[i] = t8;
-    t8 = (u8)[_in3 + i]; in3[i] = t8;
+    in0[i] = (u8)[_in0 + i];
+    in1[i] = (u8)[_in1 + i];
+    in2[i] = (u8)[_in2 + i];
+    in3[i] = (u8)[_in3 + i];
   }
 
   state = _shake256_absorb4x<INLEN>(state, in0, in1, in2, in3);
