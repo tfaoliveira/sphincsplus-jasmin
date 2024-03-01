@@ -1,0 +1,30 @@
+from Sphincs require "hash4x/hash.jtmpl"
+
+inline fn __fors_gen_skx4(
+  reg ptr u8[SPX_N] sk0,
+  reg ptr u8[SPX_N] sk1,
+  reg ptr u8[SPX_N] sk2,
+  reg ptr u8[SPX_N] sk3,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[4*8] fors_leaf_addr
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+  sk0, sk1, sk2, sk3 = _prf_addrx4(sk0, sk1, sk2, sk3, pub_seed, sk_seed, fors_leaf_addr);
+  return sk0, sk1, sk2, sk3;
+}
+
+#[returnaddress="stack"]
+fn _fors_gen_skx4(
+  reg ptr u8[SPX_N] sk0,
+  reg ptr u8[SPX_N] sk1,
+  reg ptr u8[SPX_N] sk2,
+  reg ptr u8[SPX_N] sk3,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[4*8] fors_leaf_addr
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+  sk0, sk1, sk2, sk3 = __fors_gen_skx4(sk0, sk1, sk2, sk3, pub_seed, sk_seed, fors_leaf_addr);
+  return sk0, sk1, sk2, sk3;
+}

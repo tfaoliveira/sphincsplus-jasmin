@@ -12,7 +12,7 @@ PREPROCESSOR ?= ../scripts/preprocessor
 
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple robust
+THASH_LIST    := simple
 INBLOCKS_LIST := $(shell seq 1 4) 64 100
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach N,$(INBLOCKS_LIST),$(H)_$(P)_$(T)_$(N)))))
@@ -33,6 +33,9 @@ OBJ_FILES := $(ASM_FILES:.s=.o)
 
 ################################################################################
 
+default: $(TESTS)
+run:     $(OUT)
+
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
 obj_files: $(OBJ_FILES)
@@ -47,6 +50,9 @@ checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
 
 ################################################################################
 
+SOURCES = $(filter-out ../../thash_%.c, $(wildcard ../../*.c)) ../../thash_$(GET_HASH)_$(GET_THASH)x4.c \
+          ../../keccak4x/KeccakP-1600-times4-SIMD256.c
+
 $(JPP_FILES):
 .PRECIOUS: bin/test_thash_%.jpp
 bin/test_thash_%.jpp: | bin/
@@ -54,12 +60,18 @@ bin/test_thash_%.jpp: | bin/
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
 	sed -i "2 i\from Sphincs require \"thash_4x/thash_4x_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
-	$(PREPROCESSOR) --input_file $@ --output_file $@ --task "fn:thash p:INBLOCKS:$(GET_INBLOCKS)"
+	$(PREPROCESSOR) --input_file $@ --output_file $@ --task "fn:thash_jazz p:INBLOCKS:$(GET_INBLOCKS)"
 
 $(ASM_FILES):
 .PRECIOUS: bin/test_thash_%.s
 bin/test_thash_%.s: bin/test_thash_%.jpp
 	$(JASMIN) $(JFLAGS) $< -o $@
+
+$(TESTS):
+bin/test_thash_%: bin/test_thash_%.s | bin/
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) -DINBLOCKS=$(GET_INBLOCKS) \
+	-I../common -I../../ -I../../params -I../../keccak4x \
+	test_thash_4x.c $<  $(SOURCES)
 
 bin/test_thash_%.out: bin/test_thash_%
 	@./$<

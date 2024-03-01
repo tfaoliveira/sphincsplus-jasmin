@@ -1,5 +1,14 @@
-
-export fn thash<INBLOCKS>(reg u64 args) 
+// args[0] = (void *)out0;
+// args[1] = (void *)out1;
+// args[2] = (void *)out2;
+// args[3] = (void *)out3;
+// args[4] = (void *)in0;
+// args[5] = (void *)in1;
+// args[6] = (void *)in2;
+// args[7] = (void *)in3;
+// args[8] = (void *)ctx->pub_seed;
+// args[9] = (void *)addrx4;
+export fn thash_jazz<INBLOCKS>(reg u64 args) 
 {
     reg u64 out0_ptr out1_ptr out2_ptr out3_ptr in0_ptr in1_ptr in2_ptr in3_ptr pub_seed_ptr addrx4_ptr;
 
@@ -42,14 +51,15 @@ export fn thash<INBLOCKS>(reg u64 args)
     #declassify addrx4_ptr = (u64)[args + 9 * 9];
     for i = 0 to 4 * 8 { addrx4[i] = (u32)[addrx4_ptr + 4 * i]; }
 
+    // SEGFAULT HERE 
     out0, out1, out2, out3 = __thash<INBLOCKS>(out0, out1, out2, out3, in0, in1, in2, in3, pub_seed, addrx4);
 
     () = #unspill(out0_ptr, out1_ptr, out2_ptr, out3_ptr);
 
     for i = 0 to SPX_N {
-            (u8)[out0_ptr + i] = out0[i];
-            (u8)[out1_ptr + i] = out1[i];
-            (u8)[out2_ptr + i] = out2[i];
-            (u8)[out3_ptr + i] = out3[i];
+        (u8)[out0_ptr + i] = out0[i];
+        (u8)[out1_ptr + i] = out1[i];
+        (u8)[out2_ptr + i] = out2[i];
+        (u8)[out3_ptr + i] = out3[i];
     }
 }//<>

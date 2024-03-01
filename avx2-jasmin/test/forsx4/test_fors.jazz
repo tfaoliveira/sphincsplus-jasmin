@@ -1,0 +1,52 @@
+from Sphincs require "forsx4/forsx4.jtmpl"
+
+// args[0] = (void *)sk0;
+// args[1] = (void *)sk1;
+// args[2] = (void *)sk2;
+// args[3] = (void *)sk3;
+// args[4] = (void *)ctx->pub_seed;
+// args[5] = (void *)ctx->sk_seed;
+// args[6] = (void *)addrx4; 
+export fn fors_gen_sk_x4_jazz(reg u64 args) {
+    reg u64 sk0_ptr sk1_ptr sk2_ptr sk3_ptr;
+    reg u64 pub_seed_ptr sk_seed_ptr;
+    reg u64 addrx4_ptr;
+
+    stack u8[SPX_N] sk0 sk1 sk2 sk3;
+    stack u8[SPX_N] pub_seed sk_seed;
+    stack u32[4*8] addrx4;
+
+    inline int i;
+
+    #declassify sk0_ptr = (u64)[args + 8*0];
+    #declassify sk1_ptr = (u64)[args + 8*1];
+    #declassify sk2_ptr = (u64)[args + 8*2];
+    #declassify sk3_ptr = (u64)[args + 8*3];
+
+    #declassify pub_seed_ptr = (u64)[args + 8*4];
+    #declassify sk_seed_ptr  = (u64)[args + 8*5];
+
+    #declassify addrx4_ptr = (u64)[args + 8*6];
+
+    () = #spill(sk0_ptr, sk1_ptr, sk2_ptr, sk3_ptr);
+
+    for i=0 to SPX_N {  sk0[i] = (u8)[sk0_ptr + i];
+                        sk1[i] = (u8)[sk1_ptr + i];
+                        sk2[i] = (u8)[sk2_ptr + i];
+                        sk3[i] = (u8)[sk3_ptr + i]; }
+
+    for i=0 to SPX_N {  pub_seed[i] = (u8)[pub_seed_ptr + i];
+                        sk_seed[i] = (u8)[sk_seed_ptr + i]; }
+
+    for i=0 to 4*8 { addrx4[i] = (u32)[addrx4_ptr + 4*i]; }
+
+    sk0, sk1, sk2, sk3 = _prf_addrx4(sk0, sk1, sk2, sk3, pub_seed, sk_seed, addrx4);
+
+    () = #unspill(sk0_ptr, sk1_ptr, sk2_ptr, sk3_ptr);
+
+    for i=0 to SPX_N {  (u8)[sk0_ptr + i] = sk0[i];
+                        (u8)[sk1_ptr + i] = sk1[i];
+                        (u8)[sk2_ptr + i] = sk2[i];
+                        (u8)[sk3_ptr + i] = sk3[i]; }
+
+}
