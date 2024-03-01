@@ -1,0 +1,185 @@
+from Sphincs require "fips202/shake256_array/shake256.jtmpl"
+from Sphincs require "fips202/shake256_inc/shake256_inc.jinc" // FIXME: extension should be jtmpl
+from Sphincs require "fips202/shake256_out_u64/shake256_out_u64.jtmpl"
+from Sphincs require "memcpy/memcpy.jtmpl"
+from Sphincs require "generic/utils.jtmpl"
+
+inline fn __prf_addr(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[SPX_N]
+{
+  stack u8[2*SPX_N + SPX_ADDR_BYTES] buf;
+  reg ptr u8[2*SPX_N + SPX_ADDR_BYTES] buf_p;
+
+  reg u64 offset;
+
+  buf_p = buf;
+  offset = 0;
+
+  buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, pub_seed);
+  buf_p, offset = _x_memcpy_u8u32<2*SPX_N + SPX_ADDR_BYTES, 8>(buf_p, offset, addr);
+  buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, sk_seed);
+
+  out = __shake256<SPX_N, 2*SPX_N + SPX_ADDR_BYTES>(out, buf_p);
+  return out;
+}
+
+//// PRF [out is a reg u64 instead of reg ptr u8]
+inline fn __prf_addr_out_u64(
+  reg u64 out, // reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] addr
+)
+{
+  stack u8[2*SPX_N + SPX_ADDR_BYTES] buf;
+  reg ptr u8[2*SPX_N + SPX_ADDR_BYTES] buf_p;
+
+  reg u64 offset;
+  inline u64 outlen;
+
+  outlen = SPX_N;
+
+  buf_p = buf;
+  offset = 0;
+
+  buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, pub_seed);
+  buf_p, offset = _x_memcpy_u8u32<2*SPX_N + SPX_ADDR_BYTES, 8>(buf_p, offset, addr);
+  buf_p, offset = _x_memcpy_u8u8<2*SPX_N + SPX_ADDR_BYTES, SPX_N>(buf_p, offset, sk_seed);
+
+  __shake256_out_u64<2*SPX_N + SPX_ADDR_BYTES>(out, outlen, buf_p);
+}
+
+inline fn __gen_message_random(
+  reg ptr u8[SPX_N] R,
+  reg ptr u8[SPX_N] sk_prf,
+  reg ptr u8[SPX_N] optrand,
+  reg u64 msg,
+  reg u64 msg_len
+) -> reg ptr u8[SPX_N]
+{
+  stack   u64[26] shake_state;
+  reg ptr u64[26] shake_state_p;
+
+  () = #spill(R, sk_prf, optrand, msg, msg_len);
+
+  shake_state_p = shake_state;
+  shake_state_p = __shake256_inc_init_(shake_state_p);
+
+  () = #unspill(sk_prf);
+  shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, sk_prf);
+
+  () = #unspill(optrand);
+  shake_state_p = __shake256_inc_absorb_t<SPX_N>(shake_state_p, optrand);
+
+  () = #unspill(msg, msg_len);
+  shake_state_p = _shake256_inc_absorb(shake_state_p, msg, msg_len);
+
+  shake_state_p = __shake256_inc_finalize(shake_state_p);
+
+  () = #unspill(R);
+  R, _ = __shake256_inc_squeeze_t<SPX_N>(R, shake_state_p);
+
+  return R;
+}
+
+inline fn __hash_message(
+  reg ptr u8[SPX_FORS_MSG_BYTES] digest,
+  reg ptr u8[SPX_N] R,
+  reg ptr u8[SPX_PK_BYTES] pk,
+  reg u64 msg msg_len
+) -> reg ptr u8[SPX_FORS_MSG_BYTES], reg u64, reg u32
+{
+  reg u64 tree;
+  reg u32 leaf_idx;
+
+  // buf_p = [ FORS MSG BYTES | TREE BYTES  | LEAF BYTES]
+
+  stack u8[SPX_DGST_BYTES] buf;
+  reg ptr u8[SPX_DGST_BYTES] buf_p;
+
+  stack u64[26] shake256_state;
+  reg ptr u64[26] shake256_state_p; 
+
+  reg u64 offset;
+  reg u64 t;
+
+  reg u32 w;
+  
+  inline u64 shift_amount;
+
+  reg ptr u8[SPX_TREE_BYTES] tree_bytes;
+  reg ptr u8[SPX_LEAF_BYTES] leaf_bytes;
+
+  shake256_state_p = shake256_state;
+
+  // shake256_inc_init(s_inc);
+  shake256_state_p = __shake256_inc_init_(shake256_state_p);
+
+  // shake256_inc_absorb(s_inc, R, SPX_N);
+  () = #spill(digest, pk, msg, msg_len);
+  shake256_state_p = __shake256_inc_absorb_t<SPX_N>(shake256_state_p, R);
+
+  // shake256_inc_absorb(s_inc, pk, SPX_PK_BYTES);
+  () = #unspill(pk);
+  shake256_state_p = __shake256_inc_absorb_t<SPX_PK_BYTES>(shake256_state_p, pk);
+
+  // shake256_inc_absorb(s_inc, m, mlen);
+  () = #unspill(msg, msg_len);
+  shake256_state_p = _shake256_inc_absorb(shake256_state_p, msg, msg_len);
+
+  // shake256_inc_finalize(s_inc);
+  shake256_state_p = __shake256_inc_finalize(shake256_state_p);
+
+  // shake256_inc_squeeze(buf, SPX_DGST_BYTES, s_inc);
+  buf_p = buf;
+  buf_p, _ = __shake256_inc_squeeze_t<SPX_DGST_BYTES>(buf_p, shake256_state_p);
+  shake256_state = shake256_state_p;
+
+  // memcpy(digest, bufp, SPX_FORS_MSG_BYTES);
+  offset = 0;
+  () = #unspill(digest); 
+  digest, _, _ = __memcpy_u8u8_2<SPX_FORS_MSG_BYTES, SPX_DGST_BYTES>(digest, offset, buf_p, 0, SPX_FORS_MSG_BYTES);
+  buf = buf_p;
+
+  // bufp += SPX_FORS_MSG_BYTES;
+  tree_bytes = buf[SPX_FORS_MSG_BYTES : SPX_TREE_BYTES];
+
+  // *tree = bytes_to_ull(bufp, SPX_TREE_BYTES);
+  // tree = __bytes_to_ull<SPX_TREE_BYTES>(tree, tree_bytes);
+  tree = __bytes_to_ull<SPX_TREE_BYTES>(tree_bytes);
+
+  // *tree &= (~(uint64_t)0) >> (64 - SPX_TREE_BITS);
+  tree &= (0xffffffffffffffff >> (64 - SPX_TREE_BITS)); // the expression after &= can be evaluated at compile time
+
+  // bufp += SPX_TREE_BYTES;
+  // *leaf_idx = (uint32_t)bytes_to_ull(bufp, SPX_LEAF_BYTES);
+  leaf_bytes = buf[SPX_FORS_MSG_BYTES + SPX_TREE_BYTES : SPX_LEAF_BYTES];
+  t = __bytes_to_ull<SPX_LEAF_BYTES>(leaf_bytes);
+  leaf_idx = (32u) t;
+
+  // *leaf_idx &= (~(uint32_t)0) >> (32 - SPX_LEAF_BITS);
+  leaf_idx &= (0xffffffff >> (32 - SPX_LEAF_BITS)); // the expression after &= can be evaluated at compile time
+
+  return digest, tree, leaf_idx;
+}
+
+#[returnaddress="stack"]
+fn _hash_message(
+  reg ptr u8[SPX_FORS_MSG_BYTES] digest,
+  reg ptr u8[SPX_N] R,
+  reg ptr u8[SPX_PK_BYTES] pk,
+  reg u64 msg,
+  reg u64 msg_len
+) -> reg ptr u8[SPX_FORS_MSG_BYTES], 
+     reg u64, 
+     reg u32
+{
+  reg u64 tree;
+  reg u32 leaf_idx;
+  digest, tree, leaf_idx = __hash_message(digest, R, pk, msg, msg_len);
+  return digest, tree, leaf_idx;
+}

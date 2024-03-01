@@ -17,6 +17,7 @@
         "macros.h": "c",
         "hashx4.h": "c",
         "randombytes.h": "c",
-        "*.tcc": "c"
+        "*.tcc": "c",
+        "params.h": "c"
     }
 }

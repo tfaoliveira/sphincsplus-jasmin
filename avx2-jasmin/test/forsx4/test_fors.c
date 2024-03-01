@@ -18,6 +18,7 @@
 #define TESTS 1000
 #endif
 
+extern void fors_gen_sk_jazz(uint8_t*, const uint8_t*, const uint8_t*, const uint32_t*);
 extern void fors_gen_sk_x4_jazz(const void *);
 
 void fors_gen_sk_x4_wrapper(uint8_t *sk0, uint8_t *sk1, uint8_t *sk2, uint8_t *sk3, const spx_ctx *ctx,
@@ -33,6 +34,27 @@ void fors_gen_sk_x4_wrapper(uint8_t *sk0, uint8_t *sk1, uint8_t *sk2, uint8_t *s
     args[6] = (void *)addrx4; 
 
     fors_gen_sk_x4_jazz(args);
+}
+
+void test_fors_gen_sk() {
+    uint8_t sk_ref[SPX_N] = {0};
+    uint8_t sk_jazz[SPX_N] = {0};
+
+    spx_ctx ctx;
+    uint32_t addr[8];
+
+    for (int i = 0; i < TESTS; i++) {
+        memset(sk_jazz, 0, SPX_N);
+        memset(sk_ref, 0, SPX_N);
+
+        randombytes((uint8_t *)&ctx, 2 * SPX_N);
+        randombytes((uint8_t *)addr, 8 * sizeof(uint32_t));
+
+        fors_gen_sk_jazz(sk_jazz, ctx.pub_seed, ctx.sk_seed, addr);
+        fors_gen_sk(sk_ref, &ctx, addr);
+
+        assert(memcmp(sk_ref, sk_jazz, SPX_N) == 0);
+    }
 }
 
 void test_fors_gen_sk_x4() {
@@ -74,6 +96,7 @@ void test_fors_gen_sk_x4() {
 }
 
 int main(void) {
+    test_fors_gen_sk();
     test_fors_gen_sk_x4();
     printf("PASS: fors = { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
 }

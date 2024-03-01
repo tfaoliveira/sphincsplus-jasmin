@@ -11,7 +11,7 @@
 #include "thashx4.h"
 #include "address.h"
 
-static void fors_gen_sk(unsigned char *sk, const spx_ctx *ctx,
+void fors_gen_sk(unsigned char *sk, const spx_ctx *ctx,
                         uint32_t fors_leaf_addr[8])
 {
     prf_addr(sk, ctx, fors_leaf_addr);

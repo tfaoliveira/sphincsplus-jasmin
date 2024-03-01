@@ -1,0 +1,92 @@
+
+// cond = a < b && a < c
+inline fn __cond_u64_a_below_b_and_a_below_c(reg u64 a b c) -> reg bool
+{
+  reg bool c1 c2 c3;
+  reg u8 bc1 bc2;
+
+  ?{ "<u" = c1 } = #CMP_64(a, b);
+  // if(c1) <=> if(a <u b)
+  bc1 = #SETcc(c1);
+
+  ?{ "<u" = c2 } = #CMP_64(a, c);
+  // if(c2) <=> if(a <u c)
+  bc2 = #SETcc(c2);
+
+  // zf == 1 => bc1 & bc2 == 0 => cond = false
+  // zf == 0 => bc1 & bc2 == 1 => cond = true
+  ?{ "!=" = c3 } = #TEST_8(bc1, bc2); 
+
+  return c3;
+}
+
+// cond = a < b && a < c
+inline fn __cond_u32_a_below_b_and_a_below_c(reg u32 a b c) -> reg bool
+{
+  reg bool c1 c2 c3;
+  reg u8 bc1 bc2;
+
+  ?{ "<u" = c1 } = #CMP_32(a, b);
+  bc1 = #SETcc(c1);
+
+  ?{ "<u" = c2 } = #CMP_32(a, c);
+  bc2 = #SETcc(c2);
+
+  ?{ "!=" = c3 } = #TEST_8(bc1, bc2); 
+
+  return c3;
+}
+
+// cond = a != b && a != c
+inline fn __cond_u64_a_dif_b_and_a_dif_c(reg u64 a b c) -> reg bool 
+{
+  reg bool res cond1 cond2;
+  reg u8 bc1 bc2;
+
+  res = __cond_u64_a_below_b_and_a_below_c(a, b, c); // ??
+
+  ?{ "!=" = cond1 } = #CMP_64(a, b); 
+  bc1 = #SETcc(cond1);
+
+  ?{ "!=" = cond2 } = #CMP_64(a, c); 
+  bc2 = #SETcc(cond2);
+
+  // ??
+  ?{ "!=" = res } = #TEST_8(bc1, bc2);
+
+  return res;
+}
+
+// cond = a != b && c != d
+inline fn __cond_u64_a_dif_b_and_c_dif_d(reg u64 a b c d) -> reg bool
+{
+  reg bool cond1 cond2 cond3;
+  reg u8 bc1 bc2;
+
+  ?{ "!=" = cond1 } = #CMP_64(a, b); 
+  bc1 = #SETcc(cond1);
+
+  ?{ "!=" = cond2 } = #CMP_64(c, d); 
+  bc2 = #SETcc(cond2);
+
+  ?{ "!=" = cond3 } = #TEST_8(bc1, bc2);
+
+  return cond3;
+}
+
+// a == b && c < d
+// used in treehash to compute (internal_idx & 1) == 0 && idx < max_idx
+inline fn __cond_u32_a_eq_b_and_c_below_d(reg u32 a b c d) -> reg bool {
+  reg bool cond1 cond2 cond3;
+  reg u8 bc1 bc2;
+
+  ?{ "==" = cond1 } = #CMP_32(a, b); 
+  bc1 = #SETcc(cond1);
+
+  ?{ "<u" = cond2 } = #CMP_32(c, d); 
+  bc2 = #SETcc(cond2);
+
+  ?{ "!=" = cond3 } = #TEST_8(bc1, bc2);
+
+  return cond3;
+}

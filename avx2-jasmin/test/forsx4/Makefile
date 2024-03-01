@@ -65,8 +65,7 @@ $(JPP_FILES):
 bin/test_fors_%.jpp: | bin/
 	cp test_fors.jazz $@
 	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
-	# sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
-	# FIXME: Uncomment this later
+	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
 	$(JPP) -I Sphincs:../../ -in $@ -out $@
 	$(PREPROCESSOR) --input_file $@ --output_file $@
 

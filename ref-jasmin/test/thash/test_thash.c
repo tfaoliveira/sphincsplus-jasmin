@@ -14,15 +14,15 @@
 #include "thash.h"
 
 #ifndef PARAMS
-#define PARAMS sphincs - shake - 128f
+#error "PARAMS undefined"
 #endif
 
 #ifndef THASH
-#define THASH simple
+#error "Thash undefined"
 #endif
 
 #ifndef INBLOCKS
-#define INBLOCKS 1
+#error "INBLOCKS undefined"
 #endif
 
 #ifndef TESTS
@@ -147,7 +147,7 @@ void test_api(void) {
 
     for (int i = 0; i < TESTS; i++) {
         if (debug) {
-            printf("[%s]: Test %d/%d\n", xstr(PARAMS), i, TESTS);
+            printf("[%s (%s)]: Test %d/%d\n", xstr(PARAMS), xstr(THASH), i, TESTS);
         }
 
         for (message_length = 10; message_length < MAX_MESSAGE_LENGTH; message_length++) {

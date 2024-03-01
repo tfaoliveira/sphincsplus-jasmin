@@ -16,7 +16,7 @@ PREPROCESSOR ?= ../scripts/preprocessor
 
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
-THASH_LIST    := simple robust
+THASH_LIST    := robust
 INBLOCKS_LIST := $(shell seq 1 4) 64 100
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach N,$(INBLOCKS_LIST),$(H)_$(P)_$(T)_$(N)))))
@@ -41,9 +41,11 @@ OBJ_FILES := $(ASM_FILES:.s=.o)
 
 # ------------------------------------------------------------------------------
 
-SOURCES = $(filter-out ../../thash_%.c, $(wildcard ../../*.c)) ../../thash_$(GET_HASH)_$(GET_THASH).c
+SOURCES = ../../hash_$(GET_HASH).c ../../merkle.c ../../wots.c ../../wotsx1.c ../../fips202.c ../../utils.c \
+		  ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c ../../fors.c ../../sign.c ../../wrappers.c
 
-TEST_FLAGS = -DTEST_THASH -DTEST_THASH_INPLACE
+# FIXME: Review this later => Generate two different executables : One for API one for tests with random bytes
+TEST_FLAGS = # -DTEST_THASH -DTEST_THASH_INPLACE
 
 # ------------------------------------------------------------------------------
 
@@ -87,7 +89,6 @@ bin/test_thash_%.out: bin/test_thash_%
 bin/:
 	mkdir -p bin/
 
-# ------------------------------------------------------------------------------
 .PHONY: clean
 clean:
 	rm -fr bin/

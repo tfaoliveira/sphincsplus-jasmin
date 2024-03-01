@@ -78,22 +78,22 @@ export fn compute_root_jazz(reg u64 arguments)
   reg ptr u32[8] addr_p;
 
   // load arguments from array
-  root_ptr     = (u64)[arguments + 8*0]; () = #spill(root_ptr);
-  leaf_ptr     = (u64)[arguments + 8*1];
+  #declassify root_ptr     = (u64)[arguments + 8*0]; () = #spill(root_ptr);
+  #declassify leaf_ptr     = (u64)[arguments + 8*1];
 
-  p            = (u64)[arguments + 8*2];
+  #declassify p            = (u64)[arguments + 8*2];
   leaf_idx     = (u32)[p];
 
-  p            = (u64)[arguments + 8*3];
+  #declassify p            = (u64)[arguments + 8*3];
   idx_offset   = (u32)[p];
 
-  auth_path    = (u64)[arguments + 8*4];
+  #declassify auth_path    = (u64)[arguments + 8*4];
 
-  p            = (u64)[arguments + 8*5];
+  #declassify p            = (u64)[arguments + 8*5];
   tree_height  = (u32)[p];
 
-  pub_seed_ptr = (u64)[arguments + 8*6];
-  addr_ptr     = (u64)[arguments + 8*7]; () = #spill(addr_ptr);
+  #declassify pub_seed_ptr = (u64)[arguments + 8*6];
+  #declassify addr_ptr     = (u64)[arguments + 8*7]; () = #spill(addr_ptr);
 
   // load contents from pointers
   root_p = root;

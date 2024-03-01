@@ -1,4 +1,32 @@
 from Sphincs require "hash4x/hash.jtmpl"
+from Sphincs require "hash/hash_shake.jtmpl"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+inline fn __fors_gen_sk(
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  sk = __prf_addr(sk, pub_seed, sk_seed, fors_leaf_addr);
+  return sk;
+}
+
+#[returnaddress="stack"]
+fn _fors_gen_sk(
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  sk = __fors_gen_sk(sk, pub_seed, sk_seed, fors_leaf_addr);
+  return sk;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 inline fn __fors_gen_skx4(
   reg ptr u8[SPX_N] sk0,
@@ -28,3 +56,5 @@ fn _fors_gen_skx4(
   sk0, sk1, sk2, sk3 = __fors_gen_skx4(sk0, sk1, sk2, sk3, pub_seed, sk_seed, fors_leaf_addr);
   return sk0, sk1, sk2, sk3;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
