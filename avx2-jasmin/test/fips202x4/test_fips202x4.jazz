@@ -31,7 +31,11 @@ export fn keccak_absorb4x_jazz<INLEN>(reg u64 _state _in0 _in1 _in2 _in3)
     in3[i] = (u8)[_in3 + i];
   }
 
+  () = #spill(_state);
+
   state = _shake256_absorb4x<INLEN>(state, in0, in1, in2, in3);
+
+  () = #unspill(_state);
 
   for i=0 to 25 { t = state[i]; (u256)[_state + 32*i] = t; }
 }//<>
@@ -45,26 +49,31 @@ export fn shake256_squeezeblocks_4x_jazz<OUTLEN>(reg u64 _h0 _h1 _h2 _h3 _state)
   reg u256 t;
   reg u8 u;
 
-  for i=0 to OUTLEN { u = (u8) [_h0 + i]; h0[i] = u;
-                      u = (u8) [_h1 + i]; h1[i] = u;
-                      u = (u8) [_h2 + i]; h2[i] = u;
-                      u = (u8) [_h3 + i]; h3[i] = u; }
+  for i=0 to OUTLEN { h0[i] = (u8)[_h0 + i];
+                      h1[i] = (u8)[_h1 + i];
+                      h2[i] = (u8)[_h2 + i];
+                      h3[i] = (u8)[_h3 + i]; }
 
   for i=0 to 25 { t = (u256)[_state + 32*i]; state[i]=t; }
   
+  () = #spill(_h0, _h1, _h2, _h3, _state);
+
   state, h0, h1, h2, h3 = _shake256_squeezeblocks_4x<OUTLEN>(state, h0, h1, h2, h3);
 
-  for i=0 to OUTLEN { u = h0[i]; (u8) [_h0 + i] = u;
-                      u = h1[i]; (u8) [_h1 + i] = u;
-                      u = h2[i]; (u8) [_h2 + i] = u;
-                      u = h3[i]; (u8) [_h3 + i] = u; }
+  () = #unspill(_h0, _h1, _h2, _h3, _state);
+
+  for i=0 to OUTLEN { (u8)[_h0 + i] = h0[i];
+                      (u8)[_h1 + i] = h1[i];
+                      (u8)[_h2 + i] = h2[i];
+                      (u8)[_h3 + i] = h3[i]; }
+
 
   for i=0 to 25 { t = state[i]; (u256)[_state + 32*i] = t; }
 }//<>
 
 
 // args is a (void *)
-export fn shake256_x4_jazz<INLEN, OUTLEN>(reg u64 args) 
+export fn shake256_x4_jazz<OUTLEN, INLEN>(reg u64 args) 
 {
     reg u64 _in0 _in1 _in2 _in3;
     stack u8[INLEN] in0 in1 in2 in3;

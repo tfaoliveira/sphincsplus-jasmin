@@ -1331,11 +1331,10 @@ fn _shake256_absorb4x<INLEN>(
         s = _KeccakF1600_StatePermute4x(s);
 
         inlen -= SHAKE256_RATE;
-        offset_64 += SHAKE256_RATE / 8; // NOTE: Dirty fix (is it?). The offset is  SHAKE256_RATE but scaled to u64 it becomes SHAKE256_RATE
+        offset_64 += SHAKE256_RATE / 8; // offset scaled to u64
         offset += SHAKE256_RATE;
     }
 
-    /*
 
     // SHAKE256_RATE (136) is divisible by 8 so we dont need the for i=0 to SHAKE256_RATE % 8 part
     for i = 0 to SHAKE256_RATE / 8  {
@@ -1383,7 +1382,6 @@ fn _shake256_absorb4x<INLEN>(
         s[u64 4 * i + 3] ^= t64;
     }
 
-    */
 
 	return s;
 }//<>
@@ -1398,30 +1396,31 @@ fn _shake256_squeezeblocks_4x<OUTLEN>(
      reg ptr u8[OUTLEN], 
      reg ptr u8[OUTLEN]
 {
-// TODO: Needs improvements
-  reg ptr u8[SHAKE256_RATE] buf0 buf1 buf2 buf3;
-  inline int NBLOCKS; NBLOCKS = OUTLEN / SHAKE256_RATE;
+  inline int NBLOCKS; 
   inline int i;
 
-  reg u64 nblocks offset_64;
+  reg u64 nblocks offset_64 t;
 
   reg u256 t256;
   reg u128 t128;
 
+  NBLOCKS = OUTLEN / SHAKE256_RATE;
   nblocks = NBLOCKS;
-
   offset_64 = 0;
 
   while (nblocks > 0) {
     state = _KeccakF1600_StatePermute4x(state);
     for i = 0 to SHAKE256_RATE / 8 {
         t256 = state[i];
+
         t128 = t256;
 		h0[u64 i + offset_64] = #VMOVLPD(t128);
-		h1[u64 i + offset_64] = #VMOVHPD(t128);
+        
+        h1[u64 i + offset_64] = #VMOVHPD(t128);
 
         t128 = #VEXTRACTI128(t256, 1);
 		h2[u64 i + offset_64] = #VMOVLPD(t128);
+
 		h3[u64 i + offset_64] = #VMOVHPD(t128);
 	}
     nblocks -= 1;
@@ -1460,19 +1459,16 @@ fn _shake256x4<OUTLEN,INLEN>(
   state, out0, out1, out2, out3 = _shake256_squeezeblocks_4x<OUTLEN>(state, out0, out1, out2, out3);
 
   offset = (OUTLEN / SHAKE256_RATE) * SHAKE256_RATE;
-    
-  if ((OUTLEN % SHAKE256_RATE) == 0) {
+
+  if ((OUTLEN % SHAKE256_RATE) != 0) {
     state, t0, t1, t2, t3 = _shake256_squeezeblocks_4x<SHAKE256_RATE>(state, t0, t1, t2, t3);
 
-
-    // for i=0 to OUTLEN % SHAKE256_RATE { out0[offset + i] = t0[i];
-  //                                       out1[offset + i] = t1[i];
-  //                                       out2[offset + i] = t2[i];
-       //                                    out3[offset + i] = t3[i];  }
+    for i=0 to OUTLEN % SHAKE256_RATE { out0[offset + i] = t0[i];
+                                        out1[offset + i] = t1[i];
+                                        out2[offset + i] = t2[i];
+                                        out3[offset + i] = t3[i];  }
 
   }
-  
-  state = #randombytes(state);
 
   return out0, out1, out2, out3;
 }//<>

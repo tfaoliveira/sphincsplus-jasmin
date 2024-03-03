@@ -59,36 +59,36 @@ void keccak_absorb4x(__m256i *s, unsigned int r, const unsigned char *m0, const 
         m3 += r;
     }
 
-    // for (i = 0; i < r; ++i) {
-    //     t0[i] = 0;
-    //     t1[i] = 0;
-    //     t2[i] = 0;
-    //     t3[i] = 0;
-    // }
+    for (i = 0; i < r; ++i) {
+        t0[i] = 0;
+        t1[i] = 0;
+        t2[i] = 0;
+        t3[i] = 0;
+    }
 
-    // for (i = 0; i < mlen; ++i) {
-    //     t0[i] = m0[i];
-    //     t1[i] = m1[i];
-    //     t2[i] = m2[i];
-    //     t3[i] = m3[i];
-    // }
+    for (i = 0; i < mlen; ++i) {
+        t0[i] = m0[i];
+        t1[i] = m1[i];
+        t2[i] = m2[i];
+        t3[i] = m3[i];
+    }
 
-    // t0[i] = p;
-    // t1[i] = p;
-    // t2[i] = p;
-    // t3[i] = p;
+    t0[i] = p;
+    t1[i] = p;
+    t2[i] = p;
+    t3[i] = p;
 
-    // t0[r - 1] |= 128;
-    // t1[r - 1] |= 128;
-    // t2[r - 1] |= 128;
-    // t3[r - 1] |= 128;
+    t0[r - 1] |= 128;
+    t1[r - 1] |= 128;
+    t2[r - 1] |= 128;
+    t3[r - 1] |= 128;
 
-    // for (i = 0; i < r / 8; ++i) {
-    //     ss[4 * i + 0] ^= load64(t0 + 8 * i);
-    //     ss[4 * i + 1] ^= load64(t1 + 8 * i);
-    //     ss[4 * i + 2] ^= load64(t2 + 8 * i);
-    //     ss[4 * i + 3] ^= load64(t3 + 8 * i);
-    // }
+    for (i = 0; i < r / 8; ++i) {
+        ss[4 * i + 0] ^= load64(t0 + 8 * i);
+        ss[4 * i + 1] ^= load64(t1 + 8 * i);
+        ss[4 * i + 2] ^= load64(t2 + 8 * i);
+        ss[4 * i + 3] ^= load64(t3 + 8 * i);
+    }
 }
 
 void keccak_squeezeblocks4x(unsigned char *h0, unsigned char *h1, unsigned char *h2, unsigned char *h3,
@@ -173,18 +173,14 @@ void shake256x4(unsigned char *out0, unsigned char *out1, unsigned char *out2, u
     out3 += (outlen / SHAKE256_RATE) * SHAKE256_RATE;
 
     if (outlen % SHAKE256_RATE) {
-        puts("entrou no if");
         keccak_squeezeblocks4x(t0, t1, t2, t3, 1, s, SHAKE256_RATE);
 
 
         for (i = 0; i < outlen % SHAKE256_RATE; i++) {
-            // out0[i] = t0[i];
-            // out1[i] = t1[i];
-            // out2[i] = t2[i];
-            // out3[i] = t3[i];
+            out0[i] = t0[i];
+            out1[i] = t1[i];
+            out2[i] = t2[i];
+            out3[i] = t3[i];
         }
-    } else {
-        puts("nao entrou no if");
     }
-        print_str_u8("state ref", (uint8_t*)s, 25 * sizeof(__m256i));
 }

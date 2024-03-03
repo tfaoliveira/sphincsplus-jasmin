@@ -263,6 +263,7 @@ int main(void) {
     // Test squeeze (the number of blocks to absorb is given by NBLOCKS = OUTLEN / SHAKE256_RATE)
     test_shake256_squeezeblocks4x();  // WORKS
 
+    printf("{ INLEN : %s ; OUTLEN : %s }\n", xstr(INLEN), xstr(OUTLEN));
     test_shake256();
 
     printf("Pass fips202_4x { INLEN : %s ; OUTLEN : %s }\n", xstr(INLEN), xstr(OUTLEN));
