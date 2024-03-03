@@ -14,6 +14,8 @@ jobs:
     strategy:
       matrix:
         directory:
+            - memcpy
+            - fips202x4
             - hash4x
     steps:
       - uses: actions/checkout@v4
