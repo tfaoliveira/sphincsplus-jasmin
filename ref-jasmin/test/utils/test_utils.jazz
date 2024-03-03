@@ -109,8 +109,8 @@ export fn compute_root_jazz(reg u64 arguments)
   addr_p = __load_addr(addr_p, addr_ptr);
 
   // call 
-  root_p, addr_p = __compute_root(root_p, leaf_p, leaf_idx, idx_offset,
-                                  auth_path, tree_height, pub_seed_p, addr_p);
+  root_p, addr_p = __compute_root<SPX_N>(root_p, 0, leaf_p, leaf_idx, idx_offset,
+                                         auth_path, tree_height, pub_seed_p, addr_p);
 
   // store
   () = #unspill(root_ptr);
