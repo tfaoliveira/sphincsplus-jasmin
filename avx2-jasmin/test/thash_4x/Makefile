@@ -50,8 +50,11 @@ checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
 
 ################################################################################
 
-SOURCES = $(filter-out ../../thash_%.c, $(wildcard ../../*.c)) ../../thash_$(GET_HASH)_$(GET_THASH)x4.c \
-          ../../keccak4x/KeccakP-1600-times4-SIMD256.c
+SOURCES = ../../thash_$(GET_HASH)_$(GET_THASH)x4.c \
+          ../../thash_$(GET_HASH)_$(GET_THASH).c \
+          ../../keccak4x/KeccakP-1600-times4-SIMD256.c \
+		  ../../fips202.c ../../fips202x4.c \
+		  ../../utils.c ../../address.c
 
 $(JPP_FILES):
 .PRECIOUS: bin/test_thash_%.jpp
