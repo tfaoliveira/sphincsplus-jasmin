@@ -32,7 +32,7 @@ inline fn __compute_root<INLEN>(
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u32[8] addr)
   ->
-  reg ptr u8[SPX_N], // root
+  reg ptr u8[INLEN], // root
   reg ptr u32[8]     // addr
 {
   //
