@@ -270,8 +270,12 @@ inline fn __message_to_indices_t<MSG_LEN>(
 // /////////////////////////////////////////////////////////////////////////////
 
 // for treehash in fors, tree_height is always SPX_FORS_HEIGHT
-inline fn __treehash_fors(
-  reg ptr u8[SPX_N] root,
+//
+// NOTE: root is actually a u8[SPX_N]. We introduce offset to avoid using array slices
+//
+inline fn __treehash_fors<INLEN>(
+  reg ptr u8[INLEN] root,
+  reg u64 offset,
   reg u64 auth_path,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
@@ -280,7 +284,7 @@ inline fn __treehash_fors(
   reg ptr u32[8] tree_addr,
   reg ptr u32[8] info)
   ->
-  reg ptr u8[SPX_N], // root
+  reg ptr u8[INLEN], // root
   reg ptr u32[8], // tree_addr
   reg ptr u32[8] // info
 {
@@ -310,9 +314,12 @@ inline fn __treehash_fors(
 
   reg u32 zero;
 
+  inline int i;
+  reg u64 index;
+
   //
 
-  () = #spill(root, auth_path, pub_seed, sk_seed, tree_addr, info);
+  () = #spill(root, offset, auth_path, pub_seed, sk_seed, tree_addr, info);
   s_leaf_idx = leaf_idx;
   s_idx_offset = idx_offset;
   //
@@ -356,11 +363,13 @@ inline fn __treehash_fors(
       // if (h == tree_height) { memcpy( root, &current[SPX_N], SPX_N ); return; }
       if(s_h == SPX_FORS_HEIGHT)
       {
-          () = #unspill(root);
+          () = #unspill(root, offset);
           out_offset = 0;
           current_1 = current[SPX_N:SPX_N];
 
-        root, _ = _x_memcpy_u8u8<SPX_N, SPX_N>(root, out_offset, current_1);
+        // root, _, _ = __memcpy_u8u8_2<INLEN, SPX_N>(root, out_offset, current_1, offset, SPX_N);
+        // FIXME: Use __memcpy_u8u8_2
+        for i=0 to SPX_N { index = offset; index += i; root[index] = current_1[i];  }
 
           () = #spill(root);
           s_exit_inner_loop = 1;
@@ -466,11 +475,12 @@ inline fn __treehash_fors(
   () = #unspill(root, tree_addr, info);
 
   return root, tree_addr, info;
-}
+}//<>
 
 #[returnaddress="stack"]
-fn _treehash_fors(
-  reg ptr u8[SPX_N] root,
+fn _treehash_fors<INLEN>(
+  reg ptr u8[INLEN] root,
+  reg u64 offset,
   reg u64 auth_path,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
@@ -478,21 +488,24 @@ fn _treehash_fors(
   reg u32 idx_offset,
   reg ptr u32[8] tree_addr,
   reg ptr u32[8] info
-) -> reg ptr u8[SPX_N], reg ptr u32[8], reg ptr u32[8]
+) -> reg ptr u8[INLEN], reg ptr u32[8], reg ptr u32[8]
 {
-  root, tree_addr, info = __treehash_fors(root,
-                                          auth_path,
-                                          pub_seed,
-                                          sk_seed,
-                                          leaf_idx,
-                                          idx_offset,
-                                          tree_addr,
-                                          info);
+  root, tree_addr, info = __treehash_fors<INLEN>(root,
+                                                 offset,
+                                                 auth_path,
+                                                 pub_seed,
+                                                 sk_seed,
+                                                 leaf_idx,
+                                                 idx_offset,
+                                                 tree_addr,
+                                                 info);
   return root, tree_addr, info;
-}
+}//<>
 
-inline fn __treehash_fors_(
-  reg ptr u8[SPX_N] root,
+// Same as compute root. root is actually a u8[SPX_N]
+inline fn __treehash_fors_<INLEN>(
+  reg ptr u8[INLEN] root, 
+  reg u64 offset,
   reg u64 auth_path,
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u8[SPX_N] sk_seed,
@@ -500,27 +513,28 @@ inline fn __treehash_fors_(
   reg u32 idx_offset,
   reg ptr u32[8] tree_addr,
   reg ptr u32[8] info
-) -> reg ptr u8[SPX_N], reg ptr u32[8], reg ptr u32[8]
+) -> reg ptr u8[INLEN], reg ptr u32[8], reg ptr u32[8]
 {
-  root = root; auth_path = auth_path; pub_seed = pub_seed; sk_seed = sk_seed;
+  root = root; offset = offset; auth_path = auth_path; pub_seed = pub_seed; sk_seed = sk_seed;
   leaf_idx = leaf_idx; idx_offset = idx_offset; tree_addr = tree_addr;
   info = info;
 
-  root, tree_addr, info = _treehash_fors(root,
-                                         auth_path,
-                                         pub_seed,
-                                         sk_seed,
-                                         leaf_idx,
-                                         idx_offset,
-                                         tree_addr,
-                                         info);
+  root, tree_addr, info = _treehash_fors<INLEN>(root,
+                                                offset,
+                                                auth_path,
+                                                pub_seed,
+                                                sk_seed,
+                                                leaf_idx,
+                                                idx_offset,
+                                                tree_addr,
+                                                info);
 
   root = root;
   tree_addr = tree_addr;
   info = info;
 
   return root, tree_addr, info;
-}
+}//<>
 
 // /////////////////////////////////////////////////////////////////////////////
 
@@ -535,14 +549,6 @@ inline fn __fors_sign(
   reg ptr u32[8] fors_addr
 ) -> reg ptr u8[SPX_FORS_PK_BYTES]
 {
-  stack u64 s_sig; // spill
-
-  stack u32[SPX_FORS_TREES] indices;
-  reg ptr u32[SPX_FORS_TREES] indices_p;
-  
-  stack u8[SPX_FORS_TREES * SPX_N] roots;
-  reg ptr u8[SPX_FORS_TREES * SPX_N] roots_p;
-
   stack u32[8] fors_tree_addr;
   reg ptr u32[8] fors_tree_addr_p;
 
@@ -552,25 +558,25 @@ inline fn __fors_sign(
   stack u32[8] fors_pk_addr;
   reg ptr u32[8] fors_pk_addr_p;
 
-  reg u32 idx_offset;
+  stack u32[SPX_FORS_TREES] indices;
+  reg ptr u32[SPX_FORS_TREES] indices_p;
+
+  stack u8[SPX_FORS_TREES * SPX_N] roots;
+  reg ptr u8[SPX_FORS_TREES * SPX_N] roots_p;
+
+  reg u32 t type height idx_offset;
   stack u32 s_idx_offset;
-  inline int i;
+  
+  reg u64 i offset;
 
-  reg u32 t;
+  //////////////////////////////////////////////////////////////////////////////////////////////////
 
-  reg u32 type height;
+  () = #spill(sig, pk, pub_seed, sk_seed);
 
-  reg ptr u8[SPX_N] buf;
-
-  //////////////////////////////////////////////////// Initial spills (start from a clean state)
-  s_sig = sig;
-  () = #spill(pk, m, pub_seed, sk_seed);
-
-  ////////////////////////////////////////////////////
-
+  //////////////////////////////////////////////////////////////////////////////////////////////////
   fors_tree_addr_p = fors_tree_addr;
   fors_tree_addr_p = __zero_array_u32<8>(fors_tree_addr_p);
-  fors_tree_addr = fors_tree_addr_p;
+  fors_tree_addr = fors_tree_addr_p;  
 
   fors_leaf_addr_p = fors_leaf_addr;
   fors_leaf_addr_p = __zero_array_u32<8>(fors_leaf_addr_p); // struct fors_gen_leaf_info
@@ -598,16 +604,16 @@ inline fn __fors_sign(
   type = SPX_ADDR_TYPE_FORSPK;
   fors_pk_addr_p = __set_type(fors_pk_addr_p, type);
   fors_pk_addr = fors_pk_addr_p;
-
-  () = #unspill(m);
+    
   indices_p = indices;
   indices_p = __message_to_indices_t<SPX_FORS_MSG_BYTES>(indices_p, m);
   indices = indices_p;
 
-  for i=0 to SPX_FORS_TREES {
+  i = 0;
+  while (i < SPX_FORS_TREES) {
     // idx_offset = i * (1 << SPX_FORS_HEIGHT); 
-    idx_offset = 1;
-    ?{}, idx_offset = #SHL_32(idx_offset, SPX_FORS_HEIGHT);
+    // TODO: Replace these two lines with idx_offset = 1 << SPX_FORS_HEIGHT; // statically resolved
+    idx_offset = 1 << SPX_FORS_HEIGHT;
     idx_offset *= i;
     s_idx_offset = idx_offset;
 
@@ -626,9 +632,10 @@ inline fn __fors_sign(
     fors_tree_addr_p = __set_type(fors_tree_addr_p, type);
     fors_tree_addr = fors_tree_addr_p;
 
+    () = #spill(i);
+
     // fors_gen_sk(sig, ctx, fors_tree_addr);
-    sig = s_sig;
-    () = #unspill(pub_seed, sk_seed);
+    () = #unspill(sig, pub_seed, sk_seed);
     __fors_gen_sk_out_u64(sig, pub_seed, sk_seed, fors_tree_addr_p);
     fors_tree_addr = fors_tree_addr_p;
 
@@ -637,38 +644,43 @@ inline fn __fors_sign(
     type = SPX_ADDR_TYPE_FORSTREE;
     fors_tree_addr_p = __set_type(fors_tree_addr_p, type);
     fors_tree_addr = fors_tree_addr_p;
-    
+
     // sig += SPX_N;
-    s_sig += SPX_N;
+    () = #unspill(sig);
+    sig += SPX_N;
+    () = #spill(sig);
 
     // treehashx1(roots + i*SPX_N, sig, ctx, 
     //            indices[i], idx_offset, SPX_FORS_HEIGHT, fors_gen_leafx1,
     //            fors_tree_addr, &fors_info);
-    sig = s_sig;
-    () = #unspill(pub_seed, sk_seed);
+    () = #unspill(sig, pub_seed, sk_seed, i);
     t = indices[i];
     idx_offset = s_idx_offset;
-    buf = roots[i*SPX_N:SPX_N];
     fors_tree_addr_p = fors_tree_addr;
     fors_leaf_addr_p = fors_leaf_addr;
-    buf, fors_tree_addr_p, fors_leaf_addr_p = __treehash_fors_(buf, sig, pub_seed,
-                                                               sk_seed, t, idx_offset, 
-                                                               fors_tree_addr_p,
-                                                               fors_leaf_addr_p);
+    offset = i; offset *= SPX_N; // TODO: Can this be a shift?
+    roots, fors_tree_addr_p, fors_leaf_addr_p = __treehash_fors_<SPX_FORS_TREES * SPX_N>(roots, offset, sig, pub_seed,
+                                                                                         sk_seed, t, idx_offset, fors_tree_addr_p,
+                                                                                         fors_leaf_addr_p);
     
-    roots[i*SPX_N:SPX_N] = buf;
     fors_tree_addr = fors_tree_addr_p;
     fors_leaf_addr = fors_leaf_addr_p;
 
     // sig += SPX_N * SPX_FORS_HEIGHT;
-    s_sig += SPX_N * SPX_FORS_HEIGHT;
+    // FIXME: Using a stack u64 s_sig and doing s_sig += SPX_N * SPX_FORS_HEIGHT; fails with ""
+    () = #unspill(sig);
+    sig += SPX_N * SPX_FORS_HEIGHT;
+    () = #spill(sig);
+
+    () = #unspill(i);
+    i += 1;
   }
 
   roots_p = roots;
   () = #unspill(pk, pub_seed);
   fors_pk_addr_p = fors_pk_addr;
   pk = __thash<SPX_FORS_TREES>(pk, roots_p, pub_seed, fors_pk_addr_p);
-
+  
   return pk;
 }//<>
 
@@ -726,6 +738,8 @@ inline fn __fors_pk_from_sig(
 
   reg u32 type height;
 
+  reg u64 offset;
+
   ///////////////////////////// Initial spills (start from a clean state)
   s_sig = sig;
   () = #spill(pk, pub_seed, msg);
@@ -767,8 +781,7 @@ inline fn __fors_pk_from_sig(
 
   for i=0 to SPX_FORS_TREES {
     // idx_offset = i * (1 << SPX_FORS_HEIGHT);
-    idx_offset = 1;
-    ?{}, idx_offset = #SHL_32(idx_offset, SPX_FORS_HEIGHT);
+    idx_offset = 1 << SPX_FORS_HEIGHT;
     idx_offset *= i;
     s_idx_offset = idx_offset; // spill
     
@@ -802,15 +815,14 @@ inline fn __fors_pk_from_sig(
     idx_offset = s_idx_offset;
     sig = s_sig;
     () = #unspill(pub_seed);
-    buf = roots[i*SPX_N : SPX_N];
+    offset = i; offset *= SPX_N;
     leaf_p = leaf;
     fors_tree_addr_p = fors_tree_addr;
     height = SPX_FORS_HEIGHT;
-    buf, fors_tree_addr_p = __compute_root(buf, leaf_p, 
-                                         t, idx_offset,
-                                         sig, height, 
-                                         pub_seed, fors_tree_addr_p);
-    roots[i*SPX_N : SPX_N] = buf;
+    roots, fors_tree_addr_p = __compute_root<SPX_FORS_TREES * SPX_N>(roots, offset, leaf_p, 
+                                                                     t, idx_offset, sig, 
+                                                                     height, pub_seed, 
+                                                                     fors_tree_addr_p);
     fors_tree_addr = fors_tree_addr_p;
     s_sig += SPX_N * SPX_FORS_HEIGHT;
   }

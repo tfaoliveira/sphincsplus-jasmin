@@ -40,7 +40,7 @@ OBJ_FILES := $(ASM_FILES:.s=.o)
 
 # ------------------------------------------------------------------------------
 
-SOURCES := $(filter-out ../../thash_%.c ../../utils.c, $(wildcard ../../*.c))
+SOURCES := $(filter-out ../../thash_%.c ../../utils.c ../../rng.c ../../PQCgenKAT_sign.c, $(wildcard ../../*.c))
 
 TEST_FLAGS = -DTEST_COMPUTE_ROOT
 

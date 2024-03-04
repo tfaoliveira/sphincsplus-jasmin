@@ -244,10 +244,8 @@ export fn treehash_fors_jazz(
 
   reg u32 leaf_idx idx_offset;
 
-  stack u64 s_addrs s_root;
 
-  s_root = _root;
-  s_addrs = _addrs;
+  () = #spill(_root, _addrs);
 
   root = __load_u8_array<SPX_N>(root, _root);  
   pub_seed, sk_seed = __load_ctx(pub_seed, sk_seed, _ctx);
@@ -257,11 +255,11 @@ export fn treehash_fors_jazz(
   tree_addr, info = __load_info(tree_addr, info, _addrs);
 
 
-  root, tree_addr, info = __treehash_fors_(root, auth_path, pub_seed, sk_seed, leaf_idx, idx_offset, tree_addr, info);
+  root, tree_addr, info = __treehash_fors_<SPX_N>(root, 0, auth_path, pub_seed, 
+                                                  sk_seed, leaf_idx, idx_offset, 
+                                                  tree_addr, info);
 
-  _root = s_root;
+  () = #unspill(_root, _addrs);
   __store_u8_array<SPX_N>(root, _root);
-
-  _addrs = s_addrs;
   __store_info(tree_addr, info, _addrs);
 }

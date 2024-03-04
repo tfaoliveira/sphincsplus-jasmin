@@ -1,5 +1,2 @@
 run
-fors_sign_failed_tests
-fors_sign_failed_tests.c
-fors_pk_from_sig_failed_tests
-fors_pk_from_sig_failed_tests.c
+bin/
