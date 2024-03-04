@@ -26,6 +26,9 @@
 #define thash_jazz NAMESPACE1(thashx4_jazz, INBLOCKS)
 extern void thashx4_jazz(const void *args);
 
+extern void thashx4_inplace_jazz(uint8_t *out0, uint8_t *out1, uint8_t *out2, uint8_t *out3, const uint8_t *pub_seed,
+                                 const uint32_t *addrx4);
+
 void thash_4x_jazz_wrapper(uint8_t *out0, uint8_t *out1, uint8_t *out2, uint8_t *out3, const uint8_t *in0,
                            const uint8_t *in1, const uint8_t *in2, const uint8_t *in3, const spx_ctx *ctx,
                            uint32_t *addrx4) {
@@ -103,6 +106,37 @@ void test_thash_4x(void) {
     }
 }
 
+void test_thashx4_inplace(void) {
+    uint8_t out0_ref[SPX_N], out1_ref[SPX_N], out2_ref[SPX_N], out3_ref[SPX_N];
+    uint8_t out0_jazz[SPX_N], out1_jazz[SPX_N], out2_jazz[SPX_N], out3_jazz[SPX_N];
+
+    spx_ctx ctx;
+    uint32_t addrx4[4 * 8];
+
+    for (int i = 0; i < TESTS; i++) {
+        memset(out0_ref, 0, SPX_N);
+        memset(out1_ref, 0, SPX_N);
+        memset(out2_ref, 0, SPX_N);
+        memset(out3_ref, 0, SPX_N);
+
+        memset(out0_jazz, 0, SPX_N);
+        memset(out1_jazz, 0, SPX_N);
+        memset(out2_jazz, 0, SPX_N);
+        memset(out3_jazz, 0, SPX_N);
+
+        randombytes((uint8_t *)&ctx, 2 * SPX_N);
+        randombytes((uint8_t *)addrx4, 4 * 8 * sizeof(uint32_t));
+
+        thashx4(out0_ref, out1_ref, out2_ref, out3_ref, out0_ref, out1_ref, out2_ref, out3_ref, 1, &ctx, addrx4);
+        thashx4_inplace_jazz(out0_jazz, out1_jazz, out2_jazz, out3_jazz, ctx.pub_seed, addrx4);
+
+        assert(memcmp(out0_jazz, out0_ref, SPX_N) == 0);
+        assert(memcmp(out1_jazz, out1_ref, SPX_N) == 0);
+        assert(memcmp(out2_jazz, out2_ref, SPX_N) == 0);
+        assert(memcmp(out3_jazz, out3_ref, SPX_N) == 0);
+    }
+}
+
 void test_api() {
     for (int i = 0; i < TESTS; i++) {
         // TODO:
@@ -111,6 +145,7 @@ void test_api() {
 
 int main(void) {
     test_thash_4x();
+    test_thashx4_inplace();
     printf("PASS: thash = { params: %s, thash: %s, inblocks : %d }\n", xstr(PARAMS), xstr(THASH), INBLOCKS);
     return 0;
 }

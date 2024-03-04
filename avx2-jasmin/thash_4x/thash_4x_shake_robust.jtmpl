@@ -177,3 +177,86 @@ fn _thashx4<INBLOCKS>(
     out0, out1, out2, out3 = __thashx4<INBLOCKS>(out0, out1, out2, out3, in0, in1, in2, in3, pub_seed, addrx4);
     return out0, out1, out2, out3;
 }//<>
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+inline fn __thashx4_inplace(
+  reg ptr u8[SPX_N] out0,
+  reg ptr u8[SPX_N] out1,
+  reg ptr u8[SPX_N] out2,
+  reg ptr u8[SPX_N] out3,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[4*8] addrx4
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+    inline int INBLOCKS; INBLOCKS = 1;
+
+    stack u256[25] state state2;
+    reg u256 t u;
+    reg u128 r0;
+    inline int i;
+    reg u8 t8;
+    reg u64 offset_in offset_out;
+
+    stack u64 zero; zero = 0;
+    stack u64 val;
+
+     // for (int i = 0; i < SPX_N/8; i++) { state[i] = _mm256_set1_epi64x(((int64_t*)ctx->pub_seed)[i]); }
+        for i=0 to SPX_N / 8 { t = #VPBROADCAST_4u64(pub_seed[u64 i]); state[i] = t; } 
+
+        // for (int i = 0; i < 4; i++) { state[SPX_N/8+i] = _mm256_set_epi32(addrx4[3*8+1+2*i], addrx4[3*8+2*i], addrx4[2*8+1+2*i], addrx4[2*8+2*i], addrx4[8+1+2*i], addrx4[8+2*i], addrx4[1+2*i], addrx4[2*i]); }
+        for i=0 to 4 {
+            t = _mm256_set_epi32(addrx4[3*8+1+2*i], addrx4[3*8+2*i], addrx4[2*8+1+2*i], addrx4[2*8+2*i], addrx4[8+1+2*i], addrx4[8+2*i], addrx4[1+2*i], addrx4[2*i]);
+            state[SPX_N/8 + i] = t;
+        } 
+
+        // state[SPX_N/8+4] = _mm256_set1_epi64x(0x1f);
+        val = 0x1F;
+        t = #VPBROADCAST_4u64(val);
+        state[SPX_N/8+4] = t;
+
+        // for (int i = SPX_N/8+5; i < 16; i++) { state[i] = _mm256_set1_epi64x(0); }
+        for i=SPX_N/8+5 to 16 { t = #VPBROADCAST_4u64(zero); state[i] = t; }
+
+        // state[16] = _mm256_set1_epi64x((long long)(0x80ULL << 56));
+        t = #VPBROADCAST_4u64(T);
+        state[16] = t;
+
+        // for (int i = 17; i < 25; i++) { state[i] = _mm256_set1_epi64x(0); }
+        for i=17 to 25 { t = #VPBROADCAST_4u64(zero); state[i] = t; }
+
+        // memcpy(state2, state, 800);
+        // 800 bytes is the same as 25 u256's
+        for i=0 to 25 { t = state[i]; state2[i] = t; }
+
+        // KeccakP1600times4_PermuteAll_24rounds(&state[0]);
+        state = _KeccakF1600_StatePermute4x(state);
+
+        // for (unsigned int i = 0; i < (SPX_N/8) * inblocks; i++) { state2[SPX_N/8+4+i] = _mm256_xor_si256(state[i], _mm256_set_epi64x(((int64_t*)in3)[i], ((int64_t*)in2)[i], ((int64_t*)in1)[i], ((int64_t*)in0)[i])); }
+        for i=0 to (SPX_N/8) * INBLOCKS {
+            t = _mm256_set_epi64x(out3[u64 i], out2[u64 i], out1[u64 i], out0[u64 i]);
+            u = state[i];
+            u = #VPXOR_256(u, t);
+            state2[SPX_N/8+4+i] = u;
+        }
+
+        // state2[(SPX_N/8)*(1+inblocks)+4] = _mm256_xor_si256(state2[(SPX_N/8)*(1+inblocks)+4], _mm256_set1_epi64x(0x1f));
+        val = 0x1F;
+        u = #VPBROADCAST_4u64(val);
+        t = state2[(SPX_N/8)*(1+INBLOCKS)+4];
+        t = #VPXOR_256(t, u);
+        state2[(SPX_N/8)*(1+INBLOCKS)+4] = t;
+
+        // KeccakP1600times4_PermuteAll_24rounds(&state2[0]);
+        state2 = _KeccakF1600_StatePermute4x(state2);
+
+        for i=0 to SPX_N / 8 {
+            t = state2[i];
+            r0 = #VEXTRACTI128(t, 1);
+            out0[u64 i] = #VPEXTR_64(t, 0);
+            out1[u64 i] = #VPEXTR_64(t, 1);
+            out2[u64 i] = #VPEXTR_64(r0, 0);
+            out3[u64 i] = #VPEXTR_64(r0, 1);
+        }
+
+    return out0, out1, out2, out3;
+}

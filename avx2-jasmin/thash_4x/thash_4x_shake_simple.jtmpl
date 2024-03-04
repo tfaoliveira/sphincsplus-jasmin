@@ -164,3 +164,69 @@ fn _thashx4<INBLOCKS>(
     out0, out1, out2, out3 = __thashx4<INBLOCKS>(out0, out1, out2, out3, in0, in1, in2, in3, pub_seed, addrx4);
     return out0, out1, out2, out3;
 }//<>
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+inline fn __thashx4_inplace(
+  reg ptr u8[SPX_N] out0,
+  reg ptr u8[SPX_N] out1,
+  reg ptr u8[SPX_N] out2,
+  reg ptr u8[SPX_N] out3,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[4*8] addrx4
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+    inline int INBLOCKS; INBLOCKS = 1;
+    stack u256[25] state;
+    reg u256 t u;
+    reg u128 r0;
+
+    inline int i;
+
+    stack u64 zero; zero = 0;
+    stack u64 val;
+
+    () = #spill(out0, out1, out2, out3);
+
+    for i=0 to SPX_N / 8 { t = #VPBROADCAST_4u64(pub_seed[u64 i]); state[i] = t; }  
+
+    for i=0 to 4 {
+        t = _mm256_set_epi32(addrx4[3*8+1+2*i], addrx4[3*8+2*i], addrx4[2*8+1+2*i], addrx4[2*8+2*i], addrx4[8+1+2*i], addrx4[8+2*i], addrx4[1+2*i], addrx4[2*i]);
+        state[SPX_N/8 + i] = t;
+    }
+
+    () = #unspill(out0, out1, out2, out3);
+
+    for i=0 to (SPX_N/8) * INBLOCKS {
+        t = _mm256_set_epi64x(out3[u64 i], out2[u64 i], out1[u64 i], out0[u64 i]);
+        state[SPX_N/8+4+i] = t;
+    }
+
+    for i=(SPX_N/8)*(1+INBLOCKS)+4 to 16 { t = #VPBROADCAST_4u64(zero); state[i] = t; }
+
+    t = #VPBROADCAST_4u64(T);
+    state[16] = t;
+
+    val = 0x1F;
+    u = #VPBROADCAST_4u64(val);
+    t = state[(SPX_N/8)*(1+INBLOCKS)+4];
+    t = #VPXOR_256(t, u);
+    state[(SPX_N/8)*(1+INBLOCKS)+4] = t;
+
+    for i=17 to 25 { t = #VPBROADCAST_4u64(zero); state[i] = t; } 
+
+    state = _KeccakF1600_StatePermute4x(state);
+
+    () = #unspill(out0, out1, out2, out3);
+    
+    for i=0 to SPX_N / 8 {
+        t = state[i];
+        r0 = #VEXTRACTI128(t, 1);
+        out0[u64 i] = #VPEXTR_64(t, 0);
+        out1[u64 i] = #VPEXTR_64(t, 1);
+        out2[u64 i] = #VPEXTR_64(r0, 0);
+        out3[u64 i] = #VPEXTR_64(r0, 1);
+    }
+
+    return out0, out1, out2, out3;
+}

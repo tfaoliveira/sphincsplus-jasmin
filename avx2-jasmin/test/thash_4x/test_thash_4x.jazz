@@ -62,3 +62,35 @@ export fn thashx4_jazz<INBLOCKS>(reg u64 args)
         (u8)[out3_ptr + i] = out3[i];
     }
 }//<>
+
+export fn thashx4_inplace_jazz(reg u64 out0_ptr out1_ptr out2_ptr out3_ptr pub_seed_ptr addrx4_ptr)
+{
+    stack u8[SPX_N] out0 out1 out2 out3;
+    stack u8[SPX_N] pub_seed;
+    stack u32[4*8] addrx4;
+
+    inline int i;
+
+    for i = 0 to SPX_N {
+        out0[i] = (u8)[out0_ptr + i];
+        out1[i] = (u8)[out1_ptr + i];
+        out2[i] = (u8)[out2_ptr + i];
+        out3[i] = (u8)[out3_ptr + i];
+    }
+
+    for i = 0 to SPX_N { pub_seed[i] = (u8)[pub_seed_ptr + i]; }
+
+    for i = 0 to 4 * 8 { addrx4[i] = (u32)[addrx4_ptr + 4 * i]; }
+
+    () = #spill(out0_ptr, out1_ptr, out2_ptr, out3_ptr);
+
+    out0, out1, out2, out3 = __thashx4_inplace(out0, out1, out2, out3, pub_seed, addrx4);
+
+    () = #unspill(out0_ptr, out1_ptr, out2_ptr, out3_ptr);
+    for i = 0 to SPX_N {
+        (u8)[out0_ptr + i] = out0[i];
+        (u8)[out1_ptr + i] = out1[i];
+        (u8)[out2_ptr + i] = out2[i];
+        (u8)[out3_ptr + i] = out3[i];
+    }
+}
