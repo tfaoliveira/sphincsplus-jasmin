@@ -257,6 +257,7 @@ inline fn __crypto_sign_signature(
   s_sig += SPX_FORS_BYTES;
 
   i = 0;
+  #bounded 
   while (i < SPX_D)
   {
     () = #spill(i);
