@@ -126,7 +126,8 @@ export fn fors_sk_to_leaf_jazz(
 // args[9] = (void *)fors_leaf_addrx4;
 export fn fors_sk_to_leafx4_jazz(reg u64 args)
 {
-  reg u64 leaf0_ptr leaf1_ptr leaf2_ptr leaf3_ptr sk0_ptr sk1_ptr sk2_ptr sk3_ptr pub_seed_ptr fors_leaf_addrx4_ptr;
+  reg u64 leaf0_ptr leaf1_ptr leaf2_ptr leaf3_ptr sk0_ptr sk1_ptr sk2_ptr sk3_ptr 
+          pub_seed_ptr fors_leaf_addrx4_ptr;
 
   inline int i;
 
@@ -160,7 +161,8 @@ export fn fors_sk_to_leafx4_jazz(reg u64 args)
 
   () = #spill(leaf0_ptr, leaf1_ptr, leaf2_ptr, leaf3_ptr);
 
-  leaf0, leaf1, leaf2, leaf3 = _fors_sk_to_leafx4(leaf0, leaf1, leaf2, leaf3, sk0, sk1, sk2, sk3, pub_seed, fors_leaf_addrx4);
+  leaf0, leaf1, leaf2, leaf3 = _fors_sk_to_leafx4(leaf0, leaf1, leaf2, leaf3, sk0, sk1, sk2, sk3, 
+                                                  pub_seed, fors_leaf_addrx4);
 
   () = #unspill(leaf0_ptr, leaf1_ptr, leaf2_ptr, leaf3_ptr);
 
@@ -170,4 +172,30 @@ export fn fors_sk_to_leafx4_jazz(reg u64 args)
     (u8) [leaf2_ptr + i] = leaf2[i];
     (u8) [leaf3_ptr + i] = leaf3[i];
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+export fn fors_pk_from_sig_jazz(
+  reg u64 _pk sig _msg _pub_seed _fors_addr
+)
+{
+  stack u8[SPX_N] pk; // root
+  stack u8[SPX_FORS_MSG_BYTES] msg;
+  stack u8[SPX_N] pub_seed;
+  stack u8[SPX_N] sk_seed;
+  stack u32[8] fors_addr;
+
+  stack u64 s_pk;
+
+  pk = __load_u8_array<SPX_N>(pk, _pk);
+  msg = __load_u8_array<SPX_FORS_MSG_BYTES>(msg, _msg);
+  pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
+  fors_addr = __load_u32_array<8>(fors_addr, _fors_addr);
+
+  s_pk = _pk;
+
+  pk = __fors_pk_from_sig_(pk, sig, msg, pub_seed, fors_addr);
+  
+  _pk = s_pk;
+  __store_u8_array<SPX_N>(pk, _pk);
 }

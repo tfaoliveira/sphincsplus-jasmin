@@ -197,7 +197,7 @@ fn _fors_gen_leafx1(
   reg ptr u8[SPX_N] sk_seed,
   reg u32 addr_idx,
   reg ptr u32[8] fors_leaf_addr
-) -> reg ptr u8[SPX_N], reg mut ptr u32[8]
+) -> reg ptr u8[SPX_N], reg ptr u32[8]
 {
   leaf, fors_leaf_addr = __fors_gen_leafx1(leaf, pub_seed, sk_seed, addr_idx, fors_leaf_addr);
   return leaf, fors_leaf_addr;
