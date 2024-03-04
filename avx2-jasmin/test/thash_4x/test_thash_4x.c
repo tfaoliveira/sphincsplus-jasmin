@@ -23,8 +23,8 @@
 #error "INBLOCKS is not defined"
 #endif
 
-#define thash_jazz NAMESPACE1(thash_jazz, INBLOCKS)
-extern void thash_jazz(const void *args);
+#define thash_jazz NAMESPACE1(thashx4_jazz, INBLOCKS)
+extern void thashx4_jazz(const void *args);
 
 void thash_4x_jazz_wrapper(uint8_t *out0, uint8_t *out1, uint8_t *out2, uint8_t *out3, const uint8_t *in0,
                            const uint8_t *in1, const uint8_t *in2, const uint8_t *in3, const spx_ctx *ctx,

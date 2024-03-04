@@ -5,7 +5,7 @@ from Sphincs require "avx2_utils/utils.jinc"
 // FIXME: se tentar colocar isto num stack u64 falha com "asmgen: instruction MOV_64 is given at least one too large immediate as an argument."
 u64 T = (8u8) [0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]; // Same as 0x80ULL << 56
 
-inline fn __thash<INBLOCKS>(
+inline fn __thashx4<INBLOCKS>(
   reg ptr u8[SPX_N] out0,
   reg ptr u8[SPX_N] out1,
   reg ptr u8[SPX_N] out2,
@@ -162,7 +162,7 @@ inline fn __thash<INBLOCKS>(
 }//<>
 
 #[returnaddress="stack"]
-fn _thash<INBLOCKS>(
+fn _thashx4<INBLOCKS>(
   reg ptr u8[SPX_N] out0,
   reg ptr u8[SPX_N] out1,
   reg ptr u8[SPX_N] out2,
@@ -174,6 +174,6 @@ fn _thash<INBLOCKS>(
   reg ptr u8[SPX_N] pub_seed,
   reg ptr u32[4*8] addrx4
 ) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N] {
-    out0, out1, out2, out3 = __thash<INBLOCKS>(out0, out1, out2, out3, in0, in1, in2, in3, pub_seed, addrx4);
+    out0, out1, out2, out3 = __thashx4<INBLOCKS>(out0, out1, out2, out3, in0, in1, in2, in3, pub_seed, addrx4);
     return out0, out1, out2, out3;
 }//<>
