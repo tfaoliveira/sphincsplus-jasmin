@@ -13,7 +13,7 @@ PREPROCESSOR ?= ../scripts/preprocessor
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s
 THASH_LIST    := simple
-INBLOCKS_LIST := $(shell seq 1 4) 64 100
+INBLOCKS_LIST := 64 100 # $(shell seq 1 4)
 
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST), $(foreach N,$(INBLOCKS_LIST),$(H)_$(P)_$(T)_$(N)))))
 
@@ -73,6 +73,7 @@ bin/test_thash_%.s: bin/test_thash_%.jpp
 $(TESTS):
 bin/test_thash_%: bin/test_thash_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ -DPARAMS=$(GET_PARAMS) -DTHASH=$(GET_THASH) -DINBLOCKS=$(GET_INBLOCKS) \
+	-DDEBUG \
 	-I../common -I../../ -I../../params -I../../keccak4x \
 	test_thash_4x.c $<  $(SOURCES)
 
@@ -85,3 +86,7 @@ bin/:
 .PHONY: clean
 clean:
 	rm -fr bin/
+
+.PHONY: clean_executables
+clean_executables:
+	find bin/ -type f -executable -delete

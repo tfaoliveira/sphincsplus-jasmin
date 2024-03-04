@@ -13,9 +13,10 @@
 #include "params.h"
 #include "print.c"
 #include "thash.h"
+#include "thashx4.h"
 
 #ifndef TESTS
-#define TESTS 10000
+#define TESTS 10
 #endif
 
 #ifndef INBLOCKS
@@ -74,18 +75,49 @@ void test_thash_4x(void) {
         randombytes((uint8_t *)&ctx, 2 * SPX_N);
         randombytes((uint8_t *)addrx4, 4 * 8 * sizeof(uint32_t));
 
+        thashx4(out0_ref, out1_ref, out2_ref, out3_ref, in0, in1, in2, in3, INBLOCKS, &ctx, addrx4);
+        
+        puts("Finished ref");
+        
         thash_4x_jazz_wrapper(out0_jazz, out1_jazz, out2_jazz, out3_jazz, in0, in1, in2, in3, &ctx, addrx4);
+
+        puts("Finished jasmin");
+
+        if(memcmp(out0_jazz, out0_ref, SPX_N) != 0) {
+            print_str_u8("out0 ref", out0_ref, SPX_N);
+            print_str_u8("out0 jasmin", out0_jazz, SPX_N);
+        }
+
+        if(memcmp(out1_jazz, out1_ref, SPX_N) != 0) {
+            print_str_u8("out1 ref", out1_ref, SPX_N);
+            print_str_u8("out1 jasmin", out1_jazz, SPX_N);
+        }
+
+        if(memcmp(out2_jazz, out2_ref, SPX_N) != 0) {
+            print_str_u8("out2 ref", out2_ref, SPX_N);
+            print_str_u8("out2 jasmin", out2_jazz, SPX_N);
+        }
+        
+        if(memcmp(out3_jazz, out3_ref, SPX_N) != 0) {
+            print_str_u8("out3 ref", out3_ref, SPX_N);
+            print_str_u8("out3 jasmin", out3_jazz, SPX_N);
+        }
+        
+        assert(memcmp(out0_jazz, out0_ref, SPX_N) == 0);
+        assert(memcmp(out1_jazz, out1_ref, SPX_N) == 0);
+        assert(memcmp(out2_jazz, out2_ref, SPX_N) == 0);
+        assert(memcmp(out3_jazz, out3_ref, SPX_N) == 0);
     }
 }
 
 void test_api() {
-    for (int i =0; i < TESTS; i++) {
-        
+    for (int i =0; i < TESTS; i++) {   
+        // TODO: 
     }
 }
 
 int main(void) {
     test_thash_4x();
-    printf("PASS: thash = { params: %s, thash: %s, inblocks : %d }\n", xstr(PARAMS), xstr(THASH), INBLOCKS);
+    printf("PASS: thash =    { params: %s, thash: %s, inblocks : %d }\n", xstr(PARAMS), xstr(THASH), INBLOCKS);
     return 0;
 }

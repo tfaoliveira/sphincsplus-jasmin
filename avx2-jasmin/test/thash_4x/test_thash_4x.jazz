@@ -19,7 +19,7 @@ export fn thash_jazz<INBLOCKS>(reg u64 args)
 
     inline int i;
 
-    #declassify out0_ptr = (u64)[args + 8 * 0];
+    #declassify out0_ptr = (u64)[args];
     #declassify out1_ptr = (u64)[args + 8 * 1];
     #declassify out2_ptr = (u64)[args + 8 * 2];
     #declassify out3_ptr = (u64)[args + 8 * 3];
@@ -48,10 +48,9 @@ export fn thash_jazz<INBLOCKS>(reg u64 args)
     #declassify pub_seed_ptr = (u64)[args + 8 * 8];
     for i = 0 to SPX_N { pub_seed[i] = (u8)[pub_seed_ptr + i]; }
 
-    #declassify addrx4_ptr = (u64)[args + 9 * 9];
+    #declassify addrx4_ptr = (u64)[args + 8 * 9];
     for i = 0 to 4 * 8 { addrx4[i] = (u32)[addrx4_ptr + 4 * i]; }
 
-    // SEGFAULT HERE 
     out0, out1, out2, out3 = __thash<INBLOCKS>(out0, out1, out2, out3, in0, in1, in2, in3, pub_seed, addrx4);
 
     () = #unspill(out0_ptr, out1_ptr, out2_ptr, out3_ptr);

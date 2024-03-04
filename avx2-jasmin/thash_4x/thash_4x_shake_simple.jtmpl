@@ -2,6 +2,9 @@ from Sphincs require "fips202x4/fips202_4x.jtmpl"
 from Sphincs require "memcpy/memcpy.jtmpl";
 from Sphincs require "avx2_utils/utils.jinc"
 
+// FIXME: se tentar colocar isto num stack u64 falha com "asmgen: instruction MOV_64 is given at least one too large immediate as an argument."
+u64 T = (8u8) [0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]; // Same as 0x80ULL << 56
+
 inline fn __thash<INBLOCKS>(
   reg ptr u8[SPX_N] out0,
   reg ptr u8[SPX_N] out1,
@@ -15,81 +18,28 @@ inline fn __thash<INBLOCKS>(
   reg ptr u32[4*8] addrx4
 ) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N]
 {
-    // if
     stack u256[25] state;
     reg u256 t u;
+    reg u256[1] v;
     reg u128 r0;
     inline int i;
-    reg u64 offset_in offset_out;
+    reg u8 t8;
+
+    reg u64 offset_in offset_out t64;
 
     stack u64 zero; zero = 0;
     stack u64 val;
 
-    //else
+
     stack u8[SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N] buf0 buf1 buf2 buf3;
 
     if (INBLOCKS == 1 || INBLOCKS == 2) { // statically resolved if
-        () = #spill(out0, out1, out2, out3);
-
-        // for (int i = 0; i < SPX_N/8; i++) { state[i] = _mm256_set1_epi64x(((int64_t*)ctx->pub_seed)[i]); }
-        for i=0 to SPX_N / 8 { t = #VPBROADCAST_4u64(pub_seed[u64 i]); state[i] = t; }   
-
-        // for (int i = 0; i < 4; i++) { state[SPX_N/8+i] = _mm256_set_epi32(addrx4[3*8+1+2*i], addrx4[3*8+2*i], addrx4[2*8+1+2*i], addrx4[2*8+2*i], addrx4[8+1+2*i], addrx4[8+2*i], addrx4[1+2*i], addrx4[2*i]); }
-        for i=0 to 4 {
-            t = _mm256_set_epi32(addrx4[3*8+1+2*i], addrx4[3*8+2*i], addrx4[2*8+1+2*i], addrx4[2*8+2*i], addrx4[8+1+2*i], addrx4[8+2*i], addrx4[1+2*i], addrx4[2*i]);
-            state[SPX_N/8+i] = t;
-        }
-
-        // for (unsigned int i = 0; i < (SPX_N/8) * inblocks; i++) { state[SPX_N/8+4+i] = _mm256_set_epi64x(((int64_t*)in3)[i], ((int64_t*)in2)[i], ((int64_t*)in1)[i], ((int64_t*)in0)[i]); }
-        for i=0 to (SPX_N/8) * INBLOCKS {
-            t = _mm256_set_epi64x((64u) in3[i], (64u) in2[i], (64u) in1[i], (64u) in0[i]);
-            state[SPX_N/8+4+i] = t;
-        }
-
-        // for (int i = (SPX_N/8)*(1+inblocks)+4; i < 16; i++) { state[i] = _mm256_set1_epi64x(0); }
-        for i=(SPX_N/8)*(1+INBLOCKS)+4 to 16 { t = #VPBROADCAST_4u64(zero); state[i] = t; }
-
-        // state[16] = _mm256_set1_epi64x((long long)(0x80ULL << 56));
-        val = 0x80; val <<= 56;
-        t = #VPBROADCAST_4u64(val);
-        state[16] = t;
-
-        // state[(SPX_N/8)*(1+inblocks)+4] = _mm256_xor_si256(state[(SPX_N/8)*(1+inblocks)+4], _mm256_set1_epi64x(0x1f));
-        val = 0x1F;
-        u = #VPBROADCAST_4u64(val);
-        t = state[(SPX_N/8)*(1+INBLOCKS)+4];
-        t = #VPXOR_256(t, u);
-        state[(SPX_N/8)*(1+INBLOCKS)+4] = t;
-
-        // for (int i = 17; i < 25; i++) { state[i] = _mm256_set1_epi64x(0); }
-        for i=17 to 25 { t = #VPBROADCAST_4u64(zero); state[i] = t; }
-
-        // KeccakP1600times4_PermuteAll_24rounds(&state[0]);
-        state = _KeccakF1600_StatePermute4x(state);
-
-        // for (int i = 0; i < SPX_N/8; i++) {
-        //     ((int64_t*)out0)[i] = _mm256_extract_epi64(state[i], 0);
-        //     ((int64_t*)out1)[i] = _mm256_extract_epi64(state[i], 1);
-        //     ((int64_t*)out2)[i] = _mm256_extract_epi64(state[i], 2);
-        //     ((int64_t*)out3)[i] = _mm256_extract_epi64(state[i], 3);
-        // }
-    
-        () = #unspill(out0, out1, out2, out3);
-
-        for i=0 to SPX_N/8 {
-            t = state[i];
-            r0 = #VEXTRACTI128(t, 1);         // TODO: See what these instructions do
-            out0[u64 i] = #VPEXTR_64(t, 0);   // TODO: See what these instructions do
-            out1[u64 i] = #VPEXTR_64(t, 1);   // TODO: See what these instructions do
-            out2[u64 i] = #VPEXTR_64(r0, 0);  // TODO: See what these instructions do
-            out3[u64 i] = #VPEXTR_64(r0, 1);  // TODO: See what these instructions do
-        }
-
     } else {
         // memcpy(buf0, ctx->pub_seed, SPX_N);
         // memcpy(buf1, ctx->pub_seed, SPX_N);
         // memcpy(buf2, ctx->pub_seed, SPX_N);
         // memcpy(buf3, ctx->pub_seed, SPX_N);
+        // 
         offset_out = 0;
         buf0, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, SPX_N>(buf0, offset_out, pub_seed);
 
@@ -106,32 +56,55 @@ inline fn __thash<INBLOCKS>(
         // memcpy(buf1 + SPX_N, addrx4 + 1*8, SPX_ADDR_BYTES);
         // memcpy(buf2 + SPX_N, addrx4 + 2*8, SPX_ADDR_BYTES);
         // memcpy(buf3 + SPX_N, addrx4 + 3*8, SPX_ADDR_BYTES);
-        // offset_out = SPX_N;
-        // buf0, _ = _x_memcpy_u8u32<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, SPX_ADDR_BYTES / 4>(addrx4[0:8])
-        // TODO: FIXME: Do this memcpies.
+        offset_out = SPX_N;
+        buf0, _ = _x_memcpy_u8u32<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, SPX_ADDR_BYTES/4>(buf0, offset_out, addrx4[0:SPX_ADDR_BYTES/4]); 
+
+        offset_out = SPX_N;
+        buf1, _ = _x_memcpy_u8u32<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, SPX_ADDR_BYTES/4>(buf1, offset_out, addrx4[SPX_ADDR_BYTES/4:SPX_ADDR_BYTES/4]); 
+
+        offset_out = SPX_N;
+        buf2, _ = _x_memcpy_u8u32<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, SPX_ADDR_BYTES/4>(buf2, offset_out, addrx4[2*SPX_ADDR_BYTES/4:SPX_ADDR_BYTES/4]);
+
+        offset_out = SPX_N;
+        buf3, _ = _x_memcpy_u8u32<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, SPX_ADDR_BYTES/4>(buf3, offset_out, addrx4[3*SPX_ADDR_BYTES/4:SPX_ADDR_BYTES/4]);
 
         // memcpy(buf0 + SPX_N + SPX_ADDR_BYTES, in0, inblocks * SPX_N);
         // memcpy(buf1 + SPX_N + SPX_ADDR_BYTES, in1, inblocks * SPX_N);
         // memcpy(buf2 + SPX_N + SPX_ADDR_BYTES, in2, inblocks * SPX_N);
         // memcpy(buf3 + SPX_N + SPX_ADDR_BYTES, in3, inblocks * SPX_N);
-        offset_out = SPX_N + SPX_ADDR_BYTES;
-        buf0, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, INBLOCKS*SPX_N>(buf0, offset_out, in0);
+        offset_out = SPX_N + SPX_ADDR_BYTES; 
+        buf0, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES + INBLOCKS * SPX_N, INBLOCKS * SPX_N>(buf0, offset_out, in0);
 
-        offset_out = SPX_N + SPX_ADDR_BYTES;
-        buf1, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, INBLOCKS*SPX_N>(buf1, offset_out, in1);
+        offset_out = SPX_N + SPX_ADDR_BYTES; 
+        buf1, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES + INBLOCKS * SPX_N, INBLOCKS * SPX_N>(buf1, offset_out, in1);
 
-        offset_out = SPX_N + SPX_ADDR_BYTES;
-        buf2, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, INBLOCKS*SPX_N>(buf2, offset_out, in2);
+        offset_out = SPX_N + SPX_ADDR_BYTES; 
+        buf2, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES + INBLOCKS * SPX_N, INBLOCKS * SPX_N>(buf2, offset_out, in2);
 
-
-        offset_out = SPX_N + SPX_ADDR_BYTES;
-        buf3, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N, INBLOCKS*SPX_N>(buf3, offset_out, in3);
-
+        offset_out = SPX_N + SPX_ADDR_BYTES; 
+        buf3, _ = _x_memcpy_u8u8<SPX_N + SPX_ADDR_BYTES + INBLOCKS * SPX_N, INBLOCKS * SPX_N>(buf3, offset_out, in3);
+        
         // shake256x4(out0, out1, out2, out3, SPX_N,
         //            buf0, buf1, buf2, buf3, SPX_N + SPX_ADDR_BYTES + inblocks*SPX_N);
-        out0, out1, out2, out3 = _shake256x4<SPX_N, SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N>(buf0, buf1, buf2, buf3, 
-                                                                                             out0, out1, out2, out3);
-    }
+        out0, out1, out2, out3 = _shake256x4<SPX_N, SPX_N + SPX_ADDR_BYTES + INBLOCKS*SPX_N>(buf0, buf1, buf2, buf3, out0, out1, out2, out3);
+    }     
+    
+    return out0, out1, out2, out3;
+}//<>
 
+#[returnaddress="stack"]
+fn _thash<INBLOCKS>(
+  reg ptr u8[SPX_N] out0,
+  reg ptr u8[SPX_N] out1,
+  reg ptr u8[SPX_N] out2,
+  reg ptr u8[SPX_N] out3,
+  reg ptr u8[INBLOCKS*SPX_N] in0,
+  reg ptr u8[INBLOCKS*SPX_N] in1,
+  reg ptr u8[INBLOCKS*SPX_N] in2,
+  reg ptr u8[INBLOCKS*SPX_N] in3,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[4*8] addrx4
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N] {
+    out0, out1, out2, out3 = __thash<INBLOCKS>(out0, out1, out2, out3, in0, in1, in2, in3, pub_seed, addrx4);
     return out0, out1, out2, out3;
 }//<>
