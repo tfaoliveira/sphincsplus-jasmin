@@ -27,14 +27,14 @@ void fors_gen_skx4(unsigned char *sk0,
                ctx, fors_leaf_addrx4);
 }
 
-static void fors_sk_to_leaf(unsigned char *leaf, const unsigned char *sk,
+void fors_sk_to_leaf(unsigned char *leaf, const unsigned char *sk,
                             const spx_ctx *ctx,
                             uint32_t fors_leaf_addr[8])
 {
     thash(leaf, sk, 1, ctx, fors_leaf_addr);
 }
 
-static void fors_sk_to_leafx4(unsigned char *leaf0,
+void fors_sk_to_leafx4(unsigned char *leaf0,
                               unsigned char *leaf1,
                               unsigned char *leaf2,
                               unsigned char *leaf3,

@@ -75,3 +75,99 @@ export fn fors_gen_sk_x4_jazz(reg u64 args) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export fn fors_sk_to_leaf_jazz(
+  reg u64 _leaf _sk _pub_seed _fors_leaf_addr
+)
+{
+  stack u8[SPX_N] leaf;
+  stack u8[SPX_N] sk;
+  stack u8[SPX_N] pub_seed;
+  stack u32[8] fors_leaf_addr;
+
+  reg ptr u8[SPX_N] leaf_p;
+  reg ptr u8[SPX_N] sk_p;
+  reg ptr u8[SPX_N] pub_seed_p;
+  reg ptr u32[8] fors_leaf_addr_p;
+
+  stack u64 s_leaf s_sk s_pub_seed s_fors_leaf_addr;
+
+
+  sk_p = sk;
+  sk_p = __load_u8_array<SPX_N>(sk_p, _sk);
+
+  pub_seed_p = pub_seed;
+  pub_seed_p = __load_u8_array<SPX_N>(pub_seed_p, _pub_seed);
+
+  fors_leaf_addr_p = fors_leaf_addr;
+  fors_leaf_addr_p = __load_u32_array<8>(fors_leaf_addr_p, _fors_leaf_addr);
+
+  // Spill
+  s_leaf = _leaf;
+
+  leaf_p = leaf;
+  leaf_p = _fors_sk_to_leaf(leaf_p, sk_p, pub_seed_p, fors_leaf_addr_p);
+
+  _leaf = s_leaf;
+  __store_u8_array<SPX_N>(leaf_p, _leaf);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// args[0] = (void *)leaf0;
+// args[1] = (void *)leaf1;
+// args[2] = (void *)leaf2;
+// args[3] = (void *)leaf3;
+// args[4] = (void *)sk0;
+// args[5] = (void *)sk1;
+// args[6] = (void *)sk2;
+// args[7] = (void *)sk3;
+// args[8] = (void *)ctx->pub_seed;
+// args[9] = (void *)fors_leaf_addrx4;
+export fn fors_sk_to_leafx4_jazz(reg u64 args)
+{
+  reg u64 leaf0_ptr leaf1_ptr leaf2_ptr leaf3_ptr sk0_ptr sk1_ptr sk2_ptr sk3_ptr pub_seed_ptr fors_leaf_addrx4_ptr;
+
+  inline int i;
+
+  stack u8[SPX_N] leaf0 leaf1 leaf2 leaf3 sk0 sk1 sk2 sk3 pub_seed;
+  stack u32[4*8] fors_leaf_addrx4;
+
+  #declassify leaf0_ptr = (u64) [args + 8*0];
+  #declassify leaf1_ptr = (u64) [args + 8*1];
+  #declassify leaf2_ptr = (u64) [args + 8*2];
+  #declassify leaf3_ptr = (u64) [args + 8*3];
+  #declassify sk0_ptr = (u64) [args + 8*4];
+  #declassify sk1_ptr = (u64) [args + 8*5];
+  #declassify sk2_ptr = (u64) [args + 8*6];
+  #declassify sk3_ptr = (u64) [args + 8*7];
+  #declassify pub_seed_ptr = (u64) [args + 8*8];
+  #declassify fors_leaf_addrx4_ptr = (u64) [args + 8*9];
+
+  for i=0 to SPX_N {
+    leaf0[i]    = (u8) [leaf0_ptr + i];
+    leaf1[i]    = (u8) [leaf1_ptr + i];
+    leaf2[i]    = (u8) [leaf2_ptr + i];
+    leaf3[i]    = (u8) [leaf3_ptr + i];
+    sk0[i]      = (u8) [sk0_ptr + i];
+    sk1[i]      = (u8) [sk1_ptr + i];
+    sk2[i]      = (u8) [sk2_ptr + i];
+    sk3[i]      = (u8) [sk3_ptr + i];
+    pub_seed[i] = (u8) [pub_seed_ptr + i];
+  }
+
+  for i=0 to 4*8 { fors_leaf_addrx4[i] = (u32)[fors_leaf_addrx4_ptr + 4*i]; }
+
+  () = #spill(leaf0_ptr, leaf1_ptr, leaf2_ptr, leaf3_ptr);
+
+  leaf0, leaf1, leaf2, leaf3 = _fors_sk_to_leafx4(leaf0, leaf1, leaf2, leaf3, sk0, sk1, sk2, sk3, pub_seed, fors_leaf_addrx4);
+
+  () = #unspill(leaf0_ptr, leaf1_ptr, leaf2_ptr, leaf3_ptr);
+
+  for i=0 to SPX_N {
+    (u8) [leaf0_ptr + i] = leaf0[i];
+    (u8) [leaf1_ptr + i] = leaf1[i];
+    (u8) [leaf2_ptr + i] = leaf2[i];
+    (u8) [leaf3_ptr + i] = leaf3[i];
+  }
+}

@@ -3,6 +3,7 @@ from Sphincs require "hash/hash_shake.jtmpl"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// NOTE: from ref-jasmin
 inline fn __fors_gen_sk(
   reg ptr u8[SPX_N] sk,
   reg ptr u8[SPX_N] pub_seed,
@@ -58,3 +59,68 @@ fn _fors_gen_skx4(
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// NOTE: from ref-jasmin
+inline fn __fors_sk_to_leaf(
+  reg ptr u8[SPX_N] leaf,
+  reg ptr u8[SPX_N] sk, // INBLOCKS = 1 so SPX_N * INBLOCKS = SPX_N
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  leaf = __thash_<1>(leaf, sk, pub_seed, fors_leaf_addr);
+  return leaf;
+}
+
+#[returnaddress="stack"]
+fn _fors_sk_to_leaf(
+  reg ptr u8[SPX_N] leaf,
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  leaf = __fors_sk_to_leaf(leaf, sk, pub_seed, fors_leaf_addr);
+  return leaf;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+inline fn __fors_sk_to_leafx4(
+  reg ptr u8[SPX_N] leaf0,
+  reg ptr u8[SPX_N] leaf1,
+  reg ptr u8[SPX_N] leaf2,
+  reg ptr u8[SPX_N] leaf3,
+  reg ptr u8[SPX_N] sk0, // INBLOCKS = 1 so SPX_N * INBLOCKS = SPX_N
+  reg ptr u8[SPX_N] sk1,
+  reg ptr u8[SPX_N] sk2,
+  reg ptr u8[SPX_N] sk3,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[4*8] fors_leaf_addrx4
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+  leaf0, leaf1, leaf2, leaf3 = __thashx4<1>(leaf0, leaf1, leaf2, leaf3, 
+                                            sk0, sk1, sk2, sk3, pub_seed, 
+                                            fors_leaf_addrx4);
+  return leaf0, leaf1, leaf2, leaf3;
+}
+
+#[returnaddress="stack"]
+fn _fors_sk_to_leafx4(
+  reg ptr u8[SPX_N] leaf0,
+  reg ptr u8[SPX_N] leaf1,
+  reg ptr u8[SPX_N] leaf2,
+  reg ptr u8[SPX_N] leaf3,
+  reg ptr u8[SPX_N] sk0,
+  reg ptr u8[SPX_N] sk1,
+  reg ptr u8[SPX_N] sk2,
+  reg ptr u8[SPX_N] sk3,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[4*8] fors_leaf_addrx4
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+  leaf0, leaf1, leaf2, leaf3 = __fors_sk_to_leafx4(leaf0, leaf1, leaf2, leaf3, 
+                                                   sk0, sk1, sk2, sk3, pub_seed, 
+                                                   fors_leaf_addrx4);
+  return leaf0, leaf1, leaf2, leaf3;
+}

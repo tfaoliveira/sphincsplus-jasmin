@@ -29,4 +29,19 @@ void fors_pk_from_sig(unsigned char *pk,
                       const spx_ctx* ctx,
                       const uint32_t fors_addr[8]);
 
+void fors_sk_to_leaf(unsigned char *leaf, const unsigned char *sk,
+                            const spx_ctx *ctx,
+                            uint32_t fors_leaf_addr[8]);
+
+void fors_sk_to_leafx4(unsigned char *leaf0,
+                              unsigned char *leaf1,
+                              unsigned char *leaf2,
+                              unsigned char *leaf3,
+                              const unsigned char *sk0,
+                              const unsigned char *sk1,
+                              const unsigned char *sk2,
+                              const unsigned char *sk3,
+                              const spx_ctx *ctx,
+                              uint32_t fors_leaf_addrx4[4*8]);
+
 #endif

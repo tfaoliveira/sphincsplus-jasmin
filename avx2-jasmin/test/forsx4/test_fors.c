@@ -18,8 +18,11 @@
 #define TESTS 1000
 #endif
 
-extern void fors_gen_sk_jazz(uint8_t*, const uint8_t*, const uint8_t*, const uint32_t*);
+extern void fors_gen_sk_jazz(uint8_t *, const uint8_t *, const uint8_t *, const uint32_t *);
 extern void fors_gen_sk_x4_jazz(const void *);
+extern void fors_sk_to_leafx4_jazz(const void *);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void fors_gen_sk_x4_wrapper(uint8_t *sk0, uint8_t *sk1, uint8_t *sk2, uint8_t *sk3, const spx_ctx *ctx,
                             const uint32_t *addrx4) {
@@ -31,10 +34,31 @@ void fors_gen_sk_x4_wrapper(uint8_t *sk0, uint8_t *sk1, uint8_t *sk2, uint8_t *s
     args[3] = (void *)sk3;
     args[4] = (void *)ctx->pub_seed;
     args[5] = (void *)ctx->sk_seed;
-    args[6] = (void *)addrx4; 
+    args[6] = (void *)addrx4;
 
     fors_gen_sk_x4_jazz(args);
 }
+
+void fors_sk_to_leafx4_jazz_wrapper(uint8_t *leaf0, uint8_t *leaf1, uint8_t *leaf2, uint8_t *leaf3, const uint8_t *sk0,
+                                    const uint8_t *sk1, const uint8_t *sk2, const uint8_t *sk3, const spx_ctx *ctx,
+                                    uint32_t fors_leaf_addrx4[4 * 8]) {
+    void *args[10];
+
+    args[0] = (void *)leaf0;
+    args[1] = (void *)leaf1;
+    args[2] = (void *)leaf2;
+    args[3] = (void *)leaf3;
+    args[4] = (void *)sk0;
+    args[5] = (void *)sk1;
+    args[6] = (void *)sk2;
+    args[7] = (void *)sk3;
+    args[8] = (void *)ctx->pub_seed;
+    args[9] = (void *)fors_leaf_addrx4;
+
+    fors_sk_to_leafx4_jazz(args);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void test_fors_gen_sk() {
     uint8_t sk_ref[SPX_N] = {0};
@@ -95,8 +119,77 @@ void test_fors_gen_sk_x4() {
     }
 }
 
+void test_fors_sk_to_leaf(void) {
+    bool debug = true;
+
+    uint8_t leaf_ref[SPX_N], leaf_jazz[SPX_N];
+    uint8_t sk[SPX_N];
+    spx_ctx ctx;
+    uint32_t addr[8];
+
+    for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            printf("[%s]: fors_sk_to_leaf Test %d/%d\n", xstr(PARAMS), i, TESTS);
+        }
+
+        memset(leaf_jazz, 0, SPX_N);
+        memset(leaf_ref, 0, SPX_N);
+
+        randombytes(sk, SPX_N);
+        randombytes(ctx.pub_seed, SPX_N);
+        randombytes(ctx.sk_seed, SPX_N);
+        randombytes((uint8_t *)addr, 8 * sizeof(uint32_t));
+
+        fors_sk_to_leaf_jazz(leaf_jazz, sk, ctx.pub_seed, addr);
+        fors_sk_to_leaf(leaf_ref, sk, &ctx, addr);
+
+        assert(memcmp(leaf_ref, leaf_jazz, SPX_N) == 0);
+    }
+}
+
+void test_fors_sk_to_leafx4() {
+    bool debug = true;
+
+    uint8_t leaf0_ref[SPX_N], leaf1_ref[SPX_N], leaf2_ref[SPX_N], leaf3_ref[SPX_N];
+    uint8_t leaf0_jazz[SPX_N], leaf1_jazz[SPX_N], leaf2_jazz[SPX_N], leaf3_jazz[SPX_N];
+    uint8_t sk0[SPX_N], sk1[SPX_N], sk2[SPX_N], sk3[SPX_N];
+    spx_ctx ctx;
+    uint32_t addrx4[4 * 8];
+
+    for (int i = 0; i < TESTS; i++) {
+        memset(leaf0_jazz, 0, SPX_N);
+        memset(leaf1_jazz, 0, SPX_N);
+        memset(leaf2_jazz, 0, SPX_N);
+        memset(leaf3_jazz, 0, SPX_N);
+
+        memset(leaf0_ref, 0, SPX_N);
+        memset(leaf1_ref, 0, SPX_N);
+        memset(leaf2_ref, 0, SPX_N);
+        memset(leaf3_ref, 0, SPX_N);
+
+        randombytes(sk0, SPX_N);
+        randombytes(sk1, SPX_N);
+        randombytes(sk2, SPX_N);
+        randombytes(sk3, SPX_N);
+
+        randombytes(ctx.pub_seed, SPX_N);
+        randombytes(ctx.sk_seed, SPX_N);
+        randombytes((uint8_t *)addrx4, 4 * 8 * sizeof(uint32_t));
+
+        fors_sk_to_leafx4_jazz_wrapper(leaf0_jazz, leaf1_jazz, leaf2_jazz, leaf3_jazz, sk0, sk1, sk2, sk3, ctx.pub_seed, addrx4);
+        fors_sk_to_leafx4(leaf0_ref, leaf1_ref, leaf2_ref, leaf3_ref, sk0, sk1, sk2, sk3, &ctx, addrx4);
+
+        assert(memcmp(leaf0_ref, leaf0_jazz, SPX_N) == 0);
+        assert(memcmp(leaf1_ref, leaf1_jazz, SPX_N) == 0);
+        assert(memcmp(leaf2_ref, leaf2_jazz, SPX_N) == 0);
+        assert(memcmp(leaf3_ref, leaf3_jazz, SPX_N) == 0);
+    }
+}
+
 int main(void) {
-    test_fors_gen_sk();
+    test_fors_gen_sk();  // From ref-jasmin
     test_fors_gen_sk_x4();
+    test_fors_sk_to_leaf();  // From ref-jasmin
+    test_fors_sk_to_leafx4();
     printf("PASS: fors = { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
 }
