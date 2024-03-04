@@ -14,6 +14,8 @@
 #include "utils.h"
 #include "utilsx4.h"
 
+#include "print.h"
+
 #ifndef TESTS
 #define TESTS 1000
 #endif
@@ -21,9 +23,17 @@
 extern void fors_gen_sk_jazz(uint8_t *, const uint8_t *, const uint8_t *, const uint32_t *);
 extern void fors_gen_sk_x4_jazz(const void *);
 extern void fors_sk_to_leafx4_jazz(const void *);
+extern void fors_gen_leafx4_jazz(uint8_t *leaf, const uint8_t *pub_seed, const uint8_t *sk_seed, const uint32_t* addr_idx,
+                                 uint32_t *info);
 
 extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m, const uint8_t *pub_seed,
                                   const uint32_t fors_addr[8]);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct fors_gen_leaf_info {
+    uint32_t leaf_addrx[4 * 8];
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -194,6 +204,49 @@ void test_fors_sk_to_leafx4() {
     }
 }
 
+void test_fors_gen_leafx4(void) {
+    uint8_t leaf_buf_ref[4 * SPX_N];
+    uint8_t leaf_buf_jazz[4 * SPX_N];
+
+    uint32_t addr_idx;
+
+    spx_ctx ctx;
+
+    struct fors_gen_leaf_info info_ref;
+    uint32_t leaf_addrx_jazz[8*4];
+
+    for (int i = 0; i < TESTS; i++) {
+        memset(leaf_buf_ref, 0, 4 * SPX_N);
+        memset(leaf_buf_jazz, 0, 4 * SPX_N);
+
+        randombytes((uint8_t *)&addr_idx, sizeof(uint32_t));
+        randombytes(ctx.pub_seed, SPX_N);
+        randombytes(ctx.sk_seed, SPX_N);
+
+        randombytes((uint8_t *)info_ref.leaf_addrx, 4 * 8 * sizeof(uint32_t));
+        memcpy(leaf_addrx_jazz, info_ref.leaf_addrx, 4 * 8 * sizeof(uint32_t));
+
+        assert(memcmp(info_ref.leaf_addrx, leaf_addrx_jazz, 4 * 8 * sizeof(uint32_t)) == 0);
+        assert(memcmp(leaf_buf_ref, leaf_buf_jazz, 4 * SPX_N) == 0);
+        
+        fors_gen_leafx4(leaf_buf_ref, &ctx, addr_idx, (void *)&info_ref);
+        fors_gen_leafx4_jazz(leaf_buf_jazz, ctx.pub_seed, ctx.sk_seed, &addr_idx, leaf_addrx_jazz);
+
+        if (memcmp(leaf_buf_ref, leaf_buf_jazz, 4 * SPX_N) != 0)  {
+            print_str_u8("Leaf Ref", leaf_buf_ref, 4 * SPX_N);
+            print_str_u8("Leaf Jasmin", leaf_buf_jazz, 4 * SPX_N);
+        }
+
+        if(memcmp(info_ref.leaf_addrx, leaf_addrx_jazz, 4 * 8 * sizeof(uint32_t)) != 0)  {
+            print_str_u8("info ref", (uint8_t*)info_ref.leaf_addrx, 4 * 8 * sizeof(uint32_t));
+            print_str_u8("jasmin ref", (uint8_t*)leaf_addrx_jazz, 4 * 8 * sizeof(uint32_t));
+        }
+
+        assert(memcmp(info_ref.leaf_addrx, leaf_addrx_jazz, 4 * 8 * sizeof(uint32_t)) == 0);
+        assert(memcmp(leaf_buf_ref, leaf_buf_jazz, 4 * SPX_N) == 0);
+    }
+}
+
 void test_pk_from_sig(void) {
     bool debug = true;
 
@@ -230,6 +283,9 @@ int main(void) {
     test_fors_gen_sk_x4();
     test_fors_sk_to_leaf();  // From ref-jasmin
     test_fors_sk_to_leafx4();
+    test_fors_gen_leafx4();
+    // TREEHASH
+    // FORS_SIGN
     test_pk_from_sig();  // From ref-jasmin
     printf("PASS: fors = { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
 }

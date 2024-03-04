@@ -59,6 +59,34 @@ fn _fors_gen_skx4(
   return sk0, sk1, sk2, sk3;
 }
 
+inline fn __fors_gen_skx4_(
+  reg ptr u8[SPX_N] sk0,
+  reg ptr u8[SPX_N] sk1,
+  reg ptr u8[SPX_N] sk2,
+  reg ptr u8[SPX_N] sk3,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[4*8] fors_leaf_addr
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+  sk0 = sk0;
+  sk1 = sk1;
+  sk2 = sk2;
+  sk3 = sk3;
+  pub_seed = pub_seed;
+  sk_seed = sk_seed;
+  fors_leaf_addr = fors_leaf_addr;
+
+  sk0, sk1, sk2, sk3 = _fors_gen_skx4(sk0, sk1, sk2, sk3, pub_seed, sk_seed, fors_leaf_addr);
+
+  sk0 = sk0;
+  sk1 = sk1;
+  sk2 = sk2;
+  sk3 = sk3;
+
+  return sk0, sk1, sk2, sk3;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // NOTE: from ref-jasmin
@@ -82,6 +110,25 @@ fn _fors_sk_to_leaf(
 ) -> reg ptr u8[SPX_N]
 {
   leaf = __fors_sk_to_leaf(leaf, sk, pub_seed, fors_leaf_addr);
+  return leaf;
+}
+
+inline fn __fors_sk_to_leaf_(
+  reg ptr u8[SPX_N] leaf,
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
+{
+  leaf = leaf;
+  sk = sk;
+  pub_seed = pub_seed;
+  fors_leaf_addr = fors_leaf_addr;
+
+  leaf = _fors_sk_to_leaf(leaf, sk, pub_seed, fors_leaf_addr);
+  
+  leaf = leaf;
+
   return leaf;
 }
 
@@ -164,16 +211,75 @@ fn _fors_sk_to_leafx4(
   return leaf0, leaf1, leaf2, leaf3;
 }
 
+inline fn __fors_sk_to_leafx4_(
+  reg ptr u8[SPX_N] leaf0,
+  reg ptr u8[SPX_N] leaf1,
+  reg ptr u8[SPX_N] leaf2,
+  reg ptr u8[SPX_N] leaf3,
+  reg ptr u8[SPX_N] sk0,
+  reg ptr u8[SPX_N] sk1,
+  reg ptr u8[SPX_N] sk2,
+  reg ptr u8[SPX_N] sk3,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[4*8]  fors_leaf_addrx4
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{ 
+  leaf0 = leaf0; leaf1 = leaf1; leaf2 = leaf2; leaf3 = leaf3; 
+  sk0 = sk0; sk1 = sk1; sk2 = sk2; sk3 = sk3; 
+  pub_seed = pub_seed; fors_leaf_addrx4 = fors_leaf_addrx4;
+
+  leaf0, leaf1, leaf2, leaf3 = _fors_sk_to_leafx4(leaf0, leaf1, leaf2, leaf3, sk0, sk1, sk2, sk3, pub_seed, fors_leaf_addrx4);
+
+  leaf0 = leaf0; leaf1 = leaf1; leaf2 = leaf2; leaf3 = leaf3; 
+
+  return leaf0, leaf1, leaf2, leaf3;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-inline fn fors_gen_leafx4(
-  reg ptr u8[SPX_N] leaf,
+inline fn __fors_gen_leafx4(
+  reg ptr u8[4*SPX_N] leaf,
   reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
   reg u32 addr_idx,
-  reg ptr u32[4*8] leaf_addrx
-)
+  reg ptr u32[4*8] fors_leaf_addrx4
+) -> reg ptr u8[4*SPX_N], reg ptr u32[4*8]
 {
+  inline int j;
+  reg u32 t32;
 
+
+  for j=0 to 4 {
+    t32 = addr_idx;
+    t32 += j;
+    fors_leaf_addrx4[j*8 : 8] = __set_tree_index(fors_leaf_addrx4[j*8 : 8], t32);
+
+    t32 = SPX_ADDR_TYPE_FORSPRF;
+    fors_leaf_addrx4[j*8 : 8] = __set_type(fors_leaf_addrx4[j*8 : 8], t32);
+  }
+
+  () = #spill(fors_leaf_addrx4, pub_seed);
+
+  leaf[0 : SPX_N], 
+  leaf[SPX_N : SPX_N], 
+  leaf[2*SPX_N : SPX_N], 
+  leaf[3*SPX_N : SPX_N] = __fors_gen_skx4_(leaf[0 : SPX_N], leaf[SPX_N : SPX_N], leaf[2*SPX_N : SPX_N], leaf[3*SPX_N : SPX_N],
+                                           pub_seed, sk_seed, fors_leaf_addrx4);  
+
+  () = #unspill(fors_leaf_addrx4, pub_seed);
+  
+  for j=0 to 4 {
+    t32 = SPX_ADDR_TYPE_FORSTREE;
+    fors_leaf_addrx4[j*8 : 8] = __set_type(fors_leaf_addrx4[j*8 : 8], t32);
+  }
+
+  leaf[0 : SPX_N], leaf[SPX_N : SPX_N], leaf[2*SPX_N : SPX_N], leaf[3*SPX_N : SPX_N] = __thashx4_inplace(leaf[0 : SPX_N], 
+                                                                                                         leaf[SPX_N : SPX_N], 
+                                                                                                         leaf[2*SPX_N : SPX_N], 
+                                                                                                         leaf[3*SPX_N : SPX_N],
+                                                                                                         pub_seed, fors_leaf_addrx4);
+
+  return leaf, fors_leaf_addrx4;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
