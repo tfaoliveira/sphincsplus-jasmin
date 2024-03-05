@@ -78,4 +78,4 @@ clean:
 
 .PHONY: clean_executables
 clean_executables:
-	find bin/ -type f -executable -delete
+	find bin/ -type f -executable -delete || true

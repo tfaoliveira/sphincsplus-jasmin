@@ -248,7 +248,6 @@ inline fn __fors_gen_leafx4(
   inline int j;
   reg u32 t32;
 
-
   for j=0 to 4 {
     t32 = addr_idx;
     t32 += j;
@@ -354,8 +353,6 @@ inline fn __treehashx4_fors<INLEN>(
       reg ptr u32[4*8], // tree_addr
       reg ptr u32[4*8] // info
 { 
-  stack u8[4 * SPX_FORS_HEIGHT * SPX_N] nodes;
-  
   return root, tree_addr, info;
 }//<>
 

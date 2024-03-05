@@ -11,20 +11,19 @@
 #include "fors.h"
 #include "hash.h"
 #include "hashx4.h"
+#include "print.h"
 #include "utils.h"
 #include "utilsx4.h"
 
-#include "print.h"
-
 #ifndef TESTS
-#define TESTS 1000
+#define TESTS 10000
 #endif
 
 extern void fors_gen_sk_jazz(uint8_t *, const uint8_t *, const uint8_t *, const uint32_t *);
 extern void fors_gen_sk_x4_jazz(const void *);
 extern void fors_sk_to_leafx4_jazz(const void *);
-extern void fors_gen_leafx4_jazz(uint8_t *leaf, const uint8_t *pub_seed, const uint8_t *sk_seed, const uint32_t* addr_idx,
-                                 uint32_t *info);
+extern void fors_gen_leafx4_jazz(uint8_t *leaf, const uint8_t *pub_seed, const uint8_t *sk_seed,
+                                 const uint32_t *addr_idx, uint32_t *info);
 
 extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m, const uint8_t *pub_seed,
                                   const uint32_t fors_addr[8]);
@@ -213,7 +212,7 @@ void test_fors_gen_leafx4(void) {
     spx_ctx ctx;
 
     struct fors_gen_leaf_info info_ref;
-    uint32_t leaf_addrx_jazz[8*4];
+    uint32_t leaf_addrx_jazz[8 * 4];
 
     for (int i = 0; i < TESTS; i++) {
         memset(leaf_buf_ref, 0, 4 * SPX_N);
@@ -228,18 +227,18 @@ void test_fors_gen_leafx4(void) {
 
         assert(memcmp(info_ref.leaf_addrx, leaf_addrx_jazz, 4 * 8 * sizeof(uint32_t)) == 0);
         assert(memcmp(leaf_buf_ref, leaf_buf_jazz, 4 * SPX_N) == 0);
-        
+
         fors_gen_leafx4(leaf_buf_ref, &ctx, addr_idx, (void *)&info_ref);
         fors_gen_leafx4_jazz(leaf_buf_jazz, ctx.pub_seed, ctx.sk_seed, &addr_idx, leaf_addrx_jazz);
 
-        if (memcmp(leaf_buf_ref, leaf_buf_jazz, 4 * SPX_N) != 0)  {
+        if (memcmp(leaf_buf_ref, leaf_buf_jazz, 4 * SPX_N) != 0) {
             print_str_u8("Leaf Ref", leaf_buf_ref, 4 * SPX_N);
             print_str_u8("Leaf Jasmin", leaf_buf_jazz, 4 * SPX_N);
         }
 
-        if(memcmp(info_ref.leaf_addrx, leaf_addrx_jazz, 4 * 8 * sizeof(uint32_t)) != 0)  {
-            print_str_u8("info ref", (uint8_t*)info_ref.leaf_addrx, 4 * 8 * sizeof(uint32_t));
-            print_str_u8("jasmin ref", (uint8_t*)leaf_addrx_jazz, 4 * 8 * sizeof(uint32_t));
+        if (memcmp(info_ref.leaf_addrx, leaf_addrx_jazz, 4 * 8 * sizeof(uint32_t)) != 0) {
+            print_str_u8("info ref", (uint8_t *)info_ref.leaf_addrx, 4 * 8 * sizeof(uint32_t));
+            print_str_u8("jasmin ref", (uint8_t *)leaf_addrx_jazz, 4 * 8 * sizeof(uint32_t));
         }
 
         assert(memcmp(info_ref.leaf_addrx, leaf_addrx_jazz, 4 * 8 * sizeof(uint32_t)) == 0);
@@ -278,16 +277,39 @@ void test_pk_from_sig(void) {
     }
 }
 
-void test_treehashx4(void) {
-    for (int i =0; i< TESTS; i++) {
-
+void test_fors_sign(void) {
+    for (int i = 0; i < TESTS; i++) {
     }
 }
 
-void test_fors_sign(void) {
-    for (int i =0; i< TESTS; i++) {
-        
+void test_api(void) {
+    bool debug = true;
+
+#define MAX_MESSAGE_LENGTH 1024
+#define TESTS 100
+
+    uint8_t secret_key[CRYPTO_SECRETKEYBYTES];
+    uint8_t public_key[CRYPTO_PUBLICKEYBYTES];
+
+    uint8_t signature[CRYPTO_BYTES];
+    size_t signature_length;
+
+    uint8_t message[MAX_MESSAGE_LENGTH];
+
+    for (int i = 0; i < TESTS; i++) {
+        for (size_t message_length = 1; message_length < MAX_MESSAGE_LENGTH; message_length++) {
+            if (debug) {
+                printf("[%s]: Test %d/%d [Len=%ld]\n", xstr(PARAMS), i, TESTS, message_length);
+            }
+
+            randombytes(message, message_length);
+            crypto_sign_keypair(public_key, secret_key);
+            crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
+            assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) == 0);
+        }
     }
+
+#undef MESSAGE_LENGTH
 }
 
 int main(void) {
@@ -296,10 +318,9 @@ int main(void) {
     test_fors_sk_to_leaf();  // From ref-jasmin
     test_fors_sk_to_leafx4();
     test_fors_gen_leafx4();
-    // TREEHASH
-    test_treehashx4();
-    test_fors_sign();
-    // FORS_SIGN
+    // test_fors_sign();
     test_pk_from_sig();  // From ref-jasmin
+    test_api();          // We test treehash here
     printf("PASS: fors = { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
 }
+    

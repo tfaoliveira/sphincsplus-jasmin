@@ -269,7 +269,7 @@ export fn treehashx4_fors_jazz(
 
   () = #spill(_root, _addrs);
 
-  root, tree_addr, info = __treehashx4_fors_<SPX_N>(root, 0, auth_path, pub_seed, 
+  root, tree_addr, info = __treehashx4_fors<SPX_N>(root, 0, auth_path, pub_seed, 
                                                   sk_seed, leaf_idx, idx_offset, 
                                                   tree_addr, info);
 

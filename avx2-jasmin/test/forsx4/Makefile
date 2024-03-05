@@ -6,7 +6,7 @@ CC       ?= clang
 CFLAGS   ?= -w -march=native #-Wall -Wextra -Wpedantic -Wmissing-prototypes -O3 -std=c99 -march=native -fomit-frame-pointer -flto
 
 JASMIN       ?= jasminc
-JFLAGS       ?= -lazy-regalloc -nowarning ${JADDFLAGS}
+JFLAGS       ?= -nowarning ${JADDFLAGS}
 JPP          ?= ../scripts/jpp
 PREPROCESSOR ?= ../scripts/preprocessor
 
@@ -56,9 +56,10 @@ SOURCES = ../../keccak4x/KeccakP-1600-times4-SIMD256.c ../../fips202x4.c ../../f
           ../../hash_$(GET_HASH)x4.c ../../hash_$(GET_HASH).c \
 		  ../../thash_$(GET_HASH)_$(GET_THASH)x4.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
 		  ../../fors.c ../../utilsx4.c \
-          ../../address.c ../../utils.c
+          ../../address.c ../../utils.c \
+		  ../../wots.c ../../merkle.c ../../sign.c
 
-TEST_FLAGS := 
+TEST_FLAGS := -DTEST_TREEHASH_FORS
 
 $(JPP_FILES):
 .PRECIOUS: bin/test_fors_%.jpp
@@ -96,4 +97,4 @@ clean:
 
 .PHONY: clean_executables
 clean_executables:
-	find bin/ -type f -executable -delete
+	find bin/ -type f -executable -delete || true
