@@ -1,5 +1,52 @@
 from Sphincs require "forsx4/forsx4.jtmpl"
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+inline fn __load_ctx(
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u64 addr
+) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N]
+{
+  pub_seed = __load_u8_array<SPX_N>(pub_seed, addr);
+  addr += SPX_N;
+  sk_seed = __load_u8_array<SPX_N>(sk_seed, addr);
+  return pub_seed, sk_seed;
+}
+
+inline fn __load_info(
+  reg ptr u32[4*8] tree_addr info, 
+  reg u64 addr
+) -> reg ptr u32[4*8], reg ptr u32[4*8]
+{
+  reg u64 addr1 addr2;
+
+  #declassify addr1 = [addr];
+  tree_addr = __load_u32_array<4*8>(tree_addr, addr1);
+
+  #declassify addr2 = [addr + 8];
+  info = __load_u32_array<4*8>(info, addr2);
+
+  return tree_addr, info;
+}
+
+inline fn __store_info(
+  reg ptr u32[4*8] tree_addr info, 
+  reg u64 addr
+)
+{
+  reg u64 addr1 addr2;
+
+  #declassify addr1 = (u64)[addr];
+  __store_u32_array<4*8>(tree_addr, addr1);
+
+  #declassify addr2 = (u64)[addr+8];
+  __store_u32_array<4*8>(info, addr2);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 export fn fors_gen_sk_jazz(reg u64 _sk _pub_seed _sk_seed _fors_leaf_addr)
 {
   stack u8[SPX_N] sk;
@@ -197,6 +244,39 @@ export fn fors_gen_leafx4_jazz(reg u64 leaf_ptr pub_seed_ptr sk_seed_ptr addr_id
 
   for i=0 to 4*8 { (u32)[fors_leaf_addrx4_ptr + 4*i] = fors_leaf_addrx4[i]; }
   for i=0 to SPX_N * 4 { (u8)[leaf_ptr + i] = leaf[i]; }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export fn treehashx4_fors_jazz(
+  reg u64 _root auth_path _ctx _leaf_idx _idx_offset _addrs
+)
+{
+  stack u8[SPX_N] root;
+  stack u8[SPX_N] pub_seed;
+  stack u8[SPX_N] sk_seed;
+  reg u32 leaf_idx idx_offset;
+  stack u32[4*8] tree_addr info;
+
+  inline int i;
+
+  leaf_idx = (32u) _leaf_idx;
+  idx_offset = (32u) _idx_offset;
+
+  for i=0 to SPX_N { root[i] = (u8)[_root + i]; }
+  pub_seed, sk_seed = __load_ctx(pub_seed, sk_seed, _ctx);
+  tree_addr, info = __load_info(tree_addr, info, _addrs);
+
+  () = #spill(_root, _addrs);
+
+  root, tree_addr, info = __treehashx4_fors_<SPX_N>(root, 0, auth_path, pub_seed, 
+                                                  sk_seed, leaf_idx, idx_offset, 
+                                                  tree_addr, info);
+
+  () = #unspill(_root, _addrs);
+
+  for i=0 to SPX_N { (u8)[_root + i] = root[i]; }
+  __store_info(tree_addr, info, _addrs);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

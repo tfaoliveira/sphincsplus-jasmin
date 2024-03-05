@@ -278,6 +278,18 @@ void test_pk_from_sig(void) {
     }
 }
 
+void test_treehashx4(void) {
+    for (int i =0; i< TESTS; i++) {
+
+    }
+}
+
+void test_fors_sign(void) {
+    for (int i =0; i< TESTS; i++) {
+        
+    }
+}
+
 int main(void) {
     test_fors_gen_sk();  // From ref-jasmin
     test_fors_gen_sk_x4();
@@ -285,6 +297,8 @@ int main(void) {
     test_fors_sk_to_leafx4();
     test_fors_gen_leafx4();
     // TREEHASH
+    test_treehashx4();
+    test_fors_sign();
     // FORS_SIGN
     test_pk_from_sig();  // From ref-jasmin
     printf("PASS: fors = { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));

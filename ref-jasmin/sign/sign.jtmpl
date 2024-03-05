@@ -451,7 +451,7 @@ inline fn __crypto_sign_verify(
     // compute_root(root, leaf, idx_leaf, 0, sig, SPX_TREE_HEIGHT, &ctx, tree_addr);
     sig = s_sig;
     idx_leaf = s_idx_leaf;
-    root, tree_addr = __compute_root(root, leaf, idx_leaf, 0, sig, SPX_TREE_HEIGHT, pub_seed, tree_addr);
+    root, tree_addr = __compute_root<SPX_N>(root, 0, leaf, idx_leaf, 0, sig, SPX_TREE_HEIGHT, pub_seed, tree_addr);
 
     // sig += SPX_TREE_HEIGHT * SPX_N;
     s_sig += SPX_TREE_HEIGHT * SPX_N;

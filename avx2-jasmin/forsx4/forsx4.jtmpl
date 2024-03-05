@@ -340,6 +340,85 @@ inline fn __message_to_indices_t<MSG_LEN>(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+inline fn __treehashx4_fors<INLEN>(
+  reg ptr u8[INLEN] root,
+  reg u64 offset,
+  reg u64 auth_path,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u32 leaf_idx,
+  reg u32 idx_offset,
+  reg ptr u32[4*8] tree_addr,
+  reg ptr u32[4*8] info
+) ->  reg ptr u8[INLEN], // root
+      reg ptr u32[4*8], // tree_addr
+      reg ptr u32[4*8] // info
+{ 
+  stack u8[4 * SPX_FORS_HEIGHT * SPX_N] nodes;
+  
+  return root, tree_addr, info;
+}//<>
+
+#[returnaddress="stack"]
+fn _treehashx4_fors<INLEN>(
+  reg ptr u8[INLEN] root,
+  reg u64 offset,
+  reg u64 auth_path,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u32 leaf_idx,
+  reg u32 idx_offset,
+  reg ptr u32[4*8] tree_addr,
+  reg ptr u32[4*8] info
+) -> reg ptr u8[INLEN], reg ptr u32[4*8], reg ptr u32[4*8]
+{
+  root, tree_addr, info = __treehashx4_fors<INLEN>(root,
+                                                 offset,
+                                                 auth_path,
+                                                 pub_seed,
+                                                 sk_seed,
+                                                 leaf_idx,
+                                                 idx_offset,
+                                                 tree_addr,
+                                                 info);
+  return root, tree_addr, info;
+}//<>
+
+inline fn __treehashx4_fors_<INLEN>(
+  reg ptr u8[INLEN] root, 
+  reg u64 offset,
+  reg u64 auth_path,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg u32 leaf_idx,
+  reg u32 idx_offset,
+  reg ptr u32[4*8] tree_addr,
+  reg ptr u32[4*8] info
+) -> reg ptr u8[INLEN], reg ptr u32[4*8], reg ptr u32[4*8]
+{
+  root = root; offset = offset; auth_path = auth_path; pub_seed = pub_seed; sk_seed = sk_seed;
+  leaf_idx = leaf_idx; idx_offset = idx_offset; tree_addr = tree_addr;
+  info = info;
+
+  root, tree_addr, info = _treehashx4_fors<INLEN>(root,
+                                                  offset,
+                                                  auth_path,
+                                                  pub_seed,
+                                                  sk_seed,
+                                                  leaf_idx,
+                                                  idx_offset,
+                                                  tree_addr,
+                                                  info);
+
+  root = root;
+  tree_addr = tree_addr;
+  info = info;
+
+  return root, tree_addr, info;
+}//<>
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // TODO: Fors sign here
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

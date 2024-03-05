@@ -78,6 +78,7 @@ $(TESTS):
 bin/test_sign_%: bin/test_sign_%.s | bin/
 	$(CC) $(CFLAGS) -o $@ \
 	-DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) -DTHASH=$(GET_THASH) \
+	-DTESTS=10 \
 	-I../common -I../../ -I../../params test_sign.c $< $(SOURCES)
 
 bin/test_sign_%.out: bin/test_sign_%
