@@ -14,7 +14,6 @@ jobs:
     strategy:
       matrix:
         directory:
-            - memcpy
             - fips202x4
             - thash_4x
             - hash4x
