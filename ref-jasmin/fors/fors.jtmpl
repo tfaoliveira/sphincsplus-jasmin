@@ -369,7 +369,7 @@ inline fn __treehash_fors<INLEN>(
 
         // root, _, _ = __memcpy_u8u8_2<INLEN, SPX_N>(root, out_offset, current_1, offset, SPX_N);
         // FIXME: Use __memcpy_u8u8_2
-        for i=0 to SPX_N { index = offset; index += i; root[index] = current_1[i];  }
+        for i=0 to SPX_N { root[offset + i] = current_1[i];  }
 
           () = #spill(root);
           s_exit_inner_loop = 1;
