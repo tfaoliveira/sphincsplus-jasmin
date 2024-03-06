@@ -114,7 +114,7 @@ void wots_pk_from_sig(unsigned char *pk, const unsigned char *sig, const unsigne
     uint32_t i;
 
 #ifdef TEST_WOTS_CHAIN_LENGTHS
-    chain_lengths(lengths, msg);
+    chain_lengths_jazz(lengths, msg);
 #else
     chain_lengths(lengths, msg);
 #endif

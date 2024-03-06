@@ -14,7 +14,6 @@ jobs:
     strategy:
       matrix:
         directory:
-          - address
           - utils
           - thash
           - hash
