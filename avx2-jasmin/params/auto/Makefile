@@ -16,4 +16,3 @@ clean:
 
 distclean: clean
 	rm -f $(PARAMS_J)
-

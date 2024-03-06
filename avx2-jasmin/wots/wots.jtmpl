@@ -1,0 +1,101 @@
+from Sphincs require "address/address.jinc"
+from Sphincs require "memcpy/memcpy.jtmpl"
+from Sphincs require "generic/conditions.jinc"
+from Sphincs require "generic/utils.jtmpl"
+
+/////////////////////////////////////////////////////////////////////////// SAME AS REF-JASMIN
+
+inline fn __base_w<OUTLEN,INLEN>(
+  reg ptr u32[OUTLEN] output,
+  reg ptr u8[INLEN] input
+) -> reg ptr u32[OUTLEN]
+{
+  reg u64 in out;
+  reg u8 total;
+  reg u32 total_32;
+  reg u64 bits consumed;
+
+  in = 0;
+  out  = 0;
+  bits = 0;
+
+  consumed = 0;
+  while (consumed < OUTLEN) {
+    if (bits == 0) {
+      total = input[in];
+      in += 1;
+      bits += 8;
+    }
+
+    bits -= SPX_WOTS_LOGW;
+    
+    total_32 = (32u) total;
+    total_32 >>= (bits & 31);
+    total_32 &= (SPX_WOTS_W - 1);
+    output[out] = total_32;
+
+    out += 1;
+    consumed += 1;
+  }
+
+  return output;
+}//<>
+
+inline fn __wots_checksum(
+  reg ptr u32[SPX_WOTS_LEN2] csum_base_w,
+  reg ptr u32[SPX_WOTS_LEN] msg_base_w
+) -> reg ptr u32[SPX_WOTS_LEN2]
+{
+  stack u8[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] csum_bytes;
+  reg ptr u8[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] csum_bytes_p;
+
+  reg u64 i;
+  reg u64 csum t u;
+
+  inline int k;
+
+  csum = 0;
+
+  i = 0;
+  while (i < SPX_WOTS_LEN1) {
+    t = SPX_WOTS_W - 1;
+    u = (64u) msg_base_w[i];
+    t -= u;
+    csum += t;
+    i += 1;
+  }
+
+  k = (SPX_WOTS_LEN2 * SPX_WOTS_LOGW) % 8;
+
+  u = 8;
+  u -= k;
+  t = 0x7;
+  ?{}, u = #AND(u, t);
+                      
+  u = u;
+  ?{}, csum = #SHL(csum, u);
+
+  csum_bytes_p = csum_bytes;
+  csum_bytes_p = __ull_to_bytes_t<(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(csum_bytes_p, csum);
+
+  csum_base_w = __base_w<SPX_WOTS_LEN2, (SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(csum_base_w, csum_bytes_p);
+
+  return csum_base_w;
+}
+
+inline fn __chain_lengths(
+  reg ptr u32[SPX_WOTS_LEN] lengths,
+  reg ptr u8[SPX_N] msg // root
+) -> reg ptr u32[SPX_WOTS_LEN]
+{
+  reg ptr u32[SPX_WOTS_LEN2] t;
+  
+  lengths = __base_w<SPX_WOTS_LEN,SPX_N>(lengths, msg);
+
+  t = lengths[SPX_WOTS_LEN1 : SPX_WOTS_LEN2];
+  t = __wots_checksum(t, lengths);
+
+  lengths[SPX_WOTS_LEN1 : SPX_WOTS_LEN2] = t;
+
+  return lengths;
+}
