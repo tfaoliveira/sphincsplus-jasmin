@@ -18,7 +18,6 @@ jobs:
           - thash
           - hash
           - fors
-          - wotsx
           - merkle
           - sign
     steps:

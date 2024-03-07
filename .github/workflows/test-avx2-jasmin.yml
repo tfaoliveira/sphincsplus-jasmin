@@ -18,6 +18,7 @@ jobs:
             - thash_4x
             - hash4x
             - forsx4
+            - wots
     steps:
       - uses: actions/checkout@v4
       - name: Compile tests

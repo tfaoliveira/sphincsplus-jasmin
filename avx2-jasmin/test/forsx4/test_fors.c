@@ -303,13 +303,9 @@ void test_api(void) {
             }
 
             randombytes(message, message_length);
-            
             crypto_sign_keypair(public_key, secret_key);
-            
             crypto_sign_signature(signature, &signature_length, message, message_length, secret_key);
-
-            assert(signature_length == CRYPTO_BYTES); // TODO: See if this works
-
+            assert(signature_length == CRYPTO_BYTES);
             assert(crypto_sign_verify(signature, signature_length, message, message_length, public_key) == 0);
         }
     }

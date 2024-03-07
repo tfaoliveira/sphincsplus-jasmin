@@ -37,8 +37,10 @@ OBJ_FILES := $(ASM_FILES:.s=.o)
 
 # ------------------------------------------------------------------------------
 
-SOURCES = $(filter-out ../../hash_%.c ../../thash_%.c, $(wildcard ../../*.c)) \
-          ../../hash_$(GET_HASH).c ../../thash_$(GET_HASH)_$(GET_THASH).c
+SOURCES = ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \
+		  ../../address.c ../../thash_$(GET_HASH)_$(GET_THASH).c ../../utilsx1.c \
+		  ../../merkle.c ../../wots.c ../../wotsx1.c ../../sign.c ../../wrappers.c \
+		  ../../fors.c
 
 TEST_FLAGS = -DTEST_HASH_PRF_ADDR -DTEST_HASH_GEN_MESSAGE_RANDOM -DTEST_HASH_MESSAGE
 

@@ -1,10 +1,10 @@
 # -*- Makefile -*-
 
-#-----------------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------------------- 
 
-AS       ?= as
-CC       ?= clang
-CFLAGS   ?= -w -march=native #-Wall -Wextra -Wpedantic -Wmissing-prototypes -O3 -std=c99 -march=native -fomit-frame-pointer -flto
+AS     ?= as
+CC     ?= clang
+CFLAGS ?= -w -march=native
 
 JASMIN       ?= jasminc
 JFLAGS       ?= -lazy-regalloc -nowarning ${JADDFLAGS}
@@ -20,3 +20,74 @@ THASH_LIST    := robust
 TLIST := $(foreach H,$(HASH_LIST), $(foreach P,$(PARAMS_LIST), $(foreach T,$(THASH_LIST),$(H)_$(P)_$(T))))
 
 #-----------------------------------------------------------------------------------------------------------------------
+
+TESTS := $(addprefix bin/test_wots_, $(TLIST))
+OUT   := $(addsuffix .out, $(TESTS))
+
+GET_HASH       = $(word 1, $(subst _, ,$*))
+GET_PARAM      = $(word 2, $(subst _, ,$*))
+GET_THASH      = $(word 3, $(subst _, ,$*))
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+JPP_FILES := $(addsuffix .jpp, $(TESTS))
+ASM_FILES := $(JPP_FILES:.jpp=.s)
+OBJ_FILES := $(ASM_FILES:.s=.o)
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+SOURCES = ../../keccak4x/KeccakP-1600-times4-SIMD256.c ../../fips202x4.c ../../fips202.c \
+          ../../hash_$(GET_HASH)x4.c ../../hash_$(GET_HASH).c \
+		  ../../thash_$(GET_HASH)_$(GET_THASH)x4.c ../../thash_$(GET_HASH)_$(GET_THASH).c \
+		  ../../fors.c ../../utilsx4.c \
+          ../../address.c ../../utils.c \
+		  ../../wots.c ../../merkle.c ../../sign.c
+
+TEST_FLAGS = -DTEST_WOTS_GEN_CHAIN -DTEST_WOTS_CHECKSUM -DTEST_WOTS_CHAIN_LENGTHS -DTEST_WOTS_PK_FROM_SIG 
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+default: $(TESTS)
+run: $(OUT)
+
+jpp_files: $(JPP_FILES)
+asm_files: $(ASM_FILES)
+obj_files: $(OBJ_FILES)
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+%.o: %.s
+	$(AS) $< -o $@
+	
+# ------------------------------------------------------------------------------
+
+$(JPP_FILES):
+.PRECIOUS: bin/test_wots_%.jpp
+bin/test_wots_%.jpp: | bin/
+	cp test_wots.jazz $@
+	sed -i "1 i\from Sphincs require \"params/params-sphincs-$(GET_HASH)-$(GET_PARAM).jinc\"" $@
+	sed -i "2 i\from Sphincs require \"thash/thash_$(GET_HASH)_$(GET_THASH).jtmpl\"" $@
+	$(JPP) -I Sphincs:../../ -in $@ -out $@
+	$(PREPROCESSOR) --input_file $@ --output_file $@
+
+.PRECIOUS: bin/test_wots_%.s
+bin/test_wots_%.s: bin/test_wots_%.jpp
+	$(JASMIN) $(JFLAGS) $< -o $@
+
+$(TESTS):
+bin/test_wots_%: bin/test_wots_%.s | bin/
+	$(CC) $(CFLAGS) -o $@ -DPARAMS=sphincs-$(GET_HASH)-$(GET_PARAM) $(TEST_FLAGS) \
+	-I../common/ -I../../ -I../../keccak4x ../common/print.c ../common/notrandombytes.c \
+	test_wots.c $< $(SOURCES)
+
+bin/test_wots_%.out: bin/test_wots_%
+	@./$<
+
+# ------------------------------------------------------------------------------
+
+bin/:
+	mkdir -p $@
+
+.PHONY: clean
+clean:
+	rm -fr bin/
