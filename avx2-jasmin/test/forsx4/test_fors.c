@@ -25,6 +25,8 @@ extern void fors_sk_to_leafx4_jazz(const void *);
 extern void fors_gen_leafx4_jazz(uint8_t *leaf, const uint8_t *pub_seed, const uint8_t *sk_seed,
                                  const uint32_t *addr_idx, uint32_t *info);
 
+extern void treehashx4_fors_jazz(const void *);
+
 extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t *m, const uint8_t *pub_seed,
                                   const uint32_t fors_addr[8]);
 
@@ -33,6 +35,22 @@ extern void fors_pk_from_sig_jazz(uint8_t *pk, const uint8_t *sig, const uint8_t
 struct fors_gen_leaf_info {
     uint32_t leaf_addrx[4 * 8];
 };
+
+void treehashx4_jazz_wrapper(unsigned char *root, unsigned char *auth_path, const spx_ctx *ctx, uint32_t leaf_idx,
+                             uint32_t idx_offset, uint32_t tree_addrx4[4 * 8], void *info) {
+    void *args[8];
+
+    args[0] = (void *)root;
+    args[1] = (void *)auth_path;
+    args[2] = (void *)ctx->pub_seed;
+    args[3] = (void *)ctx->sk_seed;
+    args[4] = (void *)&leaf_idx;
+    args[5] = (void *)&idx_offset;
+    args[6] = (void *)tree_addrx4;
+    args[7] = (void *)info;
+
+    treehashx4_fors_jazz(args);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -277,7 +295,27 @@ void test_pk_from_sig(void) {
     }
 }
 
+void test_treehash_fors(void) {
+    bool debug = true;
+
+    uint8_t root_ref[SPX_N], root_jazz[SPX_N];
+    uint32_t treeaddrx4_ref[4 * 8], treeaddrx4_jazz[4 * 8];
+    uint32_t info_ref[4 * 8], info_jazz[4 * 8];
+
+    for (int i = 0; i < TESTS; i++) {
+        if (debug) {
+            // treehashx4_jazz_wrapper
+        }
+
+        assert(memcmp(root_jazz, root_ref, SPX_N) == 0);
+        assert(memcmp(&treeaddrx4_jazz, &treeaddrx4_ref, 4 * 8 * sizeof(uint32_t)) == 0);
+        assert(memcmp(info_jazz, info_ref, 4 * 8 * sizeof(uint32_t)) == 0);
+    }
+}
+
 void test_fors_sign(void) {
+    bool debug = true;
+
     for (int i = 0; i < TESTS; i++) {
     }
 }
@@ -319,9 +357,8 @@ int main(void) {
     test_fors_sk_to_leaf();  // From ref-jasmin
     test_fors_sk_to_leafx4();
     test_fors_gen_leafx4();
-    // test_fors_sign();
+    test_fors_sign();
     test_pk_from_sig();  // From ref-jasmin
     test_api();          // We test treehash here
     printf("PASS: fors = { params : %s ; thash : %s }\n", xstr(PARAMS), xstr(THASH));
 }
-    

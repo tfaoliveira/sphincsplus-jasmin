@@ -339,6 +339,10 @@ inline fn __message_to_indices_t<MSG_LEN>(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// for treehash in fors, tree_height is always SPX_FORS_HEIGHT
+//
+// NOTE: root is actually a u8[SPX_N]. We introduce offset to avoid using array slices
+//
 inline fn __treehashx4_fors<INLEN>(
   reg ptr u8[INLEN] root,
   reg u64 offset,
@@ -347,62 +351,75 @@ inline fn __treehashx4_fors<INLEN>(
   reg ptr u8[SPX_N] sk_seed,
   reg u32 leaf_idx,
   reg u32 idx_offset,
-  reg ptr u32[4*8] tree_addr,
-  reg ptr u32[4*8] info
-) ->  reg ptr u8[INLEN], // root
-      reg ptr u32[4*8], // tree_addr
-      reg ptr u32[4*8] // info
-{ 
+  reg ptr u32[8] tree_addr,
+  reg ptr u32[8] info)
+  ->
+  reg ptr u8[INLEN], // root
+  reg ptr u32[8], // tree_addr
+  reg ptr u32[8] // info
+{
   stack u32 s_leaf_idx;
   stack u32 s_idx_offset;
 
-  stack u8[4 * SPX_FORS_HEIGHT * SPX_N] nodes;
-  
-  stack u8[4 * SPX_N] current;
+  //
+  stack u8[SPX_FORS_HEIGHT * SPX_N] nodes; // in C implementation: "stack"
+  reg ptr u8[SPX_FORS_HEIGHT * SPX_N] nodes_p;
+
+  stack u8[2 * SPX_N] current;
+  reg ptr u8[2 * SPX_N] current_p;
   reg ptr u8[SPX_N] current_0 current_1;
 
-  stack u32 s_left_adj s_prev_left_adj; 
-  reg u32 temp temp2;
-
+  reg u32 idx r_max_idx;
   stack u32 s_idx s_internal_idx_offset s_internal_idx s_internal_leaf s_h;
   stack u64 s_h_spx_n;
-  
-  inline u32 max_idx; 
-  reg u32 r_max_idx idx;
-  inline int i;
 
-  reg u64 out_offset in_offset t64;
+  inline u32 max_idx; // (1 << SPX_FORS_HEIGHT) - 1;
 
-  reg u32 zero addr;
+  //
+  stack u32 s_exit_outer_loop s_exit_inner_loop;
 
+  reg u32 temp;
+  reg u64 out_offset in_offset bytes;
   reg bool cond;
 
-  #public stack u32 s_exit_outer_loop s_exit_inner_loop s_exit_inner_inner_loop returned; // TODO: Is this public ?
+  reg u32 zero;
 
-  s_left_adj = 0;
-  s_prev_left_adj = 0;
+  inline int i;
+  reg u64 index;
+
+  //
 
   () = #spill(root, offset, auth_path, pub_seed, sk_seed, tree_addr, info);
+  s_leaf_idx = leaf_idx;
+  s_idx_offset = idx_offset;
+  //
 
-  s_leaf_idx = leaf_idx;     // spill
-  s_idx_offset = idx_offset; // spill
-
-  max_idx = (1 << (SPX_FORS_HEIGHT-2)) - 1;
+  max_idx = (1 << SPX_FORS_HEIGHT) - 1;
 
   // for (idx = 0;; idx++)
   s_idx = 0;
   s_exit_outer_loop = 0;
-  returned = 0;
-  while(s_exit_outer_loop == 0) {
-    // gen_leafx4(current, ctx, 4*idx + idx_offset, info);
-    temp = 4; temp *= s_idx; temp += s_idx_offset; // temp =  4 * idx + idx_offset // TODO: Replace (4*) with a shift
-    () = #unspill(pub_seed, sk_seed, info);
-    current, info = __fors_gen_leafx4(current, pub_seed, sk_seed, temp, info);
+  while(s_exit_outer_loop == 0)
+  {
+
+    // gen_leaf( &current[SPX_N], ctx, idx + idx_offset, info);
+
+      current_1 = current[SPX_N:SPX_N];
+      temp = s_idx; temp += s_idx_offset; // temp =  idx + idx_offset
+      () = #unspill(pub_seed, sk_seed, info);
+
+//    current[SPX_N:SPX_N], info = __fors_gen_leafx1__(current_1,
+//                                                       pub_seed,
+//                                                       sk_seed,
+//                                                       temp,
+//                                                       info);
+
     () = #spill(info);
 
     // uint32_t internal_idx_offset = idx_offset;
     // uint32_t internal_idx = idx;
     // uint32_t internal_leaf = leaf_idx;
+
     temp = s_idx_offset; s_internal_idx_offset = temp;
     temp = s_idx; s_internal_idx = temp;
     temp = s_leaf_idx; s_internal_leaf = temp;
@@ -411,190 +428,121 @@ inline fn __treehashx4_fors<INLEN>(
     s_h = 0;
     s_h_spx_n = 0;
     s_exit_inner_loop = 0;
+    while(s_exit_inner_loop == 0)
+    {
+      // if (h == tree_height) { memcpy( root, &current[SPX_N], SPX_N ); return; }
+      if(s_h == SPX_FORS_HEIGHT)
+      {
+          () = #unspill(root, offset);
+          out_offset = 0;
+          current_1 = current[SPX_N:SPX_N];
 
-  } // end: C: for (idx = 0;; idx++) // Jasmin: while(s_exit_outer_loop == 0)
-  while(s_exit_inner_loop == 0) {
-    s_exit_inner_inner_loop = 0;
-
-    if (s_h >= SPX_FORS_HEIGHT - 2) {
-      if(s_h == SPX_FORS_HEIGHT) {
-        // memcpy( root, &current[3*SPX_N], SPX_N ); return 
-        
-        () = #unspill(root, offset);
-
-        out_offset = 0;
-        current_1 = current[3*SPX_N : SPX_N];
+        // root, _, _ = __memcpy_u8u8_2<INLEN, SPX_N>(root, out_offset, current_1, offset, SPX_N);
+        // FIXME: Use __memcpy_u8u8_2
         for i=0 to SPX_N { root[offset + i] = current_1[i];  }
 
-        () = #spill(root);
-
-        s_exit_inner_inner_loop = 1;
-        s_exit_inner_loop = 1;
-        s_exit_outer_loop = 1;
-        returned = 1;
+          () = #spill(root);
+          s_exit_inner_loop = 1;
+          s_exit_outer_loop = 1;
       }
+      else
+      {
+        // if ((internal_idx ^ internal_leaf) == 0x01)
+        // { memcpy( &auth_path[ h * SPX_N ], &current[SPX_N], SPX_N ); }
+        temp = s_internal_idx;
+        temp ^= s_internal_leaf;
+        if( temp == 1 )
+        {
+            () = #unspill(auth_path);
+            out_offset = s_h_spx_n;
+            current_1 = current[SPX_N : SPX_N];
 
-      // i.e if we have not returned yet
-      if (returned != 1) {
-        // left_adj = 4 - (1 << (SPX_FORS_HEIGHT - h - 1));
-        // temp  : (SPX_FORS_HEIGHT - h - 1)
-        // temp2 : (1 << (SPX_FORS_HEIGHT - h - 1));
-        temp = SPX_FORS_HEIGHT; temp -= s_h; temp -= 1;
-        temp2 = 1;
-        ?{}, temp2 = #SHL_32(temp2, temp);
-        s_left_adj = 4; s_left_adj -= temp2;
-      }
-    }
+          _, _ = _x_memcpy_u8pu8<SPX_N>(auth_path, out_offset, current_1);
 
-    if (returned != 1) {
-      if (s_h == SPX_FORS_HEIGHT) {
-        // memcpy( root, &current[3*SPX_N], SPX_N ); return;
-        () = #unspill(root, offset);
+        }
 
-        out_offset = 0;
-        current_1 = current[3*SPX_N : SPX_N];
-        for i=0 to SPX_N { root[offset + i] = current_1[i];  }
+        // if ((internal_idx & 1) == 0 && idx < max_idx) { break; }
 
-        () = #spill(root);
+          temp = s_internal_idx; temp &= 1;
+          zero = 0;
+          idx = s_idx;
+          r_max_idx = max_idx; // add inline int to conditions library to avoid this
 
-        s_exit_inner_inner_loop = 1;
-        s_exit_inner_loop = 1;
-        s_exit_outer_loop = 1;
-        returned = 1;
-      }
-    } 
+        cond = __cond_u32_a_eq_b_and_c_below_d(temp, zero, idx, r_max_idx);
 
-    if (returned != 1) {
-      // if ((((internal_idx << 2) ^ internal_leaf) & ~0x3) == 0) {
-      //           memcpy( &auth_path[ h * SPX_N ],
-      //                   &current[(((internal_leaf&3)^1) + prev_left_adj) * SPX_N],
-      //                   SPX_N );
-      // }
-      temp = s_internal_idx;
-      ?{}, temp = #SHL_32(temp, 2);
-      temp ^= s_internal_leaf;
-      temp2 = 0x3; temp2 = #NOT_32(temp2);
-      temp &= temp2;
+        if(cond)
+        {
+          s_exit_inner_loop = 1;
+        }
+        else
+        {
+          // internal_idx_offset >>= 1;
+          // set_tree_height(tree_addr, h + 1);
+          // set_tree_index(tree_addr, internal_idx/2 + internal_idx_offset );
 
-      if (temp == 0) {
-        () = #unspill(auth_path);
-        out_offset = s_h_spx_n;
-        in_offset = (64u) s_internal_leaf; 
-        in_offset &= 3;
-        in_offset ^= 1;
-        t64 = (64u) s_prev_left_adj;
-        in_offset += t64;
-        in_offset *= SPX_N;
+          s_internal_idx_offset >>= 1;
 
-        _, _ = _x_memcpy_u8pu8_2<4 * SPX_N>(auth_path, out_offset, current, in_offset, SPX_N);
-      }
-
-      // if ((internal_idx & 1) == 0 && idx < max_idx) { break; }
-      temp = s_internal_idx; temp &= 1;
-      zero = 0;
-      idx = s_idx;
-      r_max_idx = max_idx; 
-
-      cond = __cond_u32_a_eq_b_and_c_below_d(temp, zero, idx, r_max_idx);
-
-      if(cond) {
-        s_exit_inner_loop = 1;
-      } else {
-        s_internal_idx_offset >>= 1;  
-
-        for i=0 to 4 {
           () = #unspill(tree_addr);
-          
-          // set_tree_height(tree_addrx4 + j*8, h + 1);
-          addr = s_h;
-          addr += 1;
-          tree_addr[i*8:8] = __set_tree_height(tree_addr[i*8:8], addr);
+          temp = s_h; temp += 1;
+          tree_addr = __set_tree_height(tree_addr, temp);
 
-          // set_tree_index(tree_addrx4 + j*8, (4/2) * (internal_idx&~1) + j - left_adj + internal_idx_offset );
-
+          temp = s_internal_idx; temp >>= 1; temp += s_internal_idx_offset;
+          tree_addr = __set_tree_index(tree_addr, temp);
           () = #spill(tree_addr);
+
+          // unsigned char *left = &stack[h * SPX_N];
+          // memcpy( &current[0], left, SPX_N );
+              current_0 = current[0:SPX_N];
+              out_offset = 0;
+              nodes_p = nodes;
+              in_offset = s_h_spx_n;
+              bytes = SPX_N;
+
+          current[0:SPX_N], _, _ =
+            _x_memcpy_u8u8_2<SPX_N,SPX_FORS_HEIGHT*SPX_N>(current_0,
+                                                          out_offset,
+                                                          nodes_p,
+                                                          in_offset,
+                                                          bytes);
+
+          // thash( &current[1 * SPX_N], &current[0 * SPX_N], 2, ctx, tree_addr);
+
+            current_1 = current[SPX_N:SPX_N];
+            current_p = current;
+            () = #unspill(pub_seed, tree_addr);
+
+          current[SPX_N:SPX_N] = __thash<2>(current_1, current_p, pub_seed, tree_addr);
         }
       }
-    }
 
-    if( s_exit_inner_loop == 0 )
+      if( s_exit_inner_loop == 0 )
+      {
+        s_h += 1;
+        s_h_spx_n += SPX_N;
+        s_internal_idx >>= 1;
+        s_internal_leaf >>= 1;
+      }
+
+    } // end: C: for (h=0;; h++, internal_idx >>= 1, internal_leaf >>= 1)
+      //      Jasmin: while(s_exit_inner_loop == 0)
+
+    // memcpy( &stack[h * SPX_N], &current[SPX_N], SPX_N);
+    if( s_exit_outer_loop == 0 )
     {
-      s_h += 1;
-      s_h_spx_n += SPX_N;
-      s_internal_idx >>= 1;
-      s_internal_leaf >>= 1;
-    }
+      // no need to memcpy if s_exit_outer_loop == 1
+        nodes_p = nodes;
+        out_offset = s_h_spx_n;
+        current_1 = current[SPX_N:SPX_N];
 
-    // memcpy( &stackx4[h * 4 * SPX_N], current, 4 * SPX_N); 
-    out_offset = s_h_spx_n;
-    out_offset *= 4;
-    current_1 = current[0:SPX_N];   
-    nodes, _ = _x_memcpy_u8u8<4*SPX_FORS_HEIGHT*SPX_N,SPX_N>(nodes,
+      nodes, _ = _x_memcpy_u8u8<SPX_FORS_HEIGHT*SPX_N,SPX_N>(nodes_p,
                                                              out_offset,
                                                              current_1);
+      s_idx += 1;
+    }
+  } // end: C: for (idx = 0;; idx++) // Jasmin: while(s_exit_outer_loop == 0)
 
-  } // end: C: for (h=0;; h++, internal_idx >>= 1, internal_leaf >>= 1)
-    // Jasmin: while(s_exit_inner_loop == 0)
 
   () = #unspill(root, tree_addr, info);
-
-  return root, tree_addr, info;
-}//<>
-
-#[returnaddress="stack"]
-fn _treehashx4_fors<INLEN>(
-  reg ptr u8[INLEN] root,
-  reg u64 offset,
-  reg u64 auth_path,
-  reg ptr u8[SPX_N] pub_seed,
-  reg ptr u8[SPX_N] sk_seed,
-  reg u32 leaf_idx,
-  reg u32 idx_offset,
-  reg ptr u32[4*8] tree_addr,
-  reg ptr u32[4*8] info
-) -> reg ptr u8[INLEN], reg ptr u32[4*8], reg ptr u32[4*8]
-{
-  root, tree_addr, info = __treehashx4_fors<INLEN>(root,
-                                                 offset,
-                                                 auth_path,
-                                                 pub_seed,
-                                                 sk_seed,
-                                                 leaf_idx,
-                                                 idx_offset,
-                                                 tree_addr,
-                                                 info);
-  return root, tree_addr, info;
-}//<>
-
-inline fn __treehashx4_fors_<INLEN>(
-  reg ptr u8[INLEN] root, 
-  reg u64 offset,
-  reg u64 auth_path,
-  reg ptr u8[SPX_N] pub_seed,
-  reg ptr u8[SPX_N] sk_seed,
-  reg u32 leaf_idx,
-  reg u32 idx_offset,
-  reg ptr u32[4*8] tree_addr,
-  reg ptr u32[4*8] info
-) -> reg ptr u8[INLEN], reg ptr u32[4*8], reg ptr u32[4*8]
-{
-  root = root; offset = offset; auth_path = auth_path; pub_seed = pub_seed; sk_seed = sk_seed;
-  leaf_idx = leaf_idx; idx_offset = idx_offset; tree_addr = tree_addr;
-  info = info;
-
-  root, tree_addr, info = _treehashx4_fors<INLEN>(root,
-                                                  offset,
-                                                  auth_path,
-                                                  pub_seed,
-                                                  sk_seed,
-                                                  leaf_idx,
-                                                  idx_offset,
-                                                  tree_addr,
-                                                  info);
-
-  root = root;
-  tree_addr = tree_addr;
-  info = info;
 
   return root, tree_addr, info;
 }//<>
