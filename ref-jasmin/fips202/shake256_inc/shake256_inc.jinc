@@ -42,7 +42,8 @@ inline fn __keccak_inc_absorb(
   reg u64 offset_in;
   
   reg u64 t u v;
-  reg u64 z;
+  reg u64 z; 
+  stack u64 bytes; // TODO: Make this a reg
 
   stack u64 s_inlen s_in s_i s_offset_in s_t s_u s_v s_z;
 
@@ -50,18 +51,20 @@ inline fn __keccak_inc_absorb(
 
   offset_in = 0;
 
+  #declassify bytes = state[25];
   t = inlen;
-  #declassify t += state[25]; // t holds the value of inlen + state[25]
+  t += bytes; // t holds the value of inlen + state[25]
 
   while (t >=u rate) {
     i = 0;
 
+    #declassify bytes = state[25];
     t = rate;
-    t -= state[25];
+    t -= bytes;
 
     while (i < t) {
       // s_inc[(s_inc[25] + i) >> 3] ^= (uint64_t)m[i] << (8 * ((s_inc[25] + i) & 0x07));
-      t = state[25];
+      #declassify t = state[25];
       t += i;
 
       u = t;
@@ -74,7 +77,7 @@ inline fn __keccak_inc_absorb(
       z += offset_in;
       z += i;
 
-      #declassify v = (64u) (u8) [z];
+      #declassify v = (64u) (u8) [z]; // TODO: FIXME: I think this is not public
       v <<= (u & 63);
 
       state[t] ^= v;
@@ -85,7 +88,8 @@ inline fn __keccak_inc_absorb(
       // v : (uint64_t) in[i] << (8 * ((state[25] + i) & 0x07))
 
       t = rate;
-      t -= state[25];
+      #declassify bytes = state[25];
+      t -= bytes;
 
       i += 1;
     }
