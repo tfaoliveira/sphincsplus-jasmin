@@ -38,7 +38,7 @@ export fn gen_chain_jazz(
   () = #unspill(_addr);
   addr = __load_u32_array<8>(addr, _addr);
 
-  out, addr = __gen_chain_(out, in, start, steps, pub_seed, addr);
+  out, addr = __gen_chain(out, in, start, steps, pub_seed, addr);
 
   () = #unspill(_out, _addr);
  

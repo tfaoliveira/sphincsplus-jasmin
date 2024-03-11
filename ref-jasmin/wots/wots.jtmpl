@@ -56,35 +56,6 @@ inline fn __gen_chain(
   return out, addr;
 }//<>
 
-#[returnaddress="stack"]
-fn _gen_chain(
-  reg ptr u8[SPX_N] out,
-  reg u64 in,
-  reg u32 start,
-  reg u32 steps,
-  reg ptr u8[SPX_N] pub_seed,
-  reg ptr u32[8] addr
-) -> reg ptr u8[SPX_N], reg ptr u32[8]
-{
-  out, addr = __gen_chain(out, in, start, steps, pub_seed, addr);
-  return out, addr;
-}//<>
-
-inline fn __gen_chain_(
-  reg ptr u8[SPX_N] out,
-  reg u64 in,
-  reg u32 start,
-  reg u32 steps,
-  reg ptr u8[SPX_N] pub_seed,
-  reg ptr u32[8] addr
-) -> reg ptr u8[SPX_N], reg ptr u32[8]
-{
-  () = #spill(out, in, start, steps, pub_seed, addr);   // Allow for full register swap  
-  () = #unspill(out, in, start, steps, pub_seed, addr); // Allow for full register swap
-  out, addr = _gen_chain(out, in, start, steps, pub_seed, addr);
-  return out, addr;
-}//<>
-
 inline fn __base_w<OUTLEN,INLEN>(
   reg ptr u32[OUTLEN] output,
   reg ptr u8[INLEN] input
