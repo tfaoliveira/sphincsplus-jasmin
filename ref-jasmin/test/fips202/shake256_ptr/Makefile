@@ -13,6 +13,7 @@ JFLAGS   ?= -nowarning ${JADDFLAGS}
 default: bin/test_shake256_ptr
 run: bin/test_shake256_ptr.out
 obj_files: bin/test_shake256_ptr.o
+checkct: bin/test_shake256_ptr.check
 
 %.o: %.s
 	$(AS) $< -o $@
@@ -23,6 +24,9 @@ bin/test_shake256_ptr.s: test_shake256_ptr.jazz | bin/
 
 bin/test_shake256_ptr: bin/test_shake256_ptr.s | bin/
 	$(CC) $(CFLAGS) -o $@ -I../../common -I../../ test_shake256_ptr.c $< ../../../fips202.c
+
+bin/test_shake256_ptr.check: test_shake256_ptr.jazz | bin/
+	$(JASMIN) $(JFLAGS) -I Sphincs:../../../ -checkCT -infer $^ > $@
 
 bin/test_shake256_ptr.out: bin/test_shake256_ptr
 	@./$<

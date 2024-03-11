@@ -35,6 +35,11 @@ JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 OBJ_FILES := $(ASM_FILES:.s=.o)
 
+checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
+
+%.check: %.jpp
+	$(JASMIN) $(JFLAGS) -checkCT -infer $< > $@
+
 # ------------------------------------------------------------------------------
 
 SOURCES = ../../hash_$(GET_HASH).c ../../fips202.c ../../utils.c \

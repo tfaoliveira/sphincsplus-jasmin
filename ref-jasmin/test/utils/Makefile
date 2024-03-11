@@ -53,11 +53,15 @@ jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
 obj_files: $(OBJ_FILES)
 
+checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
+
+%.check: %.jpp
+	$(JASMIN) $(JFLAGS) -checkCT -infer $< > $@
+
 # ------------------------------------------------------------------------------
 
 %.o: %.s
 	$(AS) $< -o $@
-
 
 # ------------------------------------------------------------------------------
 

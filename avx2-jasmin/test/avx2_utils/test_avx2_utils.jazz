@@ -15,7 +15,7 @@ export fn mm256_set_epi32_jazz(reg u64 args) {
     #declassify e6_ptr = (u64) [args + 8*6]; e6 = (u32) [e6_ptr];
     #declassify e7_ptr = (u64) [args + 8*7]; e7 = (u32) [e7_ptr];
 
-    out_ptr = (u64) [args + 8*8];
+    #declassify out_ptr = (u64) [args + 8*8];
 
     out = _mm256_set_epi32(e0, e1, e2, e3, e4, e5, e6, e7);
 

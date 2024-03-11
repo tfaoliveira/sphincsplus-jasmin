@@ -34,6 +34,12 @@ JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 OBJ_FILES := $(ASM_FILES:.s=.o)
 
+checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
+
+%.check: %.jpp
+	$(JASMIN) $(JFLAGS) -checkCT -infer $< > $@
+
+
 # ------------------------------------------------------------------------------
 
 default: $(TESTS)
@@ -71,12 +77,8 @@ bin/test_generic_%.out: bin/test_generic_%
 bin/:
 	mkdir -p bin/
 
-check: $(patsubst %.jpp,%.check,$(JPP_FILES))
-
-%.check: %.jpp
-	$(JASMIN) -checkCT -infer $< > /dev/null 2>&1
-
 # ------------------------------------------------------------------------------
+
 .PHONY: clean
 clean:
 	rm -fr bin/

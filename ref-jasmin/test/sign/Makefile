@@ -49,8 +49,10 @@ jpp_files:   $(JPP_FILES)
 asm_files:   $(ASM_FILES)
 obj_files:   $(OBJ_FILES)
 
-checksafety: $(addprefix checksafety_, $(TLIST))
-checkct:     $(addprefix checkct_, $(TLIST))
+checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
+
+%.check: %.jpp
+	$(JASMIN) $(JFLAGS) -checkCT -infer $< > $@
 
 %.o: %.s
 	$(AS) $< -o $@
@@ -83,12 +85,6 @@ bin/test_sign_%: bin/test_sign_%.s | bin/
 
 bin/test_sign_%.out: bin/test_sign_%
 	@./$<
-
-checksafety_%: bin/test_sign_%.jpp
-	$(JASMIN) $(JFLAGS) -checksafety $<
-
-checkct_%: bin/test_sign_%.jpp
-	$(JASMIN) $(JFLAGS) -checkCT -infer $<
 
 bin/:
 	mkdir -p bin/
