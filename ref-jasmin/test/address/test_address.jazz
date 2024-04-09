@@ -1,48 +1,16 @@
 
 from Sphincs require "address/address.jinc"
 
-inline fn __load_addr(reg ptr u32[8] addr, reg u64 p) -> reg ptr u32[8]
-{
-  inline int i;
-  reg u32 t;
-
-  for i=0 to 8
-  { t = (u32)[p + 4*i];
-    addr[i] = t;
-  }
-
-  return addr;
-}
-
-
-inline fn __store_addr(reg ptr u32[8] addr, reg u64 p)
-{
-  inline int i;
-  reg u32 t;
-
-  for i=0 to 8
-  { t = addr[i];
-    (u32)[p + 4*i] = t;
-  }
-}
-
-
 // 
 // Specify which level of Merkle tree (the "layer") we're working on
 // 
 export fn set_layer_addr_jazz(
-  reg u64 addr_ptr,
-  reg u32 layer)
+  reg ptr u32[8] addr,
+  reg u32 layer
+) -> reg ptr u32[8]
 {
-  stack u32[8] addr_s;
-  reg ptr u32[8] addr_p;
-
-  addr_p = addr_s;
-  addr_p = __load_addr(addr_p, addr_ptr);
-  
-    addr_p = __set_layer_addr(addr_p, layer);
- 
-  __store_addr(addr_p, addr_ptr);
+  addr = __set_layer_addr(addr, layer);
+  return addr;
 }
 
 
@@ -50,18 +18,12 @@ export fn set_layer_addr_jazz(
 // Specify which Merkle tree within the level (the "tree address") we're working on
 //
 export fn set_tree_addr_jazz(
-  reg u64 addr_ptr,
-  reg u64 tree)
+  reg ptr u32[8] addr,
+  reg u64 tree
+) -> reg ptr u32[8]
 {
-  stack u32[8] addr_s;
-  reg ptr u32[8] addr_p;
-
-  addr_p = addr_s;
-  addr_p = __load_addr(addr_p, addr_ptr);
-  
-    addr_p = __set_tree_addr(addr_p, tree);
- 
-  __store_addr(addr_p, addr_ptr);
+  addr = __set_tree_addr(addr, tree);
+  return addr;
 }
 
 
@@ -72,18 +34,12 @@ export fn set_tree_addr_jazz(
 // one of the SPX_ADDR_TYPE constants
 //
 export fn set_type_jazz(
-  reg u64 addr_ptr,
-  reg u32 type)
+  reg ptr u32[8] addr,
+  reg u32 type
+) -> reg ptr u32[8]
 {
-  stack u32[8] addr_s;
-  reg ptr u32[8] addr_p;
-
-  addr_p = addr_s;
-  addr_p = __load_addr(addr_p, addr_ptr);
-  
-    addr_p = __set_type(addr_p, type);
- 
-  __store_addr(addr_p, addr_ptr);
+  addr = __set_type(addr, type);
+  return addr;
 }
 
 
@@ -92,21 +48,12 @@ export fn set_type_jazz(
 // when we're doing multiple types of hashes within the same Merkle tree
 // 
 export fn copy_subtree_addr_jazz(
-  reg u64 out_addr_ptr,
-  reg u64 in_addr_ptr)
+  reg ptr u32[8] out_addr,
+  reg ptr u32[8] in_addr
+) -> reg ptr u32[8]
 {
-  stack u32[8] out_addr_s, in_addr_s;
-  reg ptr u32[8] out_addr_p, in_addr_p;
-
-  out_addr_p = out_addr_s;
-  in_addr_p = in_addr_s;
-
-  in_addr_p = __load_addr(in_addr_p, in_addr_ptr);
-  out_addr_p = __load_addr(out_addr_p, out_addr_ptr);
-  
-  out_addr_p = __copy_subtree_addr(out_addr_p, in_addr_p);
- 
-  __store_addr(out_addr_p, out_addr_ptr);
+  out_addr = __copy_subtree_addr(out_addr, in_addr);
+  return out_addr;
 }
 
 
@@ -115,18 +62,12 @@ export fn copy_subtree_addr_jazz(
 // we're talking about.
 //
 export fn set_keypair_addr_jazz(
-  reg u64 addr_ptr,
-  reg u32 keypair)
+  reg ptr u32[8] addr,
+  reg u32 keypair
+) -> reg ptr u32[8]
 {
-  stack u32[8] addr_s;
-  reg ptr u32[8] addr_p;
-
-  addr_p = addr_s;
-  addr_p = __load_addr(addr_p, addr_ptr);
-  
-    addr_p = __set_keypair_addr(addr_p, keypair);
- 
-  __store_addr(addr_p, addr_ptr);
+  addr = __set_keypair_addr(addr, keypair);
+  return addr;
 }
 
 
@@ -135,21 +76,12 @@ export fn set_keypair_addr_jazz(
 // used when we're doing multiple things within the same OTS keypair
 // 
 export fn copy_keypair_addr_jazz(
-  reg u64 out_addr_ptr,
-  reg u64 in_addr_ptr)
+  reg ptr u32[8] out_addr,
+  reg ptr u32[8] in_addr
+) -> reg ptr u32[8]
 {
-  stack u32[8] out_addr_s, in_addr_s;
-  reg ptr u32[8] out_addr_p, in_addr_p;
-
-  out_addr_p = out_addr_s;
-  in_addr_p = in_addr_s;
-
-  in_addr_p = __load_addr(in_addr_p, in_addr_ptr);
-  out_addr_p = __load_addr(out_addr_p, out_addr_ptr);
-  
-  out_addr_p = __copy_keypair_addr(out_addr_p, in_addr_p);
- 
-  __store_addr(out_addr_p, out_addr_ptr);
+  out_addr = __copy_keypair_addr(out_addr, in_addr);
+  return out_addr;
 }
 
 
@@ -158,18 +90,12 @@ export fn copy_keypair_addr_jazz(
 // (the chain address)
 //
 export fn set_chain_addr_jazz(
-  reg u64 addr_ptr,
-  reg u32 chain)
+  reg ptr u32[8] addr,
+  reg u32 chain
+) -> reg ptr u32[8]
 {
-  stack u32[8] addr_s;
-  reg ptr u32[8] addr_p;
-
-  addr_p = addr_s;
-  addr_p = __load_addr(addr_p, addr_ptr);
-  
-    addr_p = __set_chain_addr(addr_p, chain);
- 
-  __store_addr(addr_p, addr_ptr);
+  addr = __set_chain_addr(addr, chain);
+  return addr;
 }
 
 
@@ -178,18 +104,12 @@ export fn set_chain_addr_jazz(
 // (the hash address)
 //
 export fn set_hash_addr_jazz(
-  reg u64 addr_ptr,
-  reg u32 hash)
+  reg ptr u32[8] addr,
+  reg u32 hash
+) -> reg ptr u32[8]
 {
-  stack u32[8] addr_s;
-  reg ptr u32[8] addr_p;
-
-  addr_p = addr_s;
-  addr_p = __load_addr(addr_p, addr_ptr);
-  
-    addr_p = __set_hash_addr(addr_p, hash);
- 
-  __store_addr(addr_p, addr_ptr);
+  addr = __set_hash_addr(addr, hash);
+  return addr;
 }
 
 
@@ -201,18 +121,12 @@ export fn set_hash_addr_jazz(
 // (the tree height)
 // 
 export fn set_tree_height_jazz(
-  reg u64 addr_ptr,
-  reg u32 tree_height)
+  reg ptr u32[8] addr,
+  reg u32 tree_height
+) -> reg ptr u32[8]
 {
-  stack u32[8] addr_s;
-  reg ptr u32[8] addr_p;
-
-  addr_p = addr_s;
-  addr_p = __load_addr(addr_p, addr_ptr);
-  
-    addr_p = __set_tree_height(addr_p, tree_height);
- 
-  __store_addr(addr_p, addr_ptr);
+  addr = __set_tree_height(addr, tree_height);
+  return addr;
 }
 
 
@@ -221,18 +135,10 @@ export fn set_tree_height_jazz(
 // (the tree index)
 // 
 export fn set_tree_index_jazz(
-  reg u64 addr_ptr,
-  reg u32 tree_index)
+  reg ptr u32[8] addr,
+  reg u32 tree_index
+) -> reg ptr u32[8]
 {
-  stack u32[8] addr_s;
-  reg ptr u32[8] addr_p;
-
-  addr_p = addr_s;
-  addr_p = __load_addr(addr_p, addr_ptr);
-  
-    addr_p = __set_tree_index(addr_p, tree_index);
- 
-  __store_addr(addr_p, addr_ptr);
+  addr = __set_tree_index(addr, tree_index);
+  return addr;
 }
-
-

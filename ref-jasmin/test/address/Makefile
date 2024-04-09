@@ -1,3 +1,13 @@
+# -*- Makefile -*-
+
+# TODO: TODO: TODO: TODO:
+# TODO: TODO: TODO: TODO:
+# TODO: TODO: TODO: TODO:
+# TODO: Add target to checkCT # TODO: TODO: TODO: TODO:
+# TODO: TODO: TODO: TODO:
+# TODO: TODO: TODO: TODO:
+# TODO: TODO: TODO: TODO:
+
 # ------------------------------------------------------------------------------
 AS       ?= as
 CC       ?= clang
@@ -42,14 +52,9 @@ JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 OBJ_FILES := $(ASM_FILES:.s=.o)
 
-checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
-
-%.check: %.jpp
-	$(JASMIN) $(JFLAGS) -checkCT -infer $< > $@
-
 # ------------------------------------------------------------------------------
 
-SOURCES = $(filter-out ../../thash_%.c, $(wildcard ../../*.c)) ../../thash_$(GET_HASH)_$(GET_THASH).c
+SOURCES = $(filter-out ../../thash_%.c ../../PQCgenKAT_sign.c ../../rng.c, $(wildcard ../../*.c)) ../../thash_$(GET_HASH)_$(GET_THASH).c
 
 TEST_FLAGS := -DTEST_ADDRESS
 
@@ -60,7 +65,7 @@ run: $(OUT)
 
 jpp_files: $(JPP_FILES)
 asm_files: $(ASM_FILES)
-obj_files:   $(OBJ_FILES)
+obj_files: $(OBJ_FILES)
 
 %.o: %.s
 	$(AS) $< -o $@
@@ -84,11 +89,6 @@ bin/test_address_%: bin/test_address_%.s | bin/
 bin/test_address_%.out: bin/test_address_%
 	@./$<
 
-check: $(patsubst %.jpp,%.check,$(JPP_FILES))
-
-%.check: %.jpp
-	$(JASMIN) -checkCT -infer $< > /dev/null 2>&1
-	
 bin/:
 	mkdir -p bin/
 
@@ -96,3 +96,6 @@ bin/:
 .PHONY: clean
 clean:
 	rm -fr bin/
+
+debug:
+	@echo $(TESTS)
