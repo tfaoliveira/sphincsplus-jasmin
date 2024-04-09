@@ -1,0 +1,13 @@
+.github
+.reuse
+haraka-aesni
+LICENSES
+ref
+sha2-avx2
+shake-a64
+shake-avx2
+benchmark.py
+LICENSE
+README.md
+SHAKE256SUMS
+vectors.py
