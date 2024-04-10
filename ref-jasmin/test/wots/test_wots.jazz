@@ -1,18 +1,6 @@
 from Sphincs require "wots/wots.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
 
-inline fn __load_ctx(
-  reg ptr u8[SPX_N] pub_seed,
-  reg ptr u8[SPX_N] sk_seed,
-  reg u64 addr
-) -> reg ptr u8[SPX_N], reg ptr u8[SPX_N]
-{
-  pub_seed = __load_u8_array<SPX_N>(pub_seed, addr);
-  addr += SPX_N;
-  sk_seed = __load_u8_array<SPX_N>(sk_seed, addr);
-  return pub_seed, sk_seed;
-}
-
 export fn gen_chain_jazz(
   reg  u64 _out in _start _steps _pub_seed _addr
 )
@@ -46,94 +34,40 @@ export fn gen_chain_jazz(
   __store_u32_array<8>(addr, _addr);
 }//<>
 
-export fn base_w_jazz_out_WOTS_LEN2(reg u64 _out _in)
+export fn base_w_jazz_out_WOTS_LEN2(
+  reg ptr u32[SPX_WOTS_LEN2] out,
+  reg ptr u8[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] in
+) -> reg ptr u32[SPX_WOTS_LEN2]
 {
-  stack u32[SPX_WOTS_LEN2] out;
-  reg ptr u32[SPX_WOTS_LEN2] out_p;
-
-  stack u8[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] in;
-  reg ptr u8[(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8] in_p;
-
-  () = #spill(_out);
-
-  in_p = in;
-  in_p = __load_u8_array<(SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(in_p, _in);
-
-  out_p = out;
-  out_p = __base_w<SPX_WOTS_LEN2, (SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(out_p, in_p);
-
-  () = #unspill(_out);
-  __store_u32_array<SPX_WOTS_LEN2>(out_p, _out);
+  out = __base_w<SPX_WOTS_LEN2, (SPX_WOTS_LEN2 * SPX_WOTS_LOGW + 7) / 8>(out, in);
+  return out;
 }
 
-export fn base_w_jazz_out_WOTS_LEN1(reg u64 _out _in)
+export fn base_w_jazz_out_WOTS_LEN1(
+  reg ptr u32[SPX_WOTS_LEN1] out,
+  reg ptr u8[SPX_N] in
+) -> reg ptr u32[SPX_WOTS_LEN1]
 {
-  stack u32[SPX_WOTS_LEN1] out;
-  reg ptr u32[SPX_WOTS_LEN1] out_p;
-
-  stack u8[SPX_N] in;
-  reg ptr u8[SPX_N] in_p;
-
-  () = #spill(_out);
-
-  in_p = in;
-  in_p = __load_u8_array<SPX_N>(in_p, _in);
-
-  out_p = out;
-  out_p = __base_w<SPX_WOTS_LEN1, SPX_N>(out_p, in_p);
-
-  () = #unspill(_out);
-  __store_u32_array<SPX_WOTS_LEN1>(out_p, _out);
+  out = __base_w<SPX_WOTS_LEN1, SPX_N>(out, in);
+  return out;
 }
 
-export fn wots_checksum_jazz(reg u64 _csum_base_w _msg_base_w) 
+export fn wots_checksum_jazz(
+  reg ptr u32[SPX_WOTS_LEN2] csum_base_w,
+  reg ptr u32[SPX_WOTS_LEN] msg_base_w
+) -> reg ptr u32[SPX_WOTS_LEN2] 
 {
-  stack u32[SPX_WOTS_LEN2] csum_base_w;
-  stack u32[SPX_WOTS_LEN] msg_base_w;
-
-  reg ptr u32[SPX_WOTS_LEN2] csum_base_w_p;
-  reg ptr u32[SPX_WOTS_LEN] msg_base_w_p;
-
-  stack u64 s_csum_base_w s_msg_base_w;
-
-  csum_base_w_p = csum_base_w;
-  csum_base_w_p = __load_u32_array<SPX_WOTS_LEN2>(csum_base_w_p, _csum_base_w);
-
-  msg_base_w_p = msg_base_w;
-  msg_base_w_p = __load_u32_array<SPX_WOTS_LEN>(msg_base_w_p, _msg_base_w);
-
-  s_csum_base_w = _csum_base_w;  // spill
-
-  csum_base_w_p = __wots_checksum(csum_base_w_p, msg_base_w_p);
-
-  _csum_base_w = s_csum_base_w; // unspill
-
-  __store_u32_array<SPX_WOTS_LEN2>(csum_base_w_p, _csum_base_w);
+  csum_base_w = __wots_checksum(csum_base_w, msg_base_w);
+  return csum_base_w;
 }
 
-export fn chain_lengths_jazz(reg u64 _lengths _msg)
+export fn chain_lengths_jazz(
+  reg ptr u32[SPX_WOTS_LEN] lengths,
+  reg ptr u8[SPX_N] msg
+) -> reg ptr u32[SPX_WOTS_LEN]
 {
-  stack u32[SPX_WOTS_LEN] lengths;
-  stack u8[SPX_N] msg;
-
-  reg ptr u32[SPX_WOTS_LEN] lengths_p;
-  reg ptr u8[SPX_N] msg_p;
-
-  stack u64 s_lengths s_msg;
-
-  lengths_p = lengths;
-  lengths_p = __load_u32_array<SPX_WOTS_LEN>(lengths_p, _lengths);
-    
-  msg_p = msg;
-  msg_p = __load_u8_array<SPX_N>(msg_p, _msg);
-
-  s_lengths = _lengths; s_msg = _msg; // spill
-
-  lengths_p = __chain_lengths(lengths_p, msg_p);
-  msg =  msg_p;
-
-  s_lengths = _lengths; // spill
-  __store_u32_array<SPX_WOTS_LEN>(lengths_p, _lengths);
+  lengths = __chain_lengths(lengths, msg);
+  return lengths;
 }
 
 export fn wots_pk_from_sig_jazz(reg u64 _pk sig _msg _pub_seed _addr)

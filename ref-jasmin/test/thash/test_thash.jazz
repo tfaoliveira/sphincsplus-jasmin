@@ -2,91 +2,34 @@
 
 from Sphincs require "generic/utils.jtmpl"
 
-export fn thash<INBLOCKS>(reg u64 _out _in _pub_seed _addr)
+export fn thash<INBLOCKS>(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[INBLOCKS*SPX_N] in,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[SPX_N]
 {
-  stack u8[SPX_N] out;
-  stack u8[INBLOCKS*SPX_N] in;
-  stack u8[SPX_N] pub_seed;
-  stack u32[8] addr;
-
-  reg ptr u8[SPX_N] out_p;
-  reg ptr u8[INBLOCKS*SPX_N] in_p;
-  reg ptr u8[SPX_N] pub_seed_p;
-  reg ptr u32[8] addr_p;
-
-  reg u64 i;
-  reg u8 t; 
-  reg u32 u;
-
-  stack u64 _out_s _in_s _pub_seed_s _addr_s;
-  
-  in_p = in;
-  in_p = __load_u8_array<INBLOCKS*SPX_N>(in_p, _in);
-
-  pub_seed_p = pub_seed;
-  pub_seed_p = __load_u8_array<SPX_N>(pub_seed_p, _pub_seed);
-  
-  addr_p = addr;
-  addr_p = __load_u32_array<8>(addr_p, _addr);
-
-  () = #spill(_out);
-
-  out_p = out;
-  out_p = __thash<INBLOCKS>(out_p, in_p, pub_seed_p, addr_p);
-  out = out_p;
-
-  () = #unspill(_out);
-  __store_u8_array<SPX_N>(out_p, _out);
+  out = __thash<INBLOCKS>(out, in, pub_seed, addr);
+  return out;
 }//<>
 
-export fn thash_inplace_jazz(reg u64 _out _pub_seed _addr)
+export fn thash_inplace_jazz(
+  reg ptr u8[SPX_N] out,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[SPX_N]
 {
-  stack u8[SPX_N] out;
-  stack u8[SPX_N] pub_seed;
-  stack u32[8] addr;
-
-  reg ptr u8[SPX_N] out_p;
-  reg ptr u8[SPX_N] pub_seed_p;
-  reg ptr u32[8] addr_p;
-
-  () = #spill(_out, _pub_seed, _addr);
-
-  () = #unspill(_out);
-  out_p = out;
-  out_p = __load_u8_array<SPX_N>(out_p, _out);
-
-  () = #unspill(_pub_seed);
-  pub_seed_p = pub_seed;
-  pub_seed_p = __load_u8_array<SPX_N>(pub_seed_p, _pub_seed);
-
-  () = #unspill(_addr);
-  addr_p = addr;
-  addr_p = __load_u32_array<8>(addr_p, _addr);
-
-  out_p = __thash_inplace_(out_p, pub_seed_p, addr_p);
-
-  () = #unspill(_out);
-  __store_u8_array<SPX_N>(out_p, _out);
+  out = __thash_inplace_(out, pub_seed, addr);
+  return out;
 }
 
-export fn thash_in_u64_jazz<INBLOCKS>(reg u64 _out in _pub_seed _addr)
+export fn thash_in_u64_jazz<INBLOCKS>(
+  reg ptr u8[SPX_N] out,
+  reg u64 in_ptr,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] addr
+) -> reg ptr u8[SPX_N]
 {
-  stack u8[SPX_N] out;
-  stack u8[SPX_N] pub_seed;
-  stack u32[8] addr;
-
-  reg ptr u8[SPX_N] out_p;
-  reg ptr u8[SPX_N] pub_seed_p;
-  reg ptr u32[8] addr_p;
-
-  pub_seed = __load_u8_array<SPX_N>(pub_seed, _pub_seed);
-  addr = __load_u32_array<8>(addr, _addr);
-
-  () = #spill(_out);
-
-  out_p = out;
-  out = __thash_in_u64_<INBLOCKS>(out, in, pub_seed, addr);
-
-  () = #unspill(_out);
-  __store_u8_array<SPX_N>(out, _out);
+  out = __thash_in_u64_<INBLOCKS>(out, in_ptr, pub_seed, addr);
+  return out;
 }//<>
