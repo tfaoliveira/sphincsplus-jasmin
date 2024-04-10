@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
 
 void print_info(const char *algname, const char *arch, const char *impl);
 void print_u8(const uint8_t *a, size_t l);

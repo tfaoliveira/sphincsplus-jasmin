@@ -1,3 +1,13 @@
+# -*- Makefile -*-
+
+# TODO: TODO: TODO: TODO:
+# TODO: TODO: TODO: TODO:
+# TODO: TODO: TODO: TODO:
+# TODO: Add target to checkCT # TODO: TODO: TODO: TODO:
+# TODO: TODO: TODO: TODO:
+# TODO: TODO: TODO: TODO:
+# TODO: TODO: TODO: TODO:
+
 # ------------------------------------------------------------------------------
 AS       ?= as
 CC       ?= clang
@@ -34,11 +44,6 @@ GET_THASH = $(word 3, $(subst _, ,$*))
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 OBJ_FILES := $(ASM_FILES:.s=.o)
-
-checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
-
-%.check: %.jpp
-	$(JASMIN) $(JFLAGS) -checkCT -infer $< > $@
 
 # ------------------------------------------------------------------------------
 

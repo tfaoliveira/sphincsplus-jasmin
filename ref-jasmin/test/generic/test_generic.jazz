@@ -67,14 +67,9 @@ export fn cond_u32_a_eq_b_and_c_below_d_jazz(
     (u8)[_res] = r;
 }
 
-export fn zero_array_u32_jazz<INLEN>(reg u64 addr) {
-    stack u32[INLEN] a;
-    reg ptr u32[INLEN] ap;
-
-    ap = a;
-    ap = __load_u32_array<INLEN>(ap, addr);
-    ap = __zero_array_u32<INLEN>(ap);
-    __store_u32_array<INLEN>(ap, addr);
+export fn zero_array_u32_jazz<INLEN>(reg ptr u32[INLEN] a) -> reg ptr u32[INLEN] {
+    a = __zero_array_u32<INLEN>(a);
+    return a;
 }//<>
 
 export fn ull_to_bytes_jazz(reg u64 _out in)
@@ -87,26 +82,18 @@ export fn ull_to_bytes_jazz(reg u64 _out in)
     __store_u8_array<8>(out_p, _out);
 }
 
-export fn ull_to_bytes_t_jazz<OUTLEN>(reg u64 _out in)
+export fn ull_to_bytes_t_jazz<OUTLEN>(
+    reg ptr u8[OUTLEN] out, 
+    reg u64 in
+) -> reg ptr u8[OUTLEN]
 {
-    stack u8[OUTLEN] out;
-    reg ptr u8[OUTLEN] out_p;
-    out_p = out;
-    out_p = __load_u8_array<OUTLEN>(out_p, _out);
-    out_p = __ull_to_bytes_t<OUTLEN>(out_p, in);
-    __store_u8_array<OUTLEN>(out_p, _out); 
+    out = __ull_to_bytes_t<OUTLEN>(out, in);
+    return out;
 }//<>
 
-export fn bytes_to_ull_jazz(reg u64 _in) -> reg u64 { 
-    reg u64 res; 
-    stack u8[8] in; 
-    reg ptr u8[8] in_p; 
-    
-    in_p = in; 
-    in_p = __load_u8_array<8>(in_p, _in); 
-    res = __bytes_to_ull<8>(in_p); 
-    in = in_p; 
-    
+export fn bytes_to_ull_jazz(reg ptr u8[8] in) -> reg u64 { 
+    reg u64 res;
+    res = __bytes_to_ull<8>(in); 
     return res; 
 }
 

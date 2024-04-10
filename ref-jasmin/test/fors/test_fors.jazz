@@ -2,81 +2,25 @@ from Sphincs require "fors/fors.jtmpl"
 from Sphincs require "generic/utils.jtmpl"
 
 export fn fors_gen_sk_jazz(
-  reg u64 _sk _pub_seed _sk_seed _fors_leaf_addr
-)
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u8[SPX_N] sk_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
 {
-  stack u8[SPX_N] sk;
-  stack u8[SPX_N] pub_seed;
-  stack u8[SPX_N] sk_seed;
-  stack u32[8] fors_leaf_addr;
-
-  reg ptr u8[SPX_N] sk_p;
-  reg ptr u8[SPX_N] pub_seed_p;
-  reg ptr u8[SPX_N] sk_seed_p;
-  reg ptr u32[8] fors_leaf_addr_p;
-
-  stack u64 s_sk s_pub_seed s_sk_seed s_fors_leaf_addr;
-
-  sk_p = sk;
-  sk_p = __load_u8_array<SPX_N>(sk_p, _sk);
-
-  pub_seed_p = pub_seed;
-  pub_seed_p = __load_u8_array<SPX_N>(pub_seed_p, _pub_seed);
-
-  sk_seed_p = sk_seed;
-  sk_seed_p = __load_u8_array<SPX_N>(sk_seed_p, _sk_seed);
-
-  fors_leaf_addr_p = fors_leaf_addr;
-  fors_leaf_addr_p = __load_u32_array<8>(fors_leaf_addr_p, _fors_leaf_addr);
-
-  // Spill
-  s_sk = _sk;
-  s_pub_seed = _pub_seed;
-  s_sk_seed = _sk_seed;
-  s_fors_leaf_addr = _fors_leaf_addr;
-
-  sk_p = __fors_gen_sk(sk_p, pub_seed_p, sk_seed_p, fors_leaf_addr_p);
-
-  _sk = s_sk;
-
-  __store_u8_array<SPX_N>(sk_p, _sk);
-
+  sk = __fors_gen_sk(sk, pub_seed, sk_seed, fors_leaf_addr);
+  return sk;
 }
 
 export fn fors_sk_to_leaf_jazz(
-  reg u64 _leaf _sk _pub_seed _fors_leaf_addr
-)
+  reg ptr u8[SPX_N] leaf,
+  reg ptr u8[SPX_N] sk,
+  reg ptr u8[SPX_N] pub_seed,
+  reg ptr u32[8] fors_leaf_addr
+) -> reg ptr u8[SPX_N]
 {
-  stack u8[SPX_N] leaf;
-  stack u8[SPX_N] sk;
-  stack u8[SPX_N] pub_seed;
-  stack u32[8] fors_leaf_addr;
-
-  reg ptr u8[SPX_N] leaf_p;
-  reg ptr u8[SPX_N] sk_p;
-  reg ptr u8[SPX_N] pub_seed_p;
-  reg ptr u32[8] fors_leaf_addr_p;
-
-  stack u64 s_leaf s_sk s_pub_seed s_fors_leaf_addr;
-
-
-  sk_p = sk;
-  sk_p = __load_u8_array<SPX_N>(sk_p, _sk);
-
-  pub_seed_p = pub_seed;
-  pub_seed_p = __load_u8_array<SPX_N>(pub_seed_p, _pub_seed);
-
-  fors_leaf_addr_p = fors_leaf_addr;
-  fors_leaf_addr_p = __load_u32_array<8>(fors_leaf_addr_p, _fors_leaf_addr);
-
-  // Spill
-  s_leaf = _leaf;
-
-  leaf_p = leaf;
-  leaf_p = __fors_sk_to_leaf__(leaf_p, sk_p, pub_seed_p, fors_leaf_addr_p);
-
-  _leaf = s_leaf;
-  __store_u8_array<SPX_N>(leaf_p, _leaf);
+  leaf = __fors_sk_to_leaf__(leaf, sk, pub_seed, fors_leaf_addr);
+  return leaf;
 }
 
 export fn fors_gen_leafx1_jazz(
@@ -121,24 +65,12 @@ export fn fors_gen_leafx1_jazz(
 }
 
 export fn message_to_indices_t_jazz<MSG_LEN>(
-  reg u64 _indices _msg
-)
+  reg ptr u32[SPX_FORS_TREES] indices,
+  reg ptr u8[MSG_LEN] msg
+) -> reg ptr u32[SPX_FORS_TREES]
 {
-  stack u32[SPX_FORS_TREES] indices;
-  reg ptr u32[SPX_FORS_TREES] indices_p;
-
-  stack u8[MSG_LEN] msg;
-  reg ptr u8[MSG_LEN] msg_p;
-
-  stack u64 s_indices;
-
-  indices_p = indices;
-  msg_p = msg;
-
-  msg_p = __load_u8_array<MSG_LEN>(msg_p, _msg);
-  
-  indices_p = __message_to_indices_t<MSG_LEN>(indices_p, msg_p);
-  __store_u32_array<SPX_FORS_TREES>(indices_p, _indices);
+  indices = __message_to_indices_t<MSG_LEN>(indices, msg);
+  return indices;
 }//<>
 
 export fn fors_sign_jazz(reg u64 sig _pk _msg _pub_seed _sk_seed _fors_addr)
