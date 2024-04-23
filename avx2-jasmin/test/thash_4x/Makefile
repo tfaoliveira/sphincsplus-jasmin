@@ -7,8 +7,8 @@ CFLAGS ?= -w -march=native #-Wall -Wextra -Wpedantic -Wmissing-prototypes -O3 -s
 
 JASMIN       ?= jasminc
 JFLAGS       ?= -nowarning ${JADDFLAGS}
-JPP          ?= ../scripts/jpp
-PREPROCESSOR ?= ../scripts/preprocessor
+JPP          ?= ../../../submodules/jasmin-preprocessor/jpp
+PREPROCESSOR ?= ../../../submodules/jasmin-preprocessor/preprocessor
 
 HASH_LIST     := shake
 PARAMS_LIST   := 128f 128s 192f 192s 256f 256s

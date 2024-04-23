@@ -7,8 +7,8 @@ CFLAGS ?= -w -march=native #-Wall -Wextra -Wpedantic -Wmissing-prototypes -O3 -s
 
 JASMIN       ?= jasminc
 JFLAGS       ?= -nowarning ${JADDFLAGS}
-JPP          ?= ../scripts/jpp
-PREPROCESSOR ?= ../scripts/preprocessor
+JPP          ?= ../../../submodules/jasmin-preprocessor/jpp
+PREPROCESSOR ?= ../../../submodules/jasmin-preprocessor/preprocessor
 
 # Both INLEN and OUTLEN
 LEN_LIST  ?= 1 31 32 33 63 64 65 95 96 97 127 128 129 135  137 159 160 \

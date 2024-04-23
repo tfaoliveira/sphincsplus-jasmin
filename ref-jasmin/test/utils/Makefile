@@ -9,8 +9,8 @@ CFLAGS   ?= -w #-O3 -Wall -Wextra -Wpedantic -Werror -std=c99 \
 
 JASMIN       ?= jasminc
 JFLAGS       ?= -nowarning ${JADDFLAGS}
-JPP          ?= ../scripts/jpp
-PREPROCESSOR ?= ../scripts/preprocessor
+JPP          ?= ../../../submodules/jasmin-preprocessor/jpp
+PREPROCESSOR ?= ../../../submodules/jasmin-preprocessor/preprocessor
 
 # ------------------------------------------------------------------------------
 

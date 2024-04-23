@@ -8,8 +8,8 @@ CFLAGS ?= -w -march=native
 
 JASMIN       ?= jasminc
 JFLAGS       ?= -lazy-regalloc -nowarning ${JADDFLAGS}
-JPP          ?= ../scripts/jpp
-PREPROCESSOR ?= ../scripts/preprocessor
+JPP          ?= ../../../submodules/jasmin-preprocessor/jpp
+PREPROCESSOR ?= ../../../submodules/jasmin-preprocessor/preprocessor
 
 #-----------------------------------------------------------------------------------------------------------------------
 

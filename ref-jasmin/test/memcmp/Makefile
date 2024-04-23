@@ -7,8 +7,8 @@ CFLAGS ?= -w # -O3 -Wall -Wextra -Wpedantic -Wvla -Werror -std=c99 \
 			
 JASMIN        ?= jasminc
 JFLAGS        ?= -nowarning ${JADDFLAGS}
-JPP           ?= ../scripts/jpp
-PREPROCESSOR  ?= ../scripts/preprocessor
+JPP           ?= ../../../submodules/jasmin-preprocessor/jpp
+PREPROCESSOR  ?= ../../../submodules/jasmin-preprocessor/preprocessor
 
 # ------------------------------------------------------------------------------
 T_LIST = $(shell seq 1 1 50)
@@ -31,7 +31,7 @@ bin/test_memcmp_%.jpp:
 	
 .PRECIOUS: bin/test_memcmp_%.s
 bin/test_memcmp_%.s: bin/test_memcmp_%.jpp
-	$(JASMIN) $< -o $@
+	$(JASMIN) $(JFLAGS) $< -o $@
 
 $(TESTS):
 bin/test_memcmp_%: bin/test_memcmp_%.s | bin/

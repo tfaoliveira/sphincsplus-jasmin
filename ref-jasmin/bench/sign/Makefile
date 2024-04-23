@@ -7,8 +7,8 @@ CFLAGS ?= -Wall -Wextra -Wpedantic -Wmissing-prototypes -O3 -std=c99 -march=nati
 
 JASMIN       ?= jasminc
 JFLAGS       ?= -nowarning -g ${JADDFLAGS}
-JPP          ?= ../../test/scripts/jpp
-PREPROCESSOR ?= ../../test/scripts/preprocessor
+JPP          ?= ../../test../../submodules/jasmin-preprocessor/jpp
+PREPROCESSOR ?= ../../test../../submodules/jasmin-preprocessor/preprocessor
 
 HASH_LIST   := shake
 PARAMS_LIST := 128f 192f 256f # 128s 192s 256s 

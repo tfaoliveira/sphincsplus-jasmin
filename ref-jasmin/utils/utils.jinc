@@ -14,7 +14,7 @@ from Sphincs require "address/address.jinc"
 //       Instead we change the signature of the function to take an arbitrarily long array and only
 //       consider the first SPX_N elements starting from position `offset`
 // 
-// I.e. Instead of  inline fn __compute_root(reg ptr u8[SPX_N] root .... 
+// I.e. Instead of  inline fn __compute_root(reg ptr u8[SPX_N] root ../.. 
 //      We now have inline fn __compute_root\<INLEN\>(reg ptr u8[INLEN] root, reg u64 offset ...
 //
 // NOTE 2: The \<INLEN\> instead of <INLEN> is to prevent the proprocessor from matching that string

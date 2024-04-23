@@ -11,8 +11,8 @@ CFLAGS   ?= -w # -O3 -Wall -Wextra -Wpedantic #-Werror -std=c99 \
 
 JASMIN       ?= jasminc
 JFLAGS       ?= -nowarning ${JADDFLAGS} 
-JPP          ?= ../scripts/jpp
-PREPROCESSOR ?= ../scripts/preprocessor
+JPP          ?= ../../../submodules/jasmin-preprocessor/jpp
+PREPROCESSOR ?= ../../../submodules/jasmin-preprocessor/preprocessor
 
 # ------------------------------------------------------------------------------
 
@@ -36,11 +36,6 @@ GET_THASH = $(word 3, $(subst _, ,$*))
 JPP_FILES := $(addsuffix .jpp, $(TESTS))
 ASM_FILES := $(JPP_FILES:.jpp=.s)
 OBJ_FILES := $(ASM_FILES:.s=.o)
-
-checkct: $(patsubst %.jpp,%.check,$(JPP_FILES))
-
-%.check: %.jpp
-	$(JASMIN) $(JFLAGS) -checkCT -infer $< > $@
 
 # ------------------------------------------------------------------------------
 
