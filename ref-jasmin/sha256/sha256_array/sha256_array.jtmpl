@@ -1,0 +1,195 @@
+from XMSS require "sha256/common/sha256_common.jinc"
+
+inline fn __store_ref_array(reg ptr u8[32] out, stack u32[8] H) -> reg ptr u8[32]
+{
+  inline int i;
+  reg u32 v;
+
+  for i=0 to 8
+  { v = H[i];
+    v = #BSWAP_32(v); 
+    out[u32 i] = v; // (u32)[out + i*4] = v;
+  }
+  return out;
+}
+
+fn _blocks_0_ref<INLEN>(
+  reg ptr u32[8] _H, 
+  reg ptr u8[INLEN] in
+) -> reg ptr u32[8], reg u64
+{
+  inline int t;
+  reg u32 T1 T2 a b c d e f g h r v;
+  reg u64 offset index;
+  stack u32[64] W;
+  reg ptr u32[64] Kp;
+  stack ptr u32[8] Hp;
+  reg ptr u32[8] H;
+  reg u64 tr;
+  reg u64 inlen;
+
+  offset = 0;
+  inlen = INLEN;
+
+  Kp = SHA256_K;
+  Hp = _H;
+
+  H = Hp;
+
+  // NOTE:
+  // The function _blocks_0_ref requires that the length of in is at least 64 bytes (it processes 64 byte blocks).
+  // If we want to compute the hash of a bytestring < 64 bytes, this function does nothing (i.e. the while loop is not run)
+  // => Only __lastblocks_ref and _blocks_1_ref do useful computation
+  // 
+  // Because the value of INLEN is known at compile time, this if [ if (INLEN >= 64) ] allows the compiler to remove 
+  // the while loop if INLEN < 64 (because this if statement is statically resolved)
+  //
+  // In other words, this if statement allows us to write a sha2 impl that works for all values of INLEN instead of having
+  // to implement two different versions 
+  //      1) A impl where INLEN >= 64 where we call _blocks_0_ref
+  //      2) A impl where INLEN <  64 where we only call __lastblocks_ref and _blocks_1_ref
+  // but while loop will only be in the impl where it is in fact needed (when INLEN >= 64). In the other case, 
+  // (when INLEN < 64), the while loop will be removed by the compiler
+  if (INLEN >= 64) {
+    while(inlen >= 64) {
+      () = #spill(inlen);
+      for t=0 to 16
+      { 
+        v = in.[u32 offset + 4*t]; // v = (u32)[in + t*4];
+        v = #BSWAP_32(v);
+        W[t] = v;
+      }
+
+      () = #spill(offset);
+
+      for t=16 to 64 { W = __Wt_ref(W, t); }
+
+      a, b, c, d, e, f, g, h, H = __load_H_ref(H);
+      Hp = H;
+
+      tr = 0;
+      while(tr < 64)
+      {
+        //T1 = h + BSIG1(e) + CH(e,f,g) + Kt + Wt
+        T1  = h;
+        r   = __BSIG1_ref(e);
+        T1 += r;
+        r   = __CH_ref(e,f,g);
+        T1 += r;
+        T1 += Kp[tr];
+        T1 += W[tr];
+
+        //T2 = BSIG0(a) + MAJ(a,b,c)
+        T2  = __BSIG0_ref(a);
+        r   = __MAJ_ref(a,b,c);
+        T2 += r;
+
+        h  = g;
+        g  = f;
+        f  = e;
+        e  = d;
+        e += T1;
+        d  = c;
+        c  = b;
+        b  = a;
+        a  = T1;
+        a += T2;
+
+        tr+= 1;
+      }
+
+      H = Hp;
+      a += H[0];
+      b += H[1];
+      c += H[2];
+      d += H[3];
+      e += H[4];
+      f += H[5];
+      g += H[6];
+      h += H[7];
+
+      H = __store_H_ref(H,a,b,c,d,e,f,g,h);
+
+      () = #unspill(offset, inlen);
+      offset += 64;
+      inlen -= 64;
+    }
+  }
+
+  _H = H;
+  
+  return _H, offset;
+}//<>
+
+inline fn __lastblocks_ref<INLEN>(reg ptr u8[INLEN] in, reg u64 inlen offset bits) -> stack u32[32], reg u64
+{
+  stack u32[32] sblocks;
+  inline int k;
+  reg u64 i j nblocks;
+  reg u8 v;
+
+  reg u64 index;
+
+  i = 0;
+
+  // Zero-fill the sblocks array
+  for k = 0 to 32 { sblocks[k] = i; }
+
+  // copy in to sblocks
+  while(i < inlen)
+  { 
+    index = offset; index += i;
+    v = in[index]; // v = (u8)[in + i];
+    sblocks[u8 i] = v;
+    i += 1;
+  }
+
+  // set first byte after input to 0x80 
+  sblocks[u8 i] = 0x80;
+
+  // check if one or two blocks are needed
+  if(inlen < 56) // 448 / 8 = 56
+  { j = (64-8); nblocks = 1; i = 63; }
+  else
+  { j = (128-8); nblocks = 2; i = 127; }
+
+  while(i >= j)
+  { sblocks[u8 i] = (8u) bits;
+    bits >>= 8;
+    i -= 1;
+  }
+  
+  return sblocks, nblocks;
+}//<>
+
+inline fn __sha256<INLEN>(reg ptr u8[32] out, reg ptr u8[INLEN] in) -> reg ptr u8[32]
+{
+  reg u64 bits nblocks inlen offset;
+  stack u32[8] H;
+  reg ptr u32[8] Hp;
+  stack u32[32] sblocks;
+  reg ptr u32[32] sblocksp;
+
+  () = #spill(out);
+
+  bits = INLEN;
+  bits <<= 3;
+  () = #spill(bits);
+
+  H = __initH_ref();
+  
+  () = #spill(in);
+  Hp = H;
+  Hp, offset = _blocks_0_ref<INLEN>(Hp, in);
+
+  () = #unspill(in, bits);
+  inlen = INLEN % 64;
+  sblocks, nblocks = __lastblocks_ref<INLEN>(in, inlen, offset, bits);
+  sblocksp = sblocks;
+  Hp, _ = _blocks_1_ref(Hp, sblocksp, nblocks);
+
+  () = #unspill(out);
+  H = Hp;
+  out = __store_ref_array(out, H);
+  return out;
+}//<>
