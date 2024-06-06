@@ -1,4 +1,4 @@
-from XMSS require "sha256/common/sha256_common.jinc"
+require "sha256/common/sha256_common.jinc"
 
 inline fn __store_ref_array(reg ptr u8[32] out, stack u32[8] H) -> reg ptr u8[32]
 {

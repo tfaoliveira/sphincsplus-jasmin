@@ -1,4 +1,4 @@
-from XMSS require "sha256/sha256_array/sha256_array.jtmpl"
+require "sha256/sha256_array/sha256_array.jtmpl"
 
 inline fn __store_ref(reg u64 out, stack u32[8] H)
 {
